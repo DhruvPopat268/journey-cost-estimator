@@ -1,0 +1,95 @@
+
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { User, Car, Package } from 'lucide-react';
+
+const Category = () => {
+  const navigate = useNavigate();
+
+  const categories = [
+    {
+      id: 'driver',
+      title: 'Driver',
+      subtitle: 'Your Car, Our Driver',
+      icon: User,
+      description: 'Book a professional driver for your own vehicle'
+    },
+    {
+      id: 'cab',
+      title: 'Cab',
+      subtitle: 'Our Car with Driver',
+      icon: Car,
+      description: 'Book a complete ride with our car and driver'
+    },
+    {
+      id: 'parcel',
+      title: 'Parcel',
+      subtitle: 'Our Vehicle, Your Things',
+      icon: Package,
+      description: 'Send your packages with our delivery service'
+    }
+  ];
+
+  const handleCategorySelect = (categoryId: string) => {
+    if (categoryId === 'driver' || categoryId === 'cab') {
+      navigate(`/subcategory/${categoryId}`);
+    } else {
+      // For parcel, you can add specific handling later
+      navigate(`/subcategory/${categoryId}`);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Choose Your Service
+          </h1>
+          <p className="text-lg text-gray-600">
+            Select the service that best fits your needs
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {categories.map((category) => {
+            const IconComponent = category.icon;
+            return (
+              <Card 
+                key={category.id}
+                className="bg-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer border-2 hover:border-blue-200"
+                onClick={() => handleCategorySelect(category.id)}
+              >
+                <CardContent className="p-8 text-center">
+                  <div className="mb-6">
+                    <div className="w-20 h-20 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                      <IconComponent className="w-10 h-10 text-blue-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                      {category.title}
+                    </h2>
+                    <p className="text-gray-600 mb-4">
+                      {category.subtitle}
+                    </p>
+                    <p className="text-sm text-gray-500 mb-6">
+                      {category.description}
+                    </p>
+                  </div>
+                  <Button 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition-colors duration-200"
+                  >
+                    Book Now
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Category;
