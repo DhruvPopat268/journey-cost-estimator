@@ -97,7 +97,7 @@ const Booking = () => {
       return ['25', '50', '100', '150'];
     }
     if (normalizedName.includes('hourly') || normalizedName.includes('hour')) {
-      return ['1', '2', '3', '4', '5', '6', '7', '8'];
+      return ['60', '120', '180', '240', '300'];
     }
     // Default options for other subcategories
     return ['1', '2', '3', '4', '5'];
