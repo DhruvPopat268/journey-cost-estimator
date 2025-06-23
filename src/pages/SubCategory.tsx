@@ -1,59 +1,35 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Clock, MapPin, Calendar, RotateCcw, Repeat } from 'lucide-react';
+import {
+  ArrowLeft, Clock, MapPin, Calendar, RotateCcw, Repeat, Car
+} from 'lucide-react';
 
 const SubCategory = () => {
   const navigate = useNavigate();
   const { categoryId } = useParams();
+  const API_BASE_URL = import.meta.env.VITE_API_URL;
+  const [apiSubcategories, setApiSubcategories] = useState<any[]>([]);
 
-  const subcategories = [
-    {
-      id: 'one-way',
-      title: 'One-Way',
-      subtitle: 'Point to Point',
-      icon: MapPin,
-      description: 'Single journey from pickup to destination'
-    },
-    {
-      id: 'hourly',
-      title: 'Hourly',
-      subtitle: 'Book by Hours',
-      icon: Clock,
-      description: 'Flexible hourly booking for multiple stops'
-    },
-    {
-      id: 'outstation',
-      title: 'Outstation',
-      subtitle: 'City to City',
-      icon: RotateCcw,
-      description: 'Long distance travel between cities'
-    },
-    {
-      id: 'monthly',
-      title: 'Monthly',
-      subtitle: 'Long Term',
-      icon: Calendar,
-      description: 'Monthly subscription for regular travel'
-    },
-    {
-      id: 'weekly',
-      title: 'Weekly',
-      subtitle: 'Weekly Plans',
-      icon: Repeat,
-      description: 'Weekly packages for frequent travelers'
-    }
-  ];
+  useEffect(() => {
+    const fetchSubcategories = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/api/subcategories`);
+        console.log(res)
+        const filtered = res.data.filter((sub: any) => sub.categoryId === categoryId);
+        setApiSubcategories(filtered);
+      } catch (err) {
+        console.error('Error fetching subcategories:', err);
+      }
+    };
+
+    if (categoryId) fetchSubcategories();
+  }, [API_BASE_URL, categoryId]);
 
   const handleSubcategorySelect = (subcategoryId: string) => {
-    if (subcategoryId === 'one-way' || subcategoryId === 'hourly') {
-      navigate(`/booking/${categoryId}/${subcategoryId}`);
-    } else {
-      // For other subcategories, you can add specific handling later
-      navigate(`/booking/${categoryId}/${subcategoryId}`);
-    }
+    navigate(`/booking/${categoryId}/${subcategoryId}`);
   };
 
   const getCategoryTitle = () => {
@@ -67,6 +43,63 @@ const SubCategory = () => {
       default:
         return 'Services';
     }
+  };
+
+  // Function to get icon based on subcategory name or use default
+  const getIconForSubcategory = (name: string) => {
+    const normalizedName = name.toLowerCase().trim();
+    
+    // Check for common service types and assign appropriate icons
+    if (normalizedName.includes('one-way') || normalizedName.includes('oneway')) return MapPin;
+    if (normalizedName.includes('hourly') || normalizedName.includes('hour')) return Clock;
+    if (normalizedName.includes('outstation') || normalizedName.includes('intercity')) return RotateCcw;
+    if (normalizedName.includes('monthly') || normalizedName.includes('month')) return Calendar;
+    if (normalizedName.includes('weekly') || normalizedName.includes('week')) return Repeat;
+    
+    // Add more icon mappings as needed
+    if (normalizedName.includes('round') || normalizedName.includes('return')) return RotateCcw;
+    if (normalizedName.includes('daily') || normalizedName.includes('day')) return Calendar;
+    if (normalizedName.includes('airport')) return MapPin;
+    if (normalizedName.includes('local')) return Car;
+    
+    // Default icon for any other subcategory
+    return Car;
+  };
+
+  // Function to generate subtitle based on subcategory name
+  const getSubtitleForSubcategory = (name: string) => {
+    const normalizedName = name.toLowerCase().trim();
+    
+    if (normalizedName.includes('one-way') || normalizedName.includes('oneway')) return 'Point to Point';
+    if (normalizedName.includes('hourly') || normalizedName.includes('hour')) return 'Book by Hours';
+    if (normalizedName.includes('outstation') || normalizedName.includes('intercity')) return 'City to City';
+    if (normalizedName.includes('monthly') || normalizedName.includes('month')) return 'Long Term';
+    if (normalizedName.includes('weekly') || normalizedName.includes('week')) return 'Weekly Plans';
+    if (normalizedName.includes('round') || normalizedName.includes('return')) return 'Round Trip';
+    if (normalizedName.includes('daily') || normalizedName.includes('day')) return 'Daily Service';
+    if (normalizedName.includes('airport')) return 'Airport Transfer';
+    if (normalizedName.includes('local')) return 'Local Service';
+    
+    // Default subtitle
+    return 'Service Booking';
+  };
+
+  // Function to generate description based on subcategory name
+  const getDescriptionForSubcategory = (name: string) => {
+    const normalizedName = name.toLowerCase().trim();
+    
+    if (normalizedName.includes('one-way') || normalizedName.includes('oneway')) return 'Single journey from pickup to destination';
+    if (normalizedName.includes('hourly') || normalizedName.includes('hour')) return 'Flexible hourly booking for multiple stops';
+    if (normalizedName.includes('outstation') || normalizedName.includes('intercity')) return 'Long distance travel between cities';
+    if (normalizedName.includes('monthly') || normalizedName.includes('month')) return 'Monthly subscription for regular travel';
+    if (normalizedName.includes('weekly') || normalizedName.includes('week')) return 'Weekly packages for frequent travelers';
+    if (normalizedName.includes('round') || normalizedName.includes('return')) return 'Round trip service with return journey';
+    if (normalizedName.includes('daily') || normalizedName.includes('day')) return 'Daily service for regular commute';
+    if (normalizedName.includes('airport')) return 'Reliable airport pickup and drop service';
+    if (normalizedName.includes('local')) return 'Local area transportation service';
+    
+    // Default description
+    return `Book ${name.toLowerCase()} service for your transportation needs`;
   };
 
   return (
@@ -89,26 +122,30 @@ const SubCategory = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {subcategories.map((subcategory) => {
-            const IconComponent = subcategory.icon;
+          {apiSubcategories.map((apiSub) => {
+            // Dynamically generate data for each subcategory
+            const IconComponent = getIconForSubcategory(apiSub.name);
+            const subtitle = getSubtitleForSubcategory(apiSub.name);
+            const description = getDescriptionForSubcategory(apiSub.name);
+
             return (
-              <Card 
-                key={subcategory.id}
+              <Card
+                key={apiSub.id}
                 className="bg-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border-2 hover:border-blue-200"
-                onClick={() => handleSubcategorySelect(subcategory.id)}
+                onClick={() => handleSubcategorySelect(apiSub.id)}
               >
                 <CardContent className="p-6 text-center">
                   <div className="w-16 h-16 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4">
                     <IconComponent className="w-8 h-8 text-blue-600" />
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    {subcategory.title}
+                    {apiSub.name}
                   </h3>
                   <p className="text-blue-600 font-medium mb-3">
-                    {subcategory.subtitle}
+                    {subtitle}
                   </p>
                   <p className="text-sm text-gray-500 mb-4">
-                    {subcategory.description}
+                    {description}
                   </p>
                   <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold">
                     Book Now
@@ -118,6 +155,12 @@ const SubCategory = () => {
             );
           })}
         </div>
+
+        {apiSubcategories.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">No subcategories available for this service.</p>
+          </div>
+        )}
       </div>
     </div>
   );

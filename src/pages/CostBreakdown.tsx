@@ -1,205 +1,129 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MapPin, Clock, Car, User, CreditCard } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, Car, CreditCard } from 'lucide-react';
 
 const CostBreakdown = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const bookingData = location.state;
+  console.log("booking data", bookingData)
 
-  if (!bookingData) {
-    navigate('/');
+  const [driverCategory, setDriverCategory] = useState(null);
+  const [filterDriver, setFilterDriver] = useState(null);
+
+  useEffect(() => {
+    const fetchDriverCategory = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/price-categories`);
+        const allDrivers = res.data;
+        setDriverCategory(allDrivers);
+        console.log("driverDetails", allDrivers);
+
+        const driverType = allDrivers.filter(
+          (driver) => bookingData.driverCategory === driver.priceCategoryName
+        );
+        setFilterDriver(driverType[0]); // Get the first matching driver
+      } catch (error) {
+        console.error('Failed to fetch driver category data:', error);
+      }
+    };
+
+    fetchDriverCategory();
+  }, []);
+
+  if (!bookingData || !filterDriver) {
     return null;
   }
 
   const calculateCosts = () => {
-    const baseRate = bookingData.subcategoryId === 'one-way' ? 15 : 50; // per km or per hour
     const usage = parseInt(bookingData.usage) || 0;
     
-    const driverMultiplier = {
-      normal: 1,
-      classic: 1.3,
-      prime: 1.6
-    };
-
-    const carMultiplier = {
-      hatchback: 1,
-      sedan: 1.2,
-      suv: 1.5,
-      luxury: 2
-    };
-
-    const baseCost = baseRate * usage;
-    const driverCost = baseCost * (driverMultiplier[bookingData.driverCategory] || 1);
-    const carCost = driverCost * (carMultiplier[bookingData.carType] || 1);
+    // Driver Charges = filterDriver.chargePerKm * bookingData.usage
+    const driverCharges = filterDriver.chargePerKm * usage;
     
-    const taxes = Math.round(carCost * 0.18); // 18% GST
-    const platformFee = 25;
-    const total = Math.round(carCost + taxes + platformFee);
+    // Admin Charges = 10% of Driver Charges
+    const adminCharges = Math.round(driverCharges * 0.10);
+    
+    // GST Charges (18%) = 18% of Admin Charges
+    const gstCharges = Math.round(adminCharges * 0.18);
+    
+    // Total = Driver Charges + Admin Charges + GST Charges
+    const total = Math.round(driverCharges + adminCharges + gstCharges);
 
     return {
-      baseCost: Math.round(baseCost),
-      driverCost: Math.round(driverCost - baseCost),
-      carCost: Math.round(carCost - driverCost),
-      taxes,
-      platformFee,
+      driverCharges: Math.round(driverCharges),
+      adminCharges,
+      gstCharges,
       total
     };
   };
 
   const costs = calculateCosts();
 
-  const handlePayment = () => {
-    // Here you would integrate with a payment gateway
-    alert('Payment integration would be implemented here');
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-4 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(-1)}
-            className="mr-4 p-2 hover:bg-white/50 rounded-full"
-          >
+          <Button variant="ghost" onClick={() => navigate(-1)} className="mr-4 p-2 hover:bg-white/50 rounded-full">
             <ArrowLeft className="w-6 h-6" />
           </Button>
           <h1 className="text-2xl font-bold text-gray-900">Cost Breakdown</h1>
         </div>
 
         <div className="space-y-6">
-          {/* Trip Details */}
           <Card className="bg-white shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <MapPin className="w-5 h-5 mr-2 text-blue-600" />
-                Trip Details
+                <MapPin className="w-5 h-5 mr-2 text-blue-600" /> Trip Details
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Service Type:</span>
-                <span className="font-semibold capitalize">
-                  {bookingData.categoryId} - {bookingData.subcategoryId?.replace('-', ' ')}
-                </span>
+              <div className="flex justify-between"><span>From:</span><span>{bookingData.fromLocation}</span></div>
+              <div className="flex justify-between"><span>To:</span><span>{bookingData.toLocation}</span></div>
+              <div className="flex justify-between">
+                <span>Usage:</span>
+                <span>{bookingData.usage} {bookingData.subcategoryId === 'one-way' ? 'KM' : 'Minutes'}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">From:</span>
-                <span className="font-semibold">{bookingData.fromLocation}</span>
+              <div className="flex justify-between">
+                <span>Driver Category:</span>
+                <span>{bookingData.driverCategory}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">To:</span>
-                <span className="font-semibold">{bookingData.toLocation}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Distance/Duration:</span>
-                <span className="font-semibold">
-                  {bookingData.usage} {bookingData.subcategoryId === 'one-way' ? 'KM' : 'Hours'}
-                </span>
+              <div className="flex justify-between">
+                <span>Rate per KM:</span>
+                <span>₹{filterDriver.chargePerKm}</span>
               </div>
             </CardContent>
           </Card>
 
-          {/* Vehicle & Driver Details */}
           <Card className="bg-white shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Car className="w-5 h-5 mr-2 text-blue-600" />
-                Vehicle & Driver
-              </CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle>Price Breakdown</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Car Type:</span>
-                <span className="font-semibold capitalize">{bookingData.carType}</span>
+              <div className="flex justify-between">
+                <span>Driver Charges:</span>
+                <span>₹{costs.driverCharges}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Transmission:</span>
-                <span className="font-semibold capitalize">{bookingData.transmissionType}</span>
+              <div className="flex justify-between">
+                <span>Admin Charges (10%):</span>
+                <span>₹{costs.adminCharges}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Driver Category:</span>
-                <span className="font-semibold capitalize">{bookingData.driverCategory}</span>
+              <div className="flex justify-between">
+                <span>GST Charges (18%):</span>
+                <span>₹{costs.gstCharges}</span>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Cost Breakdown */}
-          <Card className="bg-white shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <CreditCard className="w-5 h-5 mr-2 text-blue-600" />
-                Price Breakdown
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Base Fare:</span>
-                <span className="font-semibold">₹{costs.baseCost}</span>
-              </div>
-              {costs.driverCost > 0 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Driver Category:</span>
-                  <span className="font-semibold">₹{costs.driverCost}</span>
-                </div>
-              )}
-              {costs.carCost > 0 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Car Type:</span>
-                  <span className="font-semibold">₹{costs.carCost}</span>
-                </div>
-              )}
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Platform Fee:</span>
-                <span className="font-semibold">₹{costs.platformFee}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Taxes & Fees (18%):</span>
-                <span className="font-semibold">₹{costs.taxes}</span>
-              </div>
-              
               <Separator className="my-4" />
-              
-              <div className="flex justify-between items-center text-lg font-bold">
-                <span>Total Amount:</span>
-                <span className="text-blue-600">₹{costs.total}</span>
+              <div className="flex justify-between text-xl font-bold">
+                <span>Total:</span>
+                <span>₹{costs.total}</span>
               </div>
             </CardContent>
           </Card>
 
-          {/* Payment Options */}
-          <Card className="bg-white shadow-lg">
-            <CardHeader>
-              <CardTitle>Payment Method</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3 p-3 border-2 border-blue-200 bg-blue-50 rounded-lg">
-                  <input type="radio" name="payment" defaultChecked className="text-blue-600" />
-                  <div className="flex items-center">
-                    <CreditCard className="w-5 h-5 mr-2 text-blue-600" />
-                    <span>Cash Payment</span>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3 p-3 border-2 border-gray-200 rounded-lg">
-                  <input type="radio" name="payment" className="text-blue-600" />
-                  <div className="flex items-center">
-                    <CreditCard className="w-5 h-5 mr-2 text-gray-600" />
-                    <span>Online Payment</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Confirm & Pay Button */}
           <Button
-            onClick={handlePayment}
+            onClick={() => alert('Payment flow here')}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 text-lg font-semibold rounded-lg"
           >
             Confirm & Pay ₹{costs.total}
