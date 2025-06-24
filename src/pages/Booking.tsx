@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams , useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +23,8 @@ const Booking = () => {
   // Updated date and time fields - only 2 fields instead of 4
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
+
+  const location = useLocation();
   
   // Insurance toggle field
   const [includeInsurance, setIncludeInsurance] = useState(false);
@@ -66,6 +68,30 @@ const Booking = () => {
     const today = new Date().toISOString().split('T')[0];
     if (!selectedDate) setSelectedDate(today);
   }, []);
+
+  // Add this useEffect after your existing useEffects to restore data from navigation state
+useEffect(() => {
+  // Check if we're coming back from Step 2 with existing data
+  if (location.state) {
+    const {
+      fromLocation: prevFromLocation,
+      toLocation: prevToLocation,
+      carType: prevCarType,
+      transmissionType: prevTransmissionType,
+      selectedDate: prevSelectedDate,
+      selectedTime: prevSelectedTime,
+      includeInsurance: prevIncludeInsurance
+    } = location.state;
+
+    if (prevFromLocation) setFromLocation(prevFromLocation);
+    if (prevToLocation) setToLocation(prevToLocation);
+    if (prevCarType) setCarType(prevCarType);
+    if (prevTransmissionType) setTransmissionType(prevTransmissionType);
+    if (prevSelectedDate) setSelectedDate(prevSelectedDate);
+    if (prevSelectedTime) setSelectedTime(prevSelectedTime);
+    if (prevIncludeInsurance !== undefined) setIncludeInsurance(prevIncludeInsurance);
+  }
+}, [location.state]);
 
   const transmissionOptions = ['Manual', 'Automatic'];
 
