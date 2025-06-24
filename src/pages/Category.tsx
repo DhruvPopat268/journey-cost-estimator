@@ -45,7 +45,7 @@ const Category = () => {
             const IconComponent = iconMap[category.name] || CircleHelp; // fallback icon
             return (
               <Card
-                key={category.id}
+                key={category._id}
                 className="bg-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer border-2 hover:border-blue-200"
                 onClick={() => handleCategorySelect(category._id)}
               >
