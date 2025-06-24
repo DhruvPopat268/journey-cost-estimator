@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Category from "./pages/Category";
 import SubCategory from "./pages/SubCategory";
 import Booking from "./pages/Booking";
+import BookingStep2  from './pages/BookingStep2'
 import CostBreakdown from "./pages/CostBreakdown";
 import NotFound from "./pages/NotFound";
 
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/" element={<Category />} />
           <Route path="/subcategory/:categoryId" element={<SubCategory />} />
           <Route path="/booking/:categoryId/:subcategoryId" element={<Booking />} />
+          <Route path="/booking-step2" element={<BookingStep2 />} />
           <Route path="/cost-breakdown" element={<CostBreakdown />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
