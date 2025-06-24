@@ -124,8 +124,7 @@ const SubCategory = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {apiSubcategories.map((apiSub) => {
             // Dynamically generate data for each subcategory
-            const IconComponent = getIconForSubcategory(apiSub.name);
-            const subtitle = getSubtitleForSubcategory(apiSub.name);
+            const IconComponent = getIconForSubcategory(apiSub.name);const subtitle = getSubtitleForSubcategory(apiSub.name);
             const description = getDescriptionForSubcategory(apiSub.name);
 
             return (
