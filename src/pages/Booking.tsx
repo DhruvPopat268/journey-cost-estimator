@@ -17,7 +17,7 @@ const iconMap = {
 const Booking = () => {
   const navigate = useNavigate();
   const { categoryId, subcategoryId } = useParams();
-  const API_BASE_URL = import.meta.env.VITE_API_URL;
+  
 
   const [fromLocation, setFromLocation] = useState('');
   const [toLocation, setToLocation] = useState('');
@@ -43,7 +43,7 @@ const Booking = () => {
   useEffect(() => {
     const fetchSubcategoryDetails = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/subcategories/${subcategoryId}`);
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/subcategories/${subcategoryId}`);
         setSubcategoryName(res.data.name);
       } catch (error) {
         console.error('Failed to fetch subcategory details', error);
@@ -53,7 +53,7 @@ const Booking = () => {
 
     const fetchVehicleCategories = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/vehiclecategories`);
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/vehiclecategories`);
         setVehicleCategories(res.data?.data || []);
       } catch (error) {
         console.error('Failed to fetch vehicle categories', error);
@@ -62,7 +62,7 @@ const Booking = () => {
 
     const fetchPriceCategories = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/price-categories`);
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/price-categories`);
         setPriceCategories(res.data || []);
       } catch (error) {
         console.error('Failed to fetch price categories', error);
@@ -82,7 +82,7 @@ const Booking = () => {
     if (subcategoryId) {
       fetchAllData();
     }
-  }, [API_BASE_URL, subcategoryId]);
+  }, [import.meta.env.VITE_API_URL, subcategoryId]);
 
   // Set default date to today
   useEffect(() => {

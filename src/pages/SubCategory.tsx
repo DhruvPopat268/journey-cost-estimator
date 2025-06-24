@@ -10,13 +10,13 @@ import {
 const SubCategory = () => {
   const navigate = useNavigate();
   const { categoryId } = useParams();
-  const API_BASE_URL = import.meta.env.VITE_API_URL;
+ 
   const [apiSubcategories, setApiSubcategories] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchSubcategories = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/subcategories`);
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/subcategories`);
         console.log(res)
         const filtered = res.data.filter((sub: any) => sub.categoryId === categoryId);
         setApiSubcategories(filtered);
@@ -26,7 +26,7 @@ const SubCategory = () => {
     };
 
     if (categoryId) fetchSubcategories();
-  }, [API_BASE_URL, categoryId]);
+  }, [import.meta.env.VITE_API_URL, categoryId]);
 
   const handleSubcategorySelect = (subcategoryId: string) => {
     navigate(`/booking/${categoryId}/${subcategoryId}`);

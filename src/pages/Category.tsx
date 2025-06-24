@@ -7,8 +7,8 @@ import { User, Car, Package, CircleHelp } from 'lucide-react'; // CircleHelp = d
 
 const Category = () => {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState<any[]>([]);
-  const API_BASE_URL = import.meta.env.VITE_API_URL;
+  const [categories, setCategories] = useState([])
+  
 
   const iconMap: Record<string, any> = {
     Driver: User,
@@ -19,14 +19,14 @@ const Category = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/categories`);
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/categories`);
         setCategories(res.data.data || []);
       } catch (err) {
         console.error('Failed to fetch categories', err);
       }
     };
     fetchCategories();
-  }, [API_BASE_URL]);
+  }, [import.meta.env.VITE_API_URL]);
 
   const handleCategorySelect = (categoryId: string) => {
     navigate(`/subcategory/${categoryId}`);
