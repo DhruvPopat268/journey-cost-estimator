@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Clock, Star, Award, Crown, MapPin, CreditCard, X, Receipt } from 'lucide-react';
+import { ArrowLeft, Clock, Star, Award, Crown, MapPin, CreditCard, X, Receipt, Info } from 'lucide-react';
 
 const iconMap = {
   normal: Star,
@@ -31,19 +31,27 @@ const BookingStep2 = () => {
   const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
   const [filterDriver, setFilterDriver] = useState(null);
   const [notes, setNotes] = useState('');
+  const [instructions, setInstructions] = useState([]);
 
   useEffect(() => {
+    console.log(bookingData.categoryId,bookingData.subcategoryId)
     const fetchAllData = async () => {
       try {
-        const [priceRes, peakRes, rideRes] = await Promise.all([
+        const [priceRes, peakRes, rideRes, instructionsRes] = await Promise.all([
           axios.get(`${import.meta.env.VITE_API_URL}/api/price-categories`),
           axios.get(`${import.meta.env.VITE_API_URL}/api/peaks`),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/ride-costs`)
+          axios.get(`${import.meta.env.VITE_API_URL}/api/ride-costs`),
+          axios.post(`${import.meta.env.VITE_API_URL}/api/instructions/getInstructions`, {
+            "categoryId": bookingData.categoryId,
+            "subCategoryId": bookingData.subcategoryId
+          })
         ]);
 
         setPriceCategories(priceRes.data || []);
         setPeakCharges(peakRes.data?.data || []);
         setRideCosts(rideRes.data || null);
+        setInstructions(instructionsRes.data?.instructions || []);
+        console.log('Instructions:', instructionsRes.data?.instructions);
         console.log('Peak Charges:', peakRes.data);
         console.log('Ride Costs:', rideRes.data);
       } catch (error) {
@@ -84,7 +92,7 @@ const BookingStep2 = () => {
     }
     return ['1', '2', '3', '4', '5'];
   };
-  
+
   const getUsageUnit = () => {
     const normalizedName = bookingData.subcategoryName.toLowerCase();
     if (normalizedName.includes('one-way') || normalizedName.includes('oneway') || normalizedName.includes('one way')) {
@@ -456,6 +464,31 @@ const BookingStep2 = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Instructions Section */}
+          {instructions.length > 0 && (
+            <Card className="bg-white shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Info className="w-5 h-5 mr-2 text-blue-600" />
+                  Instructions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {instructions.map((instruction, index) => (
+                    <Card key={instruction._id} className="border border-gray-200 bg-gray-50">
+                      <CardContent className="p-4">
+                        <p className="text-sm text-gray-700 leading-relaxed">
+                          {instruction}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Total and Price Breakdown Section */}
           {isFormValid && (
