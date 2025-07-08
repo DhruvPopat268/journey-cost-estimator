@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Clock, Star, Award, Crown, MapPin, CreditCard, X, Receipt } from 'lucide-react';
 
@@ -29,6 +30,7 @@ const BookingStep2 = () => {
   const [loading, setLoading] = useState(true);
   const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
   const [filterDriver, setFilterDriver] = useState(null);
+  const [notes, setNotes] = useState('');
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -71,18 +73,21 @@ const BookingStep2 = () => {
 
   const getUsageOptions = () => {
     const normalizedName = bookingData.subcategoryName.toLowerCase();
-    if (normalizedName.includes('one-way') || normalizedName.includes('oneway')) {
+    console.log('Subcategory Name:', bookingData.subcategoryName);
+    console.log('Normalized Name:', normalizedName);
+
+    if (normalizedName.includes('one-way') || normalizedName.includes('oneway') || normalizedName.includes('one way')) {
       return ['25', '50', '100', '150'];
     }
     if (normalizedName.includes('hourly') || normalizedName.includes('hour')) {
-      return ['60', '120', '180', '240', '300'];
+      return ['1', '2', '3', '4', '5'];
     }
     return ['1', '2', '3', '4', '5'];
   };
-
+  
   const getUsageUnit = () => {
     const normalizedName = bookingData.subcategoryName.toLowerCase();
-    if (normalizedName.includes('one-way') || normalizedName.includes('oneway')) {
+    if (normalizedName.includes('one-way') || normalizedName.includes('oneway') || normalizedName.includes('one way')) {
       return 'KM';
     }
     if (normalizedName.includes('hourly') || normalizedName.includes('hour')) {
@@ -191,22 +196,23 @@ const BookingStep2 = () => {
     const peakCharges = peakInfo.charges || 0;
     const insuranceCharges = bookingData.includeInsurance ? (rideCosts[0].insurance || 0) : 0;
 
-    // Calculate subtotal (all charges except admin and GST)
-    const subtotal = Math.round(driverCharges + pickCharges + nightCharges + peakCharges + insuranceCharges);
-
-    // Admin charges as percentage of subtotal (from API)
+    // Admin charges as percentage of subtotal (from API) - now included in subtotal
     const adminPercentage = (rideCosts.extraChargesFromAdmin || 10) / 100;
-    const adminCharges = Math.round(subtotal * adminPercentage);
+    const baseSubtotal = Math.round(driverCharges + pickCharges + nightCharges + peakCharges + insuranceCharges);
+    const adminCharges = Math.round(baseSubtotal * adminPercentage);
 
-    // GST as percentage of admin charges (from API)
+    // Calculate subtotal (all charges including admin)
+    const subtotal = Math.round(baseSubtotal + adminCharges);
+
+    // GST as percentage of subtotal (from API)
     const gstPercentage = (rideCosts.gst || 18) / 100;
-    const gstCharges = Math.round(adminCharges * gstPercentage);
+    const gstCharges = Math.round(subtotal * gstPercentage);
 
     // Discount from API
     const discount = rideCosts.discount || 0;
 
     // Total
-    const total = Math.round(subtotal + adminCharges + gstCharges - discount);
+    const total = Math.round(subtotal + gstCharges - discount);
 
     console.log('Cost calculation:', {
       driverCharges,
@@ -216,8 +222,8 @@ const BookingStep2 = () => {
       peakType: peakInfo.type,
       peakName: peakInfo.name,
       insuranceCharges,
-      subtotal,
       adminCharges,
+      subtotal,
       gstCharges,
       discount,
       total
@@ -239,6 +245,51 @@ const BookingStep2 = () => {
     };
   };
 
+  // Function to calculate total cost for a specific driver category
+  const calculateTotalForDriver = (category) => {
+    if (!rideCosts) return 0;
+
+    const usage = parseInt(selectedUsage || customUsage) || 0;
+    const normalizedName = bookingData.subcategoryName.toLowerCase();
+
+    // Base driver charges
+    let driverCharges = 0;
+    if (normalizedName.includes('one-way') || normalizedName.includes('oneway')) {
+      driverCharges = category.chargePerKm * usage;
+    } else if (normalizedName.includes('hourly') || normalizedName.includes('hour')) {
+      driverCharges = category.chargePerMinute * usage;
+    } else {
+      driverCharges = category.chargePerKm * usage;
+    }
+
+    // Additional charges from API
+    const pickCharges = rideCosts[0].pickCharges || 0;
+    const nightCharges = isNightTime() ? (rideCosts[0].nightCharges || 0) : 0;
+    const peakInfo = getPeakCharges();
+    const peakCharges = peakInfo.charges || 0;
+    const insuranceCharges = bookingData.includeInsurance ? (rideCosts[0].insurance || 0) : 0;
+
+    // Admin charges as percentage of subtotal (from API) - now included in subtotal
+    const adminPercentage = (rideCosts.extraChargesFromAdmin || 10) / 100;
+    const baseSubtotal = Math.round(driverCharges + pickCharges + nightCharges + peakCharges + insuranceCharges);
+    const adminCharges = Math.round(baseSubtotal * adminPercentage);
+
+    // Calculate subtotal (all charges including admin)
+    const subtotal = Math.round(baseSubtotal + adminCharges);
+
+    // GST as percentage of subtotal (from API)
+    const gstPercentage = (rideCosts.gst || 18) / 100;
+    const gstCharges = Math.round(subtotal * gstPercentage);
+
+    // Discount from API
+    const discount = rideCosts.discount || 0;
+
+    // Total
+    const total = Math.round(subtotal + gstCharges - discount);
+
+    return Math.max(0, total);
+  };
+
   const handleShowPriceBreakdown = () => {
     setShowPriceBreakdown(true);
   };
@@ -252,6 +303,7 @@ const BookingStep2 = () => {
       ...bookingData,
       selectedUsage: selectedUsage || customUsage,
       driverCategory,
+      notes,
       costs: calculateCosts()
     };
     navigate('/cost-breakdown', { state: finalBookingData });
@@ -348,20 +400,14 @@ const BookingStep2 = () => {
                 {priceCategories.map((category) => {
                   const IconComponent = iconMap[category.priceCategoryName.toLowerCase()] || Star;
                   const usageValue = parseFloat(selectedUsage || customUsage || '0');
-                  const normalizedName = bookingData.subcategoryName.toLowerCase();
-
-                  const unitRate = (normalizedName.includes('one-way') || normalizedName.includes('oneway'))
-                    ? category.chargePerKm
-                    : category.chargePerMinute;
-
-                  const estimatedCost = usageValue * unitRate;
+                  const totalCost = usageValue > 0 ? calculateTotalForDriver(category) : 0;
 
                   return (
                     <div
                       key={category._id}
                       className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${driverCategory === category.priceCategoryName
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
                         }`}
                       onClick={() => setDriverCategory(category.priceCategoryName)}
                     >
@@ -379,14 +425,34 @@ const BookingStep2 = () => {
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-lg">
-                            ₹{isNaN(estimatedCost) ? 0 : estimatedCost.toFixed(2)}
+                            ₹{totalCost.toFixed(2)}
                           </p>
-                          <p className="text-xs text-muted-foreground">Base Cost</p>
+                          <p className="text-xs text-muted-foreground">Total Cost</p>
                         </div>
                       </div>
                     </div>
                   );
                 })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Notes Section */}
+          <Card className="bg-white shadow-lg">
+            <CardHeader>
+              <CardTitle>Notes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div>
+                <Label htmlFor="notes">Additional Notes (Optional)</Label>
+                <Textarea
+                  id="notes"
+                  placeholder="Enter any special instructions or requirements..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="mt-2"
+                  rows={3}
+                />
               </div>
             </CardContent>
           </Card>
@@ -465,6 +531,12 @@ const BookingStep2 = () => {
                   <span>Driver Category:</span>
                   <span className="font-medium capitalize">{driverCategory}</span>
                 </div>
+                {notes && (
+                  <div className="flex justify-between text-sm">
+                    <span>Notes:</span>
+                    <span className="font-medium text-right max-w-[200px] break-words">{notes}</span>
+                  </div>
+                )}
                 {bookingData.includeInsurance && (
                   <div className="flex justify-between text-sm">
                     <span>Insurance:</span>
@@ -485,44 +557,9 @@ const BookingStep2 = () => {
                 )}
               </div>
 
-              {/* Cost Breakdown */}
+              {/* Simplified Cost Breakdown */}
               <div className="space-y-3">
                 <h4 className="font-semibold text-gray-800">Cost Details</h4>
-
-                <div className="flex justify-between text-sm">
-                  <span>Driver Charges:</span>
-                  <span className="font-medium">₹{costs.driverCharges}</span>
-                </div>
-
-                {costs.pickCharges > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span>Pick-up Charges:</span>
-                    <span className="font-medium">₹{costs.pickCharges}</span>
-                  </div>
-                )}
-
-                {costs.nightCharges > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span>Night Charges (22:00-06:00):</span>
-                    <span className="font-medium">₹{costs.nightCharges}</span>
-                  </div>
-                )}
-
-                {costs.peakCharges > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span>Peak Charges ({costs.peakName || costs.peakType?.replace('_', ' ')}):</span>
-                    <span className="font-medium">₹{costs.peakCharges}</span>
-                  </div>
-                )}
-
-                {costs.insuranceCharges > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span>Insurance Charges:</span>
-                    <span className="font-medium">₹{costs.insuranceCharges}</span>
-                  </div>
-                )}
-
-                <Separator className="my-2" />
 
                 <div className="flex justify-between text-sm font-medium">
                   <span>Subtotal:</span>
@@ -530,21 +567,9 @@ const BookingStep2 = () => {
                 </div>
 
                 <div className="flex justify-between text-sm">
-                  <span>Admin Charges ({rideCosts?.extraChargesFromAdmin || 10}% of subtotal):</span>
-                  <span className="font-medium">₹{costs.adminCharges}</span>
-                </div>
-
-                <div className="flex justify-between text-sm">
-                  <span>GST ({rideCosts?.gst || 18}% of admin charges):</span>
+                  <span>GST ({rideCosts?.gst || 18}% of subtotal):</span>
                   <span className="font-medium">₹{costs.gstCharges}</span>
                 </div>
-
-                {costs.discount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span>Discount:</span>
-                    <span className="font-medium text-green-600">-₹{costs.discount}</span>
-                  </div>
-                )}
 
                 <Separator className="my-3" />
 
