@@ -191,7 +191,8 @@ const BookingStep2 = () => {
     if (normalizedName.includes('one-way') || normalizedName.includes('oneway')) {
       driverCharges = filterDriver.chargePerKm * usage;
     } else if (normalizedName.includes('hourly') || normalizedName.includes('hour')) {
-      driverCharges = filterDriver.chargePerMinute * usage;
+      let hourlyUsage = usage*60
+      driverCharges = filterDriver.chargePerMinute * hourlyUsage;
     } else {
       driverCharges = filterDriver.chargePerKm * usage;
     }
@@ -206,21 +207,21 @@ const BookingStep2 = () => {
 
     // Admin charges as percentage of subtotal (from API) - now included in subtotal
     const adminPercentage = (rideCosts.extraChargesFromAdmin || 10) / 100;
-    const baseSubtotal = Math.round(driverCharges + pickCharges + nightCharges + peakCharges + insuranceCharges);
-    const adminCharges = Math.round(baseSubtotal * adminPercentage);
+    const baseSubtotal = Math.ceil(driverCharges + pickCharges + nightCharges + peakCharges + insuranceCharges);
+    const adminCharges = Math.ceil(baseSubtotal * adminPercentage);
 
     // Calculate subtotal (all charges including admin)
-    const subtotal = Math.round(baseSubtotal + adminCharges);
+    const subtotal = Math.ceil(baseSubtotal + adminCharges);
 
     // GST as percentage of subtotal (from API)
     const gstPercentage = (rideCosts.gst || 18) / 100;
-    const gstCharges = Math.round(subtotal * gstPercentage);
+    const gstCharges = Math.ceil(adminCharges * gstPercentage);
 
     // Discount from API
     const discount = rideCosts.discount || 0;
 
     // Total
-    const total = Math.round(subtotal + gstCharges - discount);
+    const total = Math.ceil(subtotal + gstCharges - discount);
 
     console.log('Cost calculation:', {
       driverCharges,
@@ -238,7 +239,7 @@ const BookingStep2 = () => {
     });
 
     return {
-      driverCharges: Math.round(driverCharges),
+      driverCharges: Math.ceil(driverCharges),
       pickCharges,
       nightCharges,
       peakCharges,
@@ -265,7 +266,8 @@ const BookingStep2 = () => {
     if (normalizedName.includes('one-way') || normalizedName.includes('oneway')) {
       driverCharges = category.chargePerKm * usage;
     } else if (normalizedName.includes('hourly') || normalizedName.includes('hour')) {
-      driverCharges = category.chargePerMinute * usage;
+      let hourlyUsage = usage*60
+      driverCharges = category.chargePerMinute * hourlyUsage ;
     } else {
       driverCharges = category.chargePerKm * usage;
     }
@@ -279,21 +281,21 @@ const BookingStep2 = () => {
 
     // Admin charges as percentage of subtotal (from API) - now included in subtotal
     const adminPercentage = (rideCosts.extraChargesFromAdmin || 10) / 100;
-    const baseSubtotal = Math.round(driverCharges + pickCharges + nightCharges + peakCharges + insuranceCharges);
-    const adminCharges = Math.round(baseSubtotal * adminPercentage);
+    const baseSubtotal = Math.ceil(driverCharges + pickCharges + nightCharges + peakCharges + insuranceCharges);
+    const adminCharges = Math.ceil(baseSubtotal * adminPercentage);
 
     // Calculate subtotal (all charges including admin)
-    const subtotal = Math.round(baseSubtotal + adminCharges);
+    const subtotal = Math.ceil(baseSubtotal + adminCharges);
 
     // GST as percentage of subtotal (from API)
     const gstPercentage = (rideCosts.gst || 18) / 100;
-    const gstCharges = Math.round(subtotal * gstPercentage);
+    const gstCharges = Math.ceil(subtotal * gstPercentage);
 
     // Discount from API
     const discount = rideCosts.discount || 0;
 
     // Total
-    const total = Math.round(subtotal + gstCharges - discount);
+    const total = Math.ceil(subtotal + gstCharges - discount);
 
     return Math.max(0, total);
   };

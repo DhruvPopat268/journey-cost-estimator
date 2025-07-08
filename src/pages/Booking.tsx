@@ -29,6 +29,9 @@ const Booking = () => {
   // Insurance toggle field
   const [includeInsurance, setIncludeInsurance] = useState(false);
 
+  // Check if subcategory is "one way" to show/hide drop location
+  const isOneWay = subcategoryName.toLowerCase() === 'one way';
+
   useEffect(() => {
     const fetchSubcategoryDetails = async () => {
       try {
@@ -93,6 +96,13 @@ useEffect(() => {
   }
 }, [location.state]);
 
+  // Clear toLocation when subcategory changes and it's not "one way"
+  useEffect(() => {
+    if (!isOneWay) {
+      setToLocation('');
+    }
+  }, [isOneWay]);
+
   const transmissionOptions = ['Manual', 'Automatic'];
 
   const handleNextPage = () => {
@@ -101,7 +111,7 @@ useEffect(() => {
       subcategoryId,
       subcategoryName,
       fromLocation,
-      toLocation,
+      toLocation: isOneWay ? toLocation : '', // Only include toLocation if it's one way
       carType,
       transmissionType,
       selectedDate,
@@ -111,9 +121,10 @@ useEffect(() => {
     navigate('/booking-step2', { state: bookingData });
   };
 
+  // Updated form validation - toLocation is only required for "one way"
   const isFormValid =
     fromLocation &&
-    toLocation &&
+    (isOneWay ? toLocation : true) && // Only require toLocation if it's one way
     carType &&
     transmissionType &&
     selectedDate &&
@@ -161,16 +172,32 @@ useEffect(() => {
                     <Label htmlFor="from">From</Label>
                     <div className="relative">
                       <div className="absolute left-3 top-3 w-3 h-3 bg-green-500 rounded-full"></div>
-                      <Input id="from" placeholder="Enter pickup location" value={fromLocation} onChange={(e) => setFromLocation(e.target.value)} className="pl-10" />
+                      <Input 
+                        id="from" 
+                        placeholder="Enter pickup location" 
+                        value={fromLocation} 
+                        onChange={(e) => setFromLocation(e.target.value)} 
+                        className="pl-10" 
+                      />
                     </div>
                   </div>
-                  <div>
-                    <Label htmlFor="to">To</Label>
-                    <div className="relative">
-                      <div className="absolute left-3 top-3 w-3 h-3 bg-red-500 rounded-full"></div>
-                      <Input id="to" placeholder="Enter destination" value={toLocation} onChange={(e) => setToLocation(e.target.value)} className="pl-10" />
+                  
+                  {/* Conditionally render To location only for "one way" */}
+                  {isOneWay && (
+                    <div>
+                      <Label htmlFor="to">To</Label>
+                      <div className="relative">
+                        <div className="absolute left-3 top-3 w-3 h-3 bg-red-500 rounded-full"></div>
+                        <Input 
+                          id="to" 
+                          placeholder="Enter destination" 
+                          value={toLocation} 
+                          onChange={(e) => setToLocation(e.target.value)} 
+                          className="pl-10" 
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
