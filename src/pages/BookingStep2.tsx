@@ -19,7 +19,13 @@ const BookingStep2 = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const bookingData = location.state;
-  console.log('Booking Data:', bookingData);
+
+
+  // console.log(bookingData)
+
+  // const normalName = bookingData.subcategoryName.toLowerCase();
+
+  // const removeName = normalName.replace(/\s+/g, '');
 
   const [selectedUsage, setSelectedUsage] = useState('');
   const [customUsage, setCustomUsage] = useState('');
@@ -32,28 +38,32 @@ const BookingStep2 = () => {
   const [filterDriver, setFilterDriver] = useState(null);
   const [notes, setNotes] = useState('');
   const [instructions, setInstructions] = useState([]);
+  const [totalAmount, setTotalAmount] = useState([])
+  const [selectedCategory, setSelectedCategory] = useState({});
+  const selectedCost = totalAmount.find(item => item.category === selectedCategory);
 
   useEffect(() => {
-    console.log(bookingData.categoryId,bookingData.subcategoryId)
+
     const fetchAllData = async () => {
       try {
-        const [priceRes, peakRes, rideRes, instructionsRes] = await Promise.all([
+        const [priceRes, instructionsRes] = await Promise.all([
           axios.get(`${import.meta.env.VITE_API_URL}/api/price-categories`),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/peaks`),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/ride-costs`),
+
           axios.post(`${import.meta.env.VITE_API_URL}/api/instructions/getInstructions`, {
             "categoryId": bookingData.categoryId,
             "subCategoryId": bookingData.subcategoryId
-          })
+          }),
+
+          // axios.get(`${import.meta.env.VITE_API_URL}/api/ride-costs/type/${removeName}`,)
         ]);
 
         setPriceCategories(priceRes.data || []);
-        setPeakCharges(peakRes.data?.data || []);
-        setRideCosts(rideRes.data || null);
+        // setPeakCharges(peakRes.data?.data || []);
+        // setRideCosts(rideRes.data || null);
         setInstructions(instructionsRes.data?.instructions || []);
         console.log('Instructions:', instructionsRes.data?.instructions);
-        console.log('Peak Charges:', peakRes.data);
-        console.log('Ride Costs:', rideRes.data);
+        // console.log('Peak Charges:', peakRes.data);
+        // console.log('Ride Costs:', rideRes.data);
       } catch (error) {
         console.error('Failed to fetch data', error);
       } finally {
@@ -73,6 +83,48 @@ const BookingStep2 = () => {
       setFilterDriver(driverType);
     }
   }, [driverCategory, priceCategories]);
+
+
+
+  // 👇 Trigger API when usage changes (selected or custom)
+  const handleUsageChange = async (value) => {
+    setSelectedUsage(value);
+    setCustomUsage('');
+
+    const fullData = { ...bookingData, selectedUsage: value };
+
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/ride-costs/calculation`,
+        fullData
+      );
+      setTotalAmount(res.data)
+    } catch (err) {
+      console.error('API error:', err);
+    }
+  };
+
+  // 👇 Trigger API when customUsage changes (with debounce)
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      if (customUsage) {
+        const fullData = { ...bookingData, selectedUsage: customUsage };
+
+        axios.post(
+          `${import.meta.env.VITE_API_URL}/api/ride-costs/calculation`,
+          fullData
+        )
+          .then(res => {
+            console.log('API response:', res.data);
+            setTotalAmount(res.data); // <-- Set the response data here
+          })
+          .catch(err => console.error('API error:', err));
+      }
+    }, 500); // debounce by 500ms
+
+    return () => clearTimeout(delayDebounce);
+  }, [customUsage]);
+
 
   if (!bookingData) {
     navigate('/');
@@ -191,7 +243,7 @@ const BookingStep2 = () => {
     if (normalizedName.includes('one-way') || normalizedName.includes('oneway')) {
       driverCharges = filterDriver.chargePerKm * usage;
     } else if (normalizedName.includes('hourly') || normalizedName.includes('hour')) {
-      let hourlyUsage = usage*60
+      let hourlyUsage = usage * 60
       driverCharges = filterDriver.chargePerMinute * hourlyUsage;
     } else {
       driverCharges = filterDriver.chargePerKm * usage;
@@ -266,8 +318,8 @@ const BookingStep2 = () => {
     if (normalizedName.includes('one-way') || normalizedName.includes('oneway')) {
       driverCharges = category.chargePerKm * usage;
     } else if (normalizedName.includes('hourly') || normalizedName.includes('hour')) {
-      let hourlyUsage = usage*60
-      driverCharges = category.chargePerMinute * hourlyUsage ;
+      let hourlyUsage = usage * 60
+      driverCharges = category.chargePerMinute * hourlyUsage;
     } else {
       driverCharges = category.chargePerKm * usage;
     }
@@ -319,10 +371,9 @@ const BookingStep2 = () => {
     navigate('/cost-breakdown', { state: finalBookingData });
   };
 
-  const isFormValid = (selectedUsage || customUsage) && driverCategory;
-  const costs = calculateCosts();
-
   if (loading) {
+
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-4 px-4 flex items-center justify-center">
         <div className="text-center">
@@ -332,6 +383,46 @@ const BookingStep2 = () => {
       </div>
     );
   }
+
+  const getIcon = (category) => {
+    switch (category.toLowerCase()) {
+      case "prime":
+        return "👑";
+      case "normal":
+        return "⭐";
+      case "classic":
+        return "🧍";
+      default:
+        return "🚗";
+    }
+  };
+
+  const getKmRate = (category) => {
+    switch (category.toLowerCase()) {
+      case "prime":
+        return 25;
+      case "normal":
+        return 20;
+      case "classic":
+        return 15;
+      default:
+        return 0;
+    }
+  };
+
+  const getMinRate = (category) => {
+    switch (category.toLowerCase()) {
+      case "prime":
+        return 15;
+      case "normal":
+        return 10;
+      case "classic":
+        return 5;
+      default:
+        return 0;
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-4 px-4">
@@ -374,10 +465,7 @@ const BookingStep2 = () => {
                   <Button
                     key={option}
                     variant={selectedUsage === option ? 'default' : 'outline'}
-                    onClick={() => {
-                      setSelectedUsage(option);
-                      setCustomUsage('');
-                    }}
+                    onClick={() => handleUsageChange(option)}
                     className="text-sm"
                   >
                     {option} {getUsageUnit()}
@@ -400,52 +488,37 @@ const BookingStep2 = () => {
             </CardContent>
           </Card>
 
-          {/* Choose Driver Type */}
-          <Card className="bg-white shadow-lg">
-            <CardHeader>
-              <CardTitle>Choose Driver Type</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {priceCategories.map((category) => {
-                  const IconComponent = iconMap[category.priceCategoryName.toLowerCase()] || Star;
-                  const usageValue = parseFloat(selectedUsage || customUsage || '0');
-                  const totalCost = usageValue > 0 ? calculateTotalForDriver(category) : 0;
-
-                  return (
-                    <div
-                      key={category._id}
-                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${driverCategory === category.priceCategoryName
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      onClick={() => setDriverCategory(category.priceCategoryName)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mr-3">
-                            <IconComponent className="w-5 h-5 text-gray-600" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold capitalize">{category.priceCategoryName}</h3>
-                            <p className="text-sm text-gray-500">
-                              ₹{category.chargePerKm} / Km & ₹{category.chargePerMinute} / Minute
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-lg">
-                            ₹{totalCost.toFixed(2)}
-                          </p>
-                          <p className="text-xs text-muted-foreground">Total Cost</p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+          {/* selected category */}
+          {totalAmount.map((item, index) => (
+            <button
+              key={index}
+              type="button"
+              onClick={() => {
+                console.log(item)
+                setSelectedCategory(item)
+              }}
+              className={`w-full text-left rounded-xl p-4 shadow-sm mb-4 flex items-center justify-between transition-all duration-200
+      ${selectedCategory?.category === item.category ? 'border-2 border-blue-700 bg-blue-50 shadow-md' : 'border border-gray-200 bg-white hover:shadow-md hover:border-gray-300'}
+    `}
+            >
+              <div className="flex items-center gap-4">
+                <div className="text-2xl">
+                  {getIcon(item.category)}
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800">{item.category}</h3>
+                  <p className="text-sm text-gray-500">
+                    ₹{getKmRate(item.category)} / Km & ₹{getMinRate(item.category)} / Minute
+                  </p>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+
+              <div className="text-right">
+                <p className="text-lg font-bold text-gray-800">₹{item.totalPayable.toFixed(2)}</p>
+                <p className="text-sm text-gray-500">Total Cost</p>
+              </div>
+            </button>
+          ))}
 
           {/* Notes Section */}
           <Card className="bg-white shadow-lg">
@@ -493,13 +566,13 @@ const BookingStep2 = () => {
           )}
 
           {/* Total and Price Breakdown Section */}
-          {isFormValid && (
+          {selectedCategory?.category && (
             <Card className="bg-white shadow-lg border-2 border-green-200">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-800">Total Amount</h3>
-                    <p className="text-3xl font-bold text-green-600">₹{costs.total}</p>
+                    <p className="text-3xl font-bold text-green-600">₹{selectedCategory.totalPayable}</p>
                   </div>
                   <Button
                     onClick={handleShowPriceBreakdown}
@@ -515,7 +588,7 @@ const BookingStep2 = () => {
                   onClick={handleConfirmBooking}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-semibold rounded-lg"
                 >
-                  Confirm & Pay ₹{costs.total}
+                  Confirm & Pay ₹{selectedCategory.totalPayable}
                 </Button>
               </CardContent>
             </Card>
@@ -564,7 +637,7 @@ const BookingStep2 = () => {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Driver Category:</span>
-                  <span className="font-medium capitalize">{driverCategory}</span>
+                  <span className="font-medium capitalize">{selectedCategory.category}</span>
                 </div>
                 {notes && (
                   <div className="flex justify-between text-sm">
@@ -584,12 +657,7 @@ const BookingStep2 = () => {
                     <span className="font-medium text-orange-600">22:00-06:00</span>
                   </div>
                 )}
-                {costs.peakType && (
-                  <div className="flex justify-between text-sm">
-                    <span>Peak Period:</span>
-                    <span className="font-medium text-red-600">{costs.peakName || costs.peakType.replace('_', ' ')}</span>
-                  </div>
-                )}
+                
               </div>
 
               {/* Simplified Cost Breakdown */}
@@ -598,19 +666,19 @@ const BookingStep2 = () => {
 
                 <div className="flex justify-between text-sm font-medium">
                   <span>Subtotal:</span>
-                  <span>₹{costs.subtotal}</span>
+                  <span>₹{selectedCategory.subtotal}</span>
                 </div>
 
                 <div className="flex justify-between text-sm">
-                  <span>GST ({rideCosts?.gst || 18}% of subtotal):</span>
-                  <span className="font-medium">₹{costs.gstCharges}</span>
+                  <span>GST Charges:</span>
+                  <span className="font-medium">₹{selectedCategory.gstCharges}</span>
                 </div>
 
                 <Separator className="my-3" />
 
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total Amount:</span>
-                  <span className="text-green-600">₹{costs.total}</span>
+                  <span className="text-green-600">₹{selectedCategory.totalPayable}</span>
                 </div>
               </div>
 
@@ -637,6 +705,7 @@ const BookingStep2 = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };
