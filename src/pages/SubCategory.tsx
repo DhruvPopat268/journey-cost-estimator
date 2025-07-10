@@ -13,20 +13,28 @@ const SubCategory = () => {
  
   const [apiSubcategories, setApiSubcategories] = useState<any[]>([]);
 
-  useEffect(() => {
+  const [loading, setLoading] = useState(false); // Spinner state
+  const [error, setError] = useState(null);      // Error state
+
+useEffect(() => {
     const fetchSubcategories = async () => {
+      setLoading(true);
+      setError(null);
+
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/subcategories`);
-        console.log(res)
-        const filtered = res.data.filter((sub: any) => sub.categoryId === categoryId);
+        const filtered = res.data.filter((sub) => sub.categoryId === categoryId);
         setApiSubcategories(filtered);
       } catch (err) {
         console.error('Error fetching subcategories:', err);
+        setError('Failed to load subcategories');
+      } finally {
+        setLoading(false);
       }
     };
 
     if (categoryId) fetchSubcategories();
-  }, [import.meta.env.VITE_API_URL, categoryId]);
+  }, []);
 
   const handleSubcategorySelect = (subcategoryId: string) => {
     navigate(`/booking/${categoryId}/${subcategoryId}`);
@@ -101,6 +109,18 @@ const SubCategory = () => {
     // Default description
     return `Book ${name.toLowerCase()} service for your transportation needs`;
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[150px]">
+        <div className="w-10 h-10 border-4 border-gray-300 border-t-gray-800 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return <p className="text-red-600">{error}</p>;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">

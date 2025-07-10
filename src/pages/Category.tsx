@@ -8,7 +8,9 @@ import { User, Car, Package, CircleHelp } from 'lucide-react'; // CircleHelp = d
 const Category = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([])
-  
+  const [loading, setLoading] = useState(true); // loader state
+  const [error, setError] = useState(null);
+
 
   const iconMap: Record<string, any> = {
     Driver: User,
@@ -18,19 +20,41 @@ const Category = () => {
 
   useEffect(() => {
     const fetchCategories = async () => {
+      setLoading(true);
+      setError(null);
+
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/categories`);
-        setCategories(res.data.data || []);
+        if (res.status === 200) {
+          setCategories(res.data.data || []);
+        } else {
+          setError('Failed to load categories');
+        }
       } catch (err) {
-        console.error('Failed to fetch categories', err);
+        console.error('Fetch error:', err);
+        setError('Something went wrong');
+      } finally {
+        setLoading(false);
       }
     };
+
     fetchCategories();
-  }, [import.meta.env.VITE_API_URL]);
+  }, []); //
 
   const handleCategorySelect = (categoryId: string) => {
     navigate(`/subcategory/${categoryId}`);
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[150px]">
+        <div className="w-10 h-10 border-4 border-gray-300 border-t-gray-800 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) return <p className="text-red-600">{error}</p>;
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
