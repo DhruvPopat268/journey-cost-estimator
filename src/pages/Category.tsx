@@ -37,7 +37,6 @@ const Category = () => {
         setLoading(false);
       }
     };
-
     fetchCategories();
   }, []); //
 
@@ -54,7 +53,6 @@ const Category = () => {
   }
 
   if (error) return <p className="text-red-600">{error}</p>;
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
