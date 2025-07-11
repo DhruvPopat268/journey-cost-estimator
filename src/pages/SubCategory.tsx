@@ -154,7 +154,7 @@ useEffect(() => {
                 onClick={() => handleSubcategorySelect(apiSub.id)}
               >
                 <CardContent className="p-6 text-center">
-                  <div className="w-16 h-16 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                  <div className="w-16 h-12 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4">
                     <IconComponent className="w-8 h-8 text-blue-600" />
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">

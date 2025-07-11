@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams , useLocation } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +11,7 @@ import { ArrowLeft, MapPin, Calendar, Shield } from 'lucide-react';
 const Booking = () => {
   const navigate = useNavigate();
   const { categoryId, subcategoryId } = useParams();
-  
+
   const [fromLocation, setFromLocation] = useState('');
   const [toLocation, setToLocation] = useState('');
   const [carType, setCarType] = useState('');
@@ -19,13 +19,29 @@ const Booking = () => {
   const [vehicleCategories, setVehicleCategories] = useState([]);
   const [subcategoryName, setSubcategoryName] = useState('');
   const [loading, setLoading] = useState(true);
-  
+
   // Updated date and time fields - only 2 fields instead of 4
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
 
+
+  // Set default time  to current time in HH:MM format and date also
+  useEffect(() => {
+
+    const today = new Date().toISOString().split('T')[0];
+    if (!selectedDate) setSelectedDate(today);
+
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const formattedTime = `${hours}:${minutes}`;
+    setSelectedTime(formattedTime);
+
+
+  }, []);
+
   const location = useLocation();
-  
+
   // Insurance toggle field
   const [includeInsurance, setIncludeInsurance] = useState(false);
 
@@ -46,7 +62,13 @@ const Booking = () => {
     const fetchVehicleCategories = async () => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/vehiclecategories`);
-        setVehicleCategories(res.data?.data || []);
+        const categories = res.data?.data || [];
+        setVehicleCategories(categories);
+
+        // Auto-set first car type
+        if (categories.length > 0) {
+          setCarType(categories[0].vehicleName.toLowerCase());
+        }
       } catch (error) {
         console.error('Failed to fetch vehicle categories', error);
       }
@@ -64,37 +86,42 @@ const Booking = () => {
     if (subcategoryId) {
       fetchAllData();
     }
+
+    if (transmissionOptions.length > 0) {
+      setTransmissionType(transmissionOptions[0].toLowerCase());
+    }
+
   }, [import.meta.env.VITE_API_URL, subcategoryId]);
 
-  // Set default date to today
-  useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-    if (!selectedDate) setSelectedDate(today);
-  }, []);
+  // // Set default date to today
+  // useEffect(() => {
+  //   const today = new Date().toISOString().split('T')[0];
+  //   if (!selectedDate) setSelectedDate(today);
+  // }, []);
 
   // Add this useEffect after your existing useEffects to restore data from navigation state
-useEffect(() => {
-  // Check if we're coming back from Step 2 with existing data
-  if (location.state) {
-    const {
-      fromLocation: prevFromLocation,
-      toLocation: prevToLocation,
-      carType: prevCarType,
-      transmissionType: prevTransmissionType,
-      selectedDate: prevSelectedDate,
-      selectedTime: prevSelectedTime,
-      includeInsurance: prevIncludeInsurance
-    } = location.state;
+  useEffect(() => {
+    // Check if we're coming back from Step 2 with existing data
+    if (location.state) {
+      const {
+        fromLocation: prevFromLocation,
+        toLocation: prevToLocation,
+        carType: prevCarType,
+        transmissionType: prevTransmissionType,
+        selectedDate: prevSelectedDate,
+        selectedTime: prevSelectedTime,
+        includeInsurance: prevIncludeInsurance
+      } = location.state;
 
-    if (prevFromLocation) setFromLocation(prevFromLocation);
-    if (prevToLocation) setToLocation(prevToLocation);
-    if (prevCarType) setCarType(prevCarType);
-    if (prevTransmissionType) setTransmissionType(prevTransmissionType);
-    if (prevSelectedDate) setSelectedDate(prevSelectedDate);
-    if (prevSelectedTime) setSelectedTime(prevSelectedTime);
-    if (prevIncludeInsurance !== undefined) setIncludeInsurance(prevIncludeInsurance);
-  }
-}, [location.state]);
+      if (prevFromLocation) setFromLocation(prevFromLocation);
+      if (prevToLocation) setToLocation(prevToLocation);
+      if (prevCarType) setCarType(prevCarType);
+      if (prevTransmissionType) setTransmissionType(prevTransmissionType);
+      if (prevSelectedDate) setSelectedDate(prevSelectedDate);
+      if (prevSelectedTime) setSelectedTime(prevSelectedTime);
+      if (prevIncludeInsurance !== undefined) setIncludeInsurance(prevIncludeInsurance);
+    }
+  }, [location.state]);
 
   // Clear toLocation when subcategory changes and it's not "one way"
   useEffect(() => {
@@ -157,43 +184,43 @@ useEffect(() => {
           {/* Single Card with All Sections */}
           <Card className="bg-white shadow-lg">
             <CardHeader>
-              <CardTitle>Booking Details</CardTitle>
+              {/* <CardTitle>Booking Details</CardTitle> */}
             </CardHeader>
             <CardContent className="space-y-8">
-              
+
               {/* Location Selection Section */}
               <div>
-                <div className="flex items-center mb-4">
+                {/* <div className="flex items-center mb-4">
                   <MapPin className="w-5 h-5 mr-2 text-blue-600" />
                   <h3 className="text-lg font-semibold">Select Locations</h3>
-                </div>
+                </div> */}
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="from">From</Label>
                     <div className="relative">
                       <div className="absolute left-3 top-3 w-3 h-3 bg-green-500 rounded-full"></div>
-                      <Input 
-                        id="from" 
-                        placeholder="Enter pickup location" 
-                        value={fromLocation} 
-                        onChange={(e) => setFromLocation(e.target.value)} 
-                        className="pl-10" 
+                      <Input
+                        id="from"
+                        placeholder="Enter pickup location"
+                        value={fromLocation}
+                        onChange={(e) => setFromLocation(e.target.value)}
+                        className="pl-10"
                       />
                     </div>
                   </div>
-                  
+
                   {/* Conditionally render To location only for "one way" */}
                   {isOneWay && (
                     <div>
                       <Label htmlFor="to">To</Label>
                       <div className="relative">
                         <div className="absolute left-3 top-3 w-3 h-3 bg-red-500 rounded-full"></div>
-                        <Input 
-                          id="to" 
-                          placeholder="Enter destination" 
-                          value={toLocation} 
-                          onChange={(e) => setToLocation(e.target.value)} 
-                          className="pl-10" 
+                        <Input
+                          id="to"
+                          placeholder="Enter destination"
+                          value={toLocation}
+                          onChange={(e) => setToLocation(e.target.value)}
+                          className="pl-10"
                         />
                       </div>
                     </div>
@@ -206,27 +233,27 @@ useEffect(() => {
 
               {/* Schedule Details Section */}
               <div>
-                <div className="flex items-center mb-4">
+                {/* <div className="flex items-center mb-4">
                   <Calendar className="w-5 h-5 mr-2 text-blue-600" />
                   <h3 className="text-lg font-semibold">Schedule Details</h3>
-                </div>
+                </div> */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="selectedDate">Date</Label>
-                    <Input 
-                      id="selectedDate" 
-                      type="date" 
-                      value={selectedDate} 
+                    <Input
+                      id="selectedDate"
+                      type="date"
+                      value={selectedDate}
                       onChange={(e) => setSelectedDate(e.target.value)}
                       min={new Date().toISOString().split('T')[0]}
                     />
                   </div>
                   <div>
                     <Label htmlFor="selectedTime">Time</Label>
-                    <Input 
-                      id="selectedTime" 
-                      type="time" 
-                      value={selectedTime} 
+                    <Input
+                      id="selectedTime"
+                      type="time"
+                      value={selectedTime}
                       onChange={(e) => setSelectedTime(e.target.value)}
                     />
                   </div>
@@ -238,13 +265,13 @@ useEffect(() => {
 
               {/* Car Preferences Section */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Car Preferences</h3>
+                {/* <h3 className="text-lg font-semibold mb-4">Car Preferences</h3> */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Car Type</Label>
                     <Select value={carType} onValueChange={setCarType}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select car type" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {vehicleCategories.map((vehicle: any) => (
@@ -259,7 +286,7 @@ useEffect(() => {
                     <Label>Transmission</Label>
                     <Select value={transmissionType} onValueChange={setTransmissionType}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select transmission" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {transmissionOptions.map((trans) => (
@@ -276,10 +303,10 @@ useEffect(() => {
 
               {/* Insurance Coverage Section */}
               <div>
-                <div className="flex items-center mb-4">
+                {/* <div className="flex items-center mb-4">
                   <Shield className="w-5 h-5 mr-2 text-blue-600" />
                   <h3 className="text-lg font-semibold">Insurance Coverage</h3>
-                </div>
+                </div> */}
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">

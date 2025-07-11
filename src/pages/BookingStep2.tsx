@@ -41,6 +41,8 @@ const BookingStep2 = () => {
   const [totalAmount, setTotalAmount] = useState([])
   const [selectedCategory, setSelectedCategory] = useState({});
   const selectedCost = totalAmount.find(item => item.category === selectedCategory);
+  const [showInstructions, setShowInstructions] = useState(false);
+
 
   useEffect(() => {
 
@@ -126,6 +128,19 @@ const BookingStep2 = () => {
   }, [customUsage]);
 
 
+  // for set default usage based on subcategory name
+  useEffect(() => {
+    const normalizedName = bookingData.subcategoryName?.toLowerCase() || "";
+
+    if (normalizedName.includes("one-way") || normalizedName.includes("oneway") || normalizedName.includes("one way")) {
+      setSelectedUsage("10");
+      handleUsageChange("10")
+    } else if (normalizedName.includes("hourly") || normalizedName.includes("hour")) {
+      setSelectedUsage("1");
+      handleUsageChange("1");
+    }
+  }, [bookingData.subcategoryName]);
+
   if (!bookingData) {
     navigate('/');
     return null;
@@ -137,7 +152,7 @@ const BookingStep2 = () => {
     console.log('Normalized Name:', normalizedName);
 
     if (normalizedName.includes('one-way') || normalizedName.includes('oneway') || normalizedName.includes('one way')) {
-      return ['25', '50', '100', '150'];
+      return ['10', '25', '50', '100',];
     }
     if (normalizedName.includes('hourly') || normalizedName.includes('hour')) {
       return ['1', '2', '3', '4', '5'];
@@ -423,6 +438,8 @@ const BookingStep2 = () => {
     }
   };
 
+  console.log(bookingData)
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-4 px-4">
@@ -523,17 +540,17 @@ const BookingStep2 = () => {
           {/* Notes Section */}
           <Card className="bg-white shadow-lg">
             <CardHeader>
-              <CardTitle>Notes</CardTitle>
+              <CardTitle>Instructions (Optional)</CardTitle>
             </CardHeader>
             <CardContent>
               <div>
-                <Label htmlFor="notes">Additional Notes (Optional)</Label>
+                {/* <Label htmlFor="notes">Instructions (Optional)</Label> */}
                 <Textarea
                   id="notes"
                   placeholder="Enter any special instructions or requirements..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="mt-2"
+                  className=""
                   rows={3}
                 />
               </div>
@@ -541,12 +558,12 @@ const BookingStep2 = () => {
           </Card>
 
           {/* Instructions Section */}
-          {instructions.length > 0 && (
+          {/* {instructions.length > 0 && (
             <Card className="bg-white shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Info className="w-5 h-5 mr-2 text-blue-600" />
-                  Instructions
+                  T & C
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -563,7 +580,7 @@ const BookingStep2 = () => {
                 </div>
               </CardContent>
             </Card>
-          )}
+          )} */}
 
           {/* Total and Price Breakdown Section */}
           {selectedCategory?.category && (
@@ -574,14 +591,25 @@ const BookingStep2 = () => {
                     <h3 className="text-lg font-semibold text-gray-800">Total Amount</h3>
                     <p className="text-3xl font-bold text-green-600">₹{selectedCategory.totalPayable}</p>
                   </div>
-                  <Button
-                    onClick={handleShowPriceBreakdown}
-                    variant="outline"
-                    className="flex items-center space-x-2 border-blue-500 text-blue-600 hover:bg-blue-50"
-                  >
-                    <Receipt className="w-4 h-4" />
-                    <span>View Breakdown</span>
-                  </Button>
+
+                  {/* Button group aligned right and close together */}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      className="text-sm border-blue-500 text-blue-600"
+                      onClick={() => setShowInstructions(true)}
+                    >
+                      T & C
+                    </Button>
+                    <Button
+                      onClick={handleShowPriceBreakdown}
+                      variant="outline"
+                      className="flex items-center space-x-2 border-blue-500 text-blue-600 hover:bg-blue-50"
+                    >
+                      <Receipt className="w-4 h-4" />
+                      <span>View Breakdown</span>
+                    </Button>
+                  </div>
                 </div>
 
                 <Button
@@ -591,10 +619,45 @@ const BookingStep2 = () => {
                   Confirm & Pay ₹{selectedCategory.totalPayable}
                 </Button>
               </CardContent>
+
             </Card>
           )}
         </div>
       </div>
+
+      {/* instructions Modal */}
+      {showInstructions && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-xl font-bold flex items-center">
+                <Info className="w-5 h-5 mr-2 text-blue-600" />
+                Terms & Conditions
+              </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowInstructions(false)}
+                className="p-2 hover:bg-gray-100 rounded-full"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {instructions.map((instruction, index) => (
+                <Card key={index} className="border border-gray-200 bg-gray-50">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {instruction}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Price Breakdown Modal */}
       {showPriceBreakdown && (
@@ -657,7 +720,7 @@ const BookingStep2 = () => {
                     <span className="font-medium text-orange-600">22:00-06:00</span>
                   </div>
                 )}
-                
+
               </div>
 
               {/* Simplified Cost Breakdown */}
