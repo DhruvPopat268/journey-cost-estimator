@@ -36,13 +36,14 @@ const BookingStep2 = () => {
   const [loading, setLoading] = useState(true);
   const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
   const [filterDriver, setFilterDriver] = useState(null);
+  //instructions = notes
   const [notes, setNotes] = useState('');
   const [instructions, setInstructions] = useState([]);
   const [totalAmount, setTotalAmount] = useState([])
   const [selectedCategory, setSelectedCategory] = useState({});
   const selectedCost = totalAmount.find(item => item.category === selectedCategory);
   const [showInstructions, setShowInstructions] = useState(false);
-
+  const [tc, setTc] = useState(false)
 
   useEffect(() => {
 
@@ -60,6 +61,8 @@ const BookingStep2 = () => {
         ]);
 
         setPriceCategories(priceRes.data || []);
+        console.log('all categories', priceRes.data)
+
         // setPeakCharges(peakRes.data?.data || []);
         // setRideCosts(rideRes.data || null);
         setInstructions(instructionsRes.data?.instructions || []);
@@ -101,6 +104,10 @@ const BookingStep2 = () => {
         fullData
       );
       setTotalAmount(res.data)
+      if (totalAmount) {
+        console.log('total amount:', res.data);
+      }
+
     } catch (err) {
       console.error('API error:', err);
     }
@@ -126,7 +133,6 @@ const BookingStep2 = () => {
 
     return () => clearTimeout(delayDebounce);
   }, [customUsage]);
-
 
   // for set default usage based on subcategory name
   useEffect(() => {
@@ -380,11 +386,22 @@ const BookingStep2 = () => {
       ...bookingData,
       selectedUsage: selectedUsage || customUsage,
       driverCategory,
-      notes,
+
       costs: calculateCosts()
     };
     navigate('/cost-breakdown', { state: finalBookingData });
   };
+
+  // Set default category to "Prime"
+  useEffect(() => {
+    if (totalAmount?.length) {
+      const defaultCategory = totalAmount.find(item => item.category.toLowerCase() === 'prime');
+      if (defaultCategory) {
+        setSelectedCategory(defaultCategory);
+        console.log('Default category set:', defaultCategory);
+      }
+    }
+  }, [totalAmount]);
 
   if (loading) {
 
@@ -537,25 +554,35 @@ const BookingStep2 = () => {
             </button>
           ))}
 
-          {/* Notes Section */}
-          <Card className="bg-white shadow-lg">
-            <CardHeader>
-              <CardTitle>Instructions (Optional)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div>
-                {/* <Label htmlFor="notes">Instructions (Optional)</Label> */}
-                <Textarea
-                  id="notes"
-                  placeholder="Enter any special instructions or requirements..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className=""
-                  rows={3}
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <div>
+            {/* Button to toggle instructions */}
+            {!showInstructions && (
+              <Button
+                variant="outline"
+                onClick={() => setShowInstructions(true)}
+              >
+                + Add Instructions
+              </Button>
+            )}
+
+            {/* Conditionally show the card */}
+            {showInstructions && (
+              <Card className="bg-white shadow-lg">
+                <CardHeader>
+                  <CardTitle>Instructions (Optional)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Textarea
+                    id="notes"
+                    placeholder="Enter any special instructions or requirements..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={3}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </div>
 
           {/* Instructions Section */}
           {/* {instructions.length > 0 && (
@@ -588,26 +615,26 @@ const BookingStep2 = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-800">Total Amount</h3>
+                    <h3 className="text-lg font-semibold text-gray-800">Total Amount </h3>
                     <p className="text-3xl font-bold text-green-600">₹{selectedCategory.totalPayable}</p>
                   </div>
 
                   {/* Button group aligned right and close together */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 ">
                     <Button
                       variant="outline"
-                      className="text-sm border-blue-500 text-blue-600"
-                      onClick={() => setShowInstructions(true)}
+                      className="text-sm border-blue-500 text-blue-600 mt-11"
+                      onClick={() => setTc(true)}
                     >
                       T & C
                     </Button>
                     <Button
                       onClick={handleShowPriceBreakdown}
                       variant="outline"
-                      className="flex items-center space-x-2 border-blue-500 text-blue-600 hover:bg-blue-50"
+                      className="flex items-center space-x-2 border-blue-500 text-blue-600 hover:bg-blue-50 mt-11"
                     >
                       <Receipt className="w-4 h-4" />
-                      <span>View Breakdown</span>
+                      <span>View Breakup</span>
                     </Button>
                   </div>
                 </div>
@@ -625,8 +652,8 @@ const BookingStep2 = () => {
         </div>
       </div>
 
-      {/* instructions Modal */}
-      {showInstructions && (
+      {/* T & C Modal */}
+      {tc && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b">
@@ -637,7 +664,7 @@ const BookingStep2 = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowInstructions(false)}
+                onClick={() => setTc(false)}
                 className="p-2 hover:bg-gray-100 rounded-full"
               >
                 <X className="w-5 h-5" />
@@ -702,12 +729,7 @@ const BookingStep2 = () => {
                   <span>Driver Category:</span>
                   <span className="font-medium capitalize">{selectedCategory.category}</span>
                 </div>
-                {notes && (
-                  <div className="flex justify-between text-sm">
-                    <span>Notes:</span>
-                    <span className="font-medium text-right max-w-[200px] break-words">{notes}</span>
-                  </div>
-                )}
+
                 {bookingData.includeInsurance && (
                   <div className="flex justify-between text-sm">
                     <span>Insurance:</span>
@@ -726,6 +748,11 @@ const BookingStep2 = () => {
               {/* Simplified Cost Breakdown */}
               <div className="space-y-3">
                 <h4 className="font-semibold text-gray-800">Cost Details</h4>
+
+                <div className="flex justify-between text-sm font-medium">
+                  <span>Insurance Charges:</span>
+                  <span>₹{selectedCategory.insuranceCharges}</span>
+                </div>
 
                 <div className="flex justify-between text-sm font-medium">
                   <span>Subtotal:</span>
