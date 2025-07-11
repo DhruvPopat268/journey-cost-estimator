@@ -611,7 +611,7 @@ const BookingStep2 = () => {
 
           {/* Total and Price Breakdown Section */}
           {selectedCategory?.category && (
-            <Card className="bg-white shadow-lg border-2 border-green-200">
+            <Card className="bg-white shadow-lg border-2 ">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -730,7 +730,7 @@ const BookingStep2 = () => {
                   <span className="font-medium capitalize">{selectedCategory.category}</span>
                 </div>
 
-                {bookingData.includeInsurance && (
+                {bookingData.includeInsurance  && (
                   <div className="flex justify-between text-sm">
                     <span>Insurance:</span>
                     <span className="font-medium text-green-600">Included</span>
@@ -749,10 +749,17 @@ const BookingStep2 = () => {
               <div className="space-y-3">
                 <h4 className="font-semibold text-gray-800">Cost Details</h4>
 
-                <div className="flex justify-between text-sm font-medium">
+                {/* <div className="flex justify-between text-sm font-medium">
+                  <span>Insurance Charges:</span>
+                  <span>₹{selectedCategory.insuranceCharges}</span>
+                </div> */}
+
+                {selectedCategory.insuranceCharges > 0 && (
+                  <div className="flex justify-between text-sm font-medium">
                   <span>Insurance Charges:</span>
                   <span>₹{selectedCategory.insuranceCharges}</span>
                 </div>
+                )}
 
                 <div className="flex justify-between text-sm font-medium">
                   <span>Subtotal:</span>
