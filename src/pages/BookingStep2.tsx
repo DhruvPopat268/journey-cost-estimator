@@ -49,9 +49,8 @@ const BookingStep2 = () => {
 
     const fetchAllData = async () => {
       try {
-        const [priceRes, instructionsRes] = await Promise.all([
+        const [priceRes, instructionsRes ,] = await Promise.all([
           axios.get(`${import.meta.env.VITE_API_URL}/api/price-categories`),
-
           axios.post(`${import.meta.env.VITE_API_URL}/api/instructions/getInstructions`, {
             "categoryId": bookingData.categoryId,
             "subCategoryId": bookingData.subcategoryId
@@ -79,15 +78,7 @@ const BookingStep2 = () => {
     fetchAllData();
   }, []);
 
-  // Update filterDriver when driverCategory changes
-  useEffect(() => {
-    if (driverCategory && priceCategories.length > 0) {
-      const driverType = priceCategories.find(
-        (driver) => driver.priceCategoryName === driverCategory
-      );
-      setFilterDriver(driverType);
-    }
-  }, [driverCategory, priceCategories]);
+
 
 
 
@@ -430,29 +421,13 @@ const BookingStep2 = () => {
   };
 
   const getKmRate = (category) => {
-    switch (category.toLowerCase()) {
-      case "prime":
-        return 25;
-      case "normal":
-        return 20;
-      case "classic":
-        return 15;
-      default:
-        return 0;
-    }
+    const currentCategory =  priceCategories.filter((item) => item.priceCategoryName.toLowerCase() === category.toLowerCase())
+    return currentCategory[0]?.chargePerKm
   };
 
   const getMinRate = (category) => {
-    switch (category.toLowerCase()) {
-      case "prime":
-        return 15;
-      case "normal":
-        return 10;
-      case "classic":
-        return 5;
-      default:
-        return 0;
-    }
+     const currentCategory =  priceCategories.filter((item) => item.priceCategoryName.toLowerCase() === category.toLowerCase())
+    return currentCategory[0]?.chargePerMinute
   };
 
   console.log(bookingData)
