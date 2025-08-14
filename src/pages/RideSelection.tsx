@@ -10,14 +10,14 @@ import {
 
 const RideSelection = () => {
   const navigate = useNavigate();
-  
+
   // State management
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
   const [filteredSubcategories, setFilteredSubcategories] = useState([]);
-  
+
   // Loading and error states
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [subcategoriesLoading, setSubcategoriesLoading] = useState(false);
@@ -35,7 +35,7 @@ const RideSelection = () => {
     const fetchCategories = async () => {
       setCategoriesLoading(true);
       setError(null);
-      
+
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/categories`);
         if (res.status === 200) {
@@ -109,7 +109,7 @@ const RideSelection = () => {
   // Function to get icon based on subcategory name
   const getIconForSubcategory = (name) => {
     const normalizedName = name.toLowerCase().trim();
-    
+
     if (normalizedName.includes('one-way') || normalizedName.includes('oneway')) return MapPin;
     if (normalizedName.includes('hourly') || normalizedName.includes('hour')) return Clock;
     if (normalizedName.includes('outstation') || normalizedName.includes('intercity')) return RotateCcw;
@@ -119,14 +119,14 @@ const RideSelection = () => {
     if (normalizedName.includes('daily') || normalizedName.includes('day')) return Calendar;
     if (normalizedName.includes('airport')) return MapPin;
     if (normalizedName.includes('local')) return Car;
-    
+
     return Car; // Default icon
   };
 
   // Function to generate subtitle based on subcategory name
   const getSubtitleForSubcategory = (name) => {
     const normalizedName = name.toLowerCase().trim();
-    
+
     if (normalizedName.includes('one-way') || normalizedName.includes('oneway')) return 'Point to Point';
     if (normalizedName.includes('hourly') || normalizedName.includes('hour')) return 'Book by Hours';
     if (normalizedName.includes('outstation') || normalizedName.includes('intercity')) return 'City to City';
@@ -136,14 +136,14 @@ const RideSelection = () => {
     if (normalizedName.includes('daily') || normalizedName.includes('day')) return 'Daily Service';
     if (normalizedName.includes('airport')) return 'Airport Transfer';
     if (normalizedName.includes('local')) return 'Local Service';
-    
+
     return 'Service Booking';
   };
 
   // Function to generate description based on subcategory name
   const getDescriptionForSubcategory = (name) => {
     const normalizedName = name.toLowerCase().trim();
-    
+
     if (normalizedName.includes('one-way') || normalizedName.includes('oneway')) return 'Single journey from pickup to destination';
     if (normalizedName.includes('hourly') || normalizedName.includes('hour')) return 'Flexible hourly booking for multiple stops';
     if (normalizedName.includes('outstation') || normalizedName.includes('intercity')) return 'Long distance travel between cities';
@@ -153,7 +153,7 @@ const RideSelection = () => {
     if (normalizedName.includes('daily') || normalizedName.includes('day')) return 'Daily service for regular commute';
     if (normalizedName.includes('airport')) return 'Reliable airport pickup and drop service';
     if (normalizedName.includes('local')) return 'Local area transportation service';
-    
+
     return `Book ${name.toLowerCase()} service for your transportation needs`;
   };
 
@@ -180,13 +180,7 @@ const RideSelection = () => {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/')}
-            className="mr-4 p-2 hover:bg-white/50 rounded-full"
-          >
-            <ArrowLeft className="w-6 h-6" />
-          </Button>
+
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
               Book Your Service
