@@ -8,6 +8,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Clock, Star, Award, Crown, MapPin, CreditCard, X, Receipt, Info } from 'lucide-react';
+// Add these imports at the top of your BookingStep2.tsx file
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 const iconMap = {
   normal: Star,
@@ -49,7 +57,7 @@ const BookingStep2 = () => {
 
     const fetchAllData = async () => {
       try {
-        const [priceRes, instructionsRes ,] = await Promise.all([
+        const [priceRes, instructionsRes,] = await Promise.all([
           axios.get(`${import.meta.env.VITE_API_URL}/api/price-categories`),
           axios.post(`${import.meta.env.VITE_API_URL}/api/instructions/getInstructions`, {
             "categoryId": bookingData.categoryId,
@@ -421,12 +429,12 @@ const BookingStep2 = () => {
   };
 
   const getKmRate = (category) => {
-    const currentCategory =  priceCategories.filter((item) => item.priceCategoryName.toLowerCase() === category.toLowerCase())
+    const currentCategory = priceCategories.filter((item) => item.priceCategoryName.toLowerCase() === category.toLowerCase())
     return currentCategory[0]?.chargePerKm
   };
 
   const getMinRate = (category) => {
-     const currentCategory =  priceCategories.filter((item) => item.priceCategoryName.toLowerCase() === category.toLowerCase())
+    const currentCategory = priceCategories.filter((item) => item.priceCategoryName.toLowerCase() === category.toLowerCase())
     return currentCategory[0]?.chargePerMinute
   };
 
@@ -436,7 +444,7 @@ const BookingStep2 = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-4 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="flex items-center mb-6">
+        <div className="flex items-center mb-3">
           <Button
             variant="ghost"
             onClick={() => navigate(`/booking/${bookingData.categoryId}/${bookingData.subcategoryId}`, {
@@ -469,30 +477,39 @@ const BookingStep2 = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-4 gap-2 mb-4">
-                {getUsageOptions().map((option) => (
-                  <Button
-                    key={option}
-                    variant={selectedUsage === option ? 'default' : 'outline'}
-                    onClick={() => handleUsageChange(option)}
-                    className="text-sm"
+              <div className="flex gap-3 items-end">
+                <div className="flex-1">
+                  <Label htmlFor="usage-select">Usage Options</Label>
+                  <Select
+                    value={selectedUsage}
+                    onValueChange={handleUsageChange}
                   >
-                    {option} {getUsageUnit()}
-                  </Button>
-                ))}
-              </div>
-              <div>
-                <Label htmlFor="custom">Custom {getUsageUnit()}</Label>
-                <Input
-                  id="custom"
-                  placeholder={`Enter custom ${getUsageUnit().toLowerCase()}`}
-                  value={customUsage}
-                  onChange={(e) => {
-                    setCustomUsage(e.target.value);
-                    setSelectedUsage('');
-                  }}
-                  type="number"
-                />
+                    <SelectTrigger id="usage-select">
+                      <SelectValue placeholder={`Select ${getUsageUnit().toLowerCase()}`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getUsageOptions().map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option} {getUsageUnit()}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex-1">
+                  <Label htmlFor="custom">Custom {getUsageUnit()}</Label>
+                  <Input
+                    id="custom"
+                    placeholder={`Custom ${getUsageUnit().toLowerCase()}`}
+                    value={customUsage}
+                    onChange={(e) => {
+                      setCustomUsage(e.target.value);
+                      setSelectedUsage('');
+                    }}
+                    type="number"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -705,7 +722,7 @@ const BookingStep2 = () => {
                   <span className="font-medium capitalize">{selectedCategory.category}</span>
                 </div>
 
-                {bookingData.includeInsurance  && (
+                {bookingData.includeInsurance && (
                   <div className="flex justify-between text-sm">
                     <span>Insurance:</span>
                     <span className="font-medium text-green-600">Included</span>
@@ -731,9 +748,9 @@ const BookingStep2 = () => {
 
                 {selectedCategory.insuranceCharges > 0 && (
                   <div className="flex justify-between text-sm font-medium">
-                  <span>Insurance Charges:</span>
-                  <span>₹{selectedCategory.insuranceCharges}</span>
-                </div>
+                    <span>Insurance Charges:</span>
+                    <span>₹{selectedCategory.insuranceCharges}</span>
+                  </div>
                 )}
 
                 <div className="flex justify-between text-sm font-medium">
