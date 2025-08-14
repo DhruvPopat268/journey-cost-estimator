@@ -172,7 +172,7 @@ const Booking = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-4 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center mb-6">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mr-4 p-2 hover:bg-white/50 rounded-full">
+          <Button variant="ghost" onClick={() => navigate('/')} className="mr-4 p-2 hover:bg-white/50 rounded-full">
             <ArrowLeft className="w-6 h-6" />
           </Button>
           <h1 className="text-2xl font-bold text-gray-900">
