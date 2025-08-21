@@ -71,48 +71,46 @@ export default function OtpLoginFlow() {
   };
 
   // Handle login form submission
-const handleLogin = async (data) => {
-  if (!otpSent) {
-    const otpSent = await handleSendOtp(data.mobile);
-    if (!otpSent) return;
-    return;
-  }
-
-  if (!data.otp) {
-    alert("Please enter the OTP");
-    return;
-  }
-
-  setLoading(true);
-  try {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/verify-otp`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mobile: data.mobile, otp: data.otp }),
-    });
-
-    const result = await res.json();
-    if (result.success) {
-      // ✅ Save JWT token in localStorage
-      localStorage.setItem("RiderToken", result.token);
-      localStorage.setItem("RiderId", result.rider._id);
-      localStorage.setItem("RiderMobile", result.rider.mobile || "");
-
-      if (result.isNew) {
-        setStep("profile");
-      } else {
-        setShowSuccess(true);
-      }
-    } else {
-      alert(result.message || "Invalid OTP");
+  const handleLogin = async (data) => {
+    if (!otpSent) {
+      const otpSent = await handleSendOtp(data.mobile);
+      if (!otpSent) return;
+      return;
     }
-  } catch (err) {
-    console.error("Error verifying OTP:", err);
-    alert("Server error while verifying OTP");
-  }
-  setLoading(false);
-};
 
+    if (!data.otp) {
+      alert("Please enter the OTP");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobile: data.mobile, otp: data.otp }),
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        // ✅ Save JWT token in localStorage
+        localStorage.setItem("RiderToken", result.token);
+        localStorage.setItem("RiderMobile", result.rider.mobile || "");
+
+        if (result.isNew) {
+          setStep("profile");
+        } else {
+          setShowSuccess(true);
+        }
+      } else {
+        alert(result.message || "Invalid OTP");
+      }
+    } catch (err) {
+      console.error("Error verifying OTP:", err);
+      alert("Server error while verifying OTP");
+    }
+    setLoading(false);
+  };
 
   // Resend OTP
   const handleResendOtp = async () => {
@@ -190,7 +188,7 @@ const handleLogin = async (data) => {
                 </label>
                 <Input
                   type="tel"
-                  
+
                   className="text-lg"
                   disabled={otpSent}
                   {...loginForm.register("mobile", {
@@ -270,8 +268,8 @@ const handleLogin = async (data) => {
                 type="submit"
                 disabled={loading}
                 className={`w-full ${otpSent
-                    ? "bg-green-600 hover:bg-green-700"
-                    : "bg-blue-600 hover:bg-blue-700"
+                  ? "bg-green-600 hover:bg-green-700"
+                  : "bg-blue-600 hover:bg-blue-700"
                   }`}
               >
                 {loading

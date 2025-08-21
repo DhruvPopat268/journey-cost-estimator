@@ -1,7 +1,8 @@
-import React , {useState , useEffect} from 'react';
-import { X, Clock, User, LogOut, Trash2, Bike, AlertTriangle , House} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Clock, User, LogOut, Trash2, Bike, AlertTriangle, House, LogIn } from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const Sidebar = ({ onNavigate }) => {
   const {
@@ -12,36 +13,58 @@ const Sidebar = ({ onNavigate }) => {
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
   const [initials, setInitials] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedRider = localStorage.getItem("rider");
-    const storedMobile = localStorage.getItem("RiderMobile");
+    // Check if RiderToken exists in localStorage
+    const token = localStorage.getItem("RiderToken");
+    setIsLoggedIn(!!token);
+    
+    if (!token) return; // Skip fetching rider data if not logged in
 
-    if (storedRider) {
+    const fetchRider = async () => {
       try {
-        const riderObj = JSON.parse(storedRider);
-        if (riderObj.name) {
-          setName(riderObj.name);
+        const res = await axios.post(
+          `${import.meta.env.VITE_API_URL}/api/rider-auth/find-rider`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-          // ✅ Generate initials
-          const words = riderObj.name.trim().split(" ");
-          if (words.length >= 2) {
-            setInitials(words[0][0].toUpperCase() + words[1][0].toUpperCase());
-          } else {
-            setInitials(words[0][0].toUpperCase());
+        if (res.data?.success && res.data.rider) {
+          const rider = res.data.rider;
+
+          setName(rider.name || "");
+          setMobile(rider.mobile || "");
+
+          // ✅ Generate initials from name
+          if (rider.name) {
+            const words = rider.name.trim().split(" ");
+            if (words.length >= 2) {
+              setInitials(
+                words[0][0].toUpperCase() + words[1][0].toUpperCase()
+              );
+            } else {
+              setInitials(words[0][0].toUpperCase());
+            }
           }
         }
-      } catch (error) {
-        console.error("Error parsing rider object:", error);
+      } catch (err) {
+        console.error("Error fetching rider:", err);
+        if (err.response?.status === 401) {
+          localStorage.removeItem("RiderToken");
+          setIsLoggedIn(false);
+        }
       }
-    }
+    };
 
-    if (storedMobile) {
-      setMobile(storedMobile);
-    }
-  }, []);
+    fetchRider();
+  }, [navigate]);
 
   const deleteRider = async () => {
     try {
@@ -63,6 +86,7 @@ const Sidebar = ({ onNavigate }) => {
       if (res.status === 200) {
         // ✅ Clear localStorage and redirect
         localStorage.clear();
+        setIsLoggedIn(false);
         navigate("/login");
       } else {
         const data = await res.json();
@@ -78,8 +102,6 @@ const Sidebar = ({ onNavigate }) => {
     initials,
   };
 
-  
-
   const handleNavigation = (path, label) => {
     if (onNavigate) {
       onNavigate(path, label);
@@ -88,6 +110,11 @@ const Sidebar = ({ onNavigate }) => {
       window.location.href = path;
     }
     closeSidebar();
+  };
+
+  const handleLoginClick = () => {
+    closeSidebar();
+    navigate('/login');
   };
 
   const menuItems = [
@@ -125,6 +152,13 @@ const Sidebar = ({ onNavigate }) => {
     }
   ];
 
+  const loginButton = {
+    icon: LogIn,
+    label: 'Login',
+    onClick: handleLoginClick,
+    className: 'text-blue-600 hover:bg-blue-50'
+  };
+
   const LogoutDialog = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-[70] flex items-center justify-center p-4">
       <div className="bg-white rounded-lg p-6 w-full max-w-sm">
@@ -145,6 +179,7 @@ const Sidebar = ({ onNavigate }) => {
               setShowLogoutDialog(false);
               closeSidebar(); // Close sidebar before navigation
               localStorage.clear();
+              setIsLoggedIn(false);
               navigate('/login');
             }}
             className="flex-1 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
@@ -212,40 +247,53 @@ const Sidebar = ({ onNavigate }) => {
           </button>
         </div>
 
-        <div className="p-6 border-b bg-gray-50">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-semibold text-lg">{userProfile.initials}</span>
+        {isLoggedIn ? (
+          <>
+            <div className="p-6 border-b bg-gray-50">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-semibold text-lg">{userProfile.initials}</span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-800">{name}</h3>
+                  <p className="text-sm text-gray-600">{mobile}</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-gray-800">{userProfile.name}</h3>
-              <p className="text-sm text-gray-600">{mobile}</p>
-            </div>
-          </div>
-        </div>
 
-        <div className="py-4">
-          {menuItems.map((item, index) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={index}
-                onClick={item.onClick}
-                className={`w-full flex items-center space-x-4 px-6 py-4 text-left transition-colors ${
-                  item.className || 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <Icon size={20} />
-                <span className="font-medium">{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
+            <div className="py-4">
+              {menuItems.map((item, index) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={index}
+                    onClick={item.onClick}
+                    className={`w-full flex items-center space-x-4 px-6 py-4 text-left transition-colors ${
+                      item.className || 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Icon size={20} />
+                    <span className="font-medium">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <div className="py-4">
+            <button
+              onClick={loginButton.onClick}
+              className={`w-full flex items-center space-x-4 px-6 py-4 text-left transition-colors ${loginButton.className}`}
+            >
+              <loginButton.icon size={20} />
+              <span className="font-medium">{loginButton.label}</span>
+            </button>
+          </div>
+        )}
 
         <div className="absolute bottom-6 left-6 right-6">
           <div className="text-center text-xs text-gray-500">
-            {/* <p>Version 2.1.0</p> */}
-            <p className="mt-1">© 2025 DriveGo</p>
+            <p>© 2025 DriveGo</p>
           </div>
         </div>
       </div>

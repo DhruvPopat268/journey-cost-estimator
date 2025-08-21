@@ -33,43 +33,52 @@ const RideSelection = () => {
   };
 
   //fetch rider using mobile from local storage
-  useEffect(() => {
-    const fetchRider = async () => {
-      try {
-        // 1️⃣ Get RiderMobile from localStorage
-        const mobile = localStorage.getItem("RiderMobile");
+  // useEffect(() => {
+  //   const fetchRider = async () => {
+  //     try {
+  //       // 1️⃣ Get RiderToken from localStorage
+  //       const token = localStorage.getItem("RiderToken");
 
-        if (!mobile) {
-          console.warn("No RiderMobile found in localStorage");
-          return;
-        }
+  //       if (!token) {
+  //         console.warn("No RiderToken found in localStorage");
+  //         navigate("/login"); // redirect if no token
+  //         return;
+  //       }
 
-        // 2️⃣ Make POST API call
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/find-rider`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ mobile }),
-        });
+  //       // 2️⃣ Make POST API call with Bearer token
+  //       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/find-rider`, {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           "Authorization": `Bearer ${token}`,
+  //         },
+  //       });
 
-        const data = await res.json();
+  //       // 3️⃣ Handle unauthorized response
+  //       if (res.status === 401) {
+  //         console.warn("Unauthorized, redirecting to login...");
+  //         localStorage.clear(); // optional: clear storage
+  //         navigate("/login");
+  //         return;
+  //       }
 
-        // 3️⃣ Check response and store rider info
-        if (data.success && data.rider) {
-          const { name, gender, email } = data.rider;
-          localStorage.setItem("rider", JSON.stringify({ name, gender, email }));
-          console.log("Rider stored:", { name, gender, email });
-        } else {
-          console.warn("Rider not found:", data.message);
-        }
-      } catch (error) {
-        console.error("Error fetching rider:", error);
-      }
-    };
+  //       const data = await res.json();
 
-    fetchRider();
-  }, []);
+  //       // 4️⃣ Check response and store rider info
+  //       if (data.success && data.rider) {
+  //         const { name, gender, email } = data.rider;
+  //         localStorage.setItem("rider", JSON.stringify({ name, gender, email }));
+  //         console.log("Rider stored:", { name, gender, email });
+  //       } else {
+  //         console.warn("Rider not found:", data.message);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching rider:", error);
+  //     }
+  //   };
+
+  //   fetchRider();
+  // }, [navigate]);
 
   // Fetch categories on component mount
   useEffect(() => {
@@ -222,7 +231,7 @@ const RideSelection = () => {
 
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-       {/* Header */}
+        {/* Header */}
         <div className="flex items-center justify-center mb-8">
           <h2 className="text-gray-600 text-center font-medium mt-4">Select category and service type</h2>
         </div>

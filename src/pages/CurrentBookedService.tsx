@@ -81,34 +81,34 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
     }
   };
 
-  const handleCancelBooking = async (bookingId: string) => {
-    try {
-      const confirmed = window.confirm('Are you sure you want to cancel this booking?');
-      if (!confirmed) return;
+const handleCancelBooking = async (bookingId: string) => {
+  try {
+    const confirmed = window.confirm("Are you sure you want to cancel this booking?");
+    if (!confirmed) return;
 
-      const token = localStorage.getItem("RiderToken");
-      
-      // Replace with your actual cancel API endpoint
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/rides/cancel/${bookingId}`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+    const token = localStorage.getItem("RiderToken");
 
-      if (response.status === 200) {
-        // Refresh bookings after successful cancellation
-        fetchBookings();
-        alert('Booking cancelled successfully');
+    // ✅ Send bookingId in body instead of URL
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_URL}/api/rides/booking/cancel`,
+      { bookingId }, // sending in body
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    } catch (error) {
-      console.error("Error cancelling booking:", error);
-      alert('Error cancelling booking');
+    );
+
+    if (response.status === 200) {
+      fetchBookings(); // Refresh bookings
+      alert("Booking cancelled successfully");
     }
-  };
+  } catch (error) {
+    console.error("Error cancelling booking:", error);
+    alert("Error cancelling booking");
+  }
+};
+
 
   const handleViewDetails = (booking: Booking) => {
     // Use navigate to go to the detail view
