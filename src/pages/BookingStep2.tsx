@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +9,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Clock, Star, Award, Crown, MapPin, CreditCard, X, Receipt, Info } from 'lucide-react';
-// Add these imports at the top of your BookingStep2.tsx file
 import {
   Select,
   SelectContent,
@@ -16,6 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+
+// Import Redux actions - make sure this path is correct
+import { 
+  setUsage, 
+  setTotalAmount, 
+  setSelectedCategory, 
+  setNotes 
+} from '../store/slices/bookingSlice'; // Adjust this path as needed
 
 const iconMap = {
   normal: Star,
@@ -27,55 +35,33 @@ const BookingStep2 = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const bookingData = location.state;
-
-
-  // console.log(bookingData)
-
-  // const normalName = bookingData.subcategoryName.toLowerCase();
-
-  // const removeName = normalName.replace(/\s+/g, '');
+  const dispatch = useDispatch();
 
   const [selectedUsage, setSelectedUsage] = useState('');
   const [customUsage, setCustomUsage] = useState('');
-  const [driverCategory, setDriverCategory] = useState('');
   const [priceCategories, setPriceCategories] = useState([]);
-  const [peakCharges, setPeakCharges] = useState([]);
-  const [rideCosts, setRideCosts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
-  const [filterDriver, setFilterDriver] = useState(null);
-  //instructions = notes
-  const [notes, setNotes] = useState('');
+  const [notes, setNotesLocal] = useState(''); // Renamed to avoid confusion
   const [instructions, setInstructions] = useState([]);
-  const [totalAmount, setTotalAmount] = useState([])
-  const [selectedCategory, setSelectedCategory] = useState({});
-  const selectedCost = totalAmount.find(item => item.category === selectedCategory);
+  const [totalAmount, setTotalAmountLocal] = useState([]); // Renamed to avoid confusion
+  const [selectedCategory, setSelectedCategoryLocal] = useState(null); // Renamed to avoid confusion
   const [showInstructions, setShowInstructions] = useState(false);
-  const [tc, setTc] = useState(false)
+  const [tc, setTc] = useState(false);
 
   useEffect(() => {
-
     const fetchAllData = async () => {
       try {
-        const [priceRes, instructionsRes,] = await Promise.all([
+        const [priceRes, instructionsRes] = await Promise.all([
           axios.get(`${import.meta.env.VITE_API_URL}/api/price-categories`),
           axios.post(`${import.meta.env.VITE_API_URL}/api/instructions/getInstructions`, {
             "categoryId": bookingData.categoryId,
             "subCategoryId": bookingData.subcategoryId
           }),
-
-          // axios.get(`${import.meta.env.VITE_API_URL}/api/ride-costs/type/${removeName}`,)
         ]);
 
         setPriceCategories(priceRes.data || []);
-        console.log('all categories', priceRes.data)
-
-        // setPeakCharges(peakRes.data?.data || []);
-        // setRideCosts(rideRes.data || null);
         setInstructions(instructionsRes.data?.instructions || []);
-        console.log('Instructions:', instructionsRes.data?.instructions);
-        // console.log('Peak Charges:', peakRes.data);
-        // console.log('Ride Costs:', rideRes.data);
       } catch (error) {
         console.error('Failed to fetch data', error);
       } finally {
@@ -83,12 +69,12 @@ const BookingStep2 = () => {
       }
     };
 
-    fetchAllData();
-  }, []);
-
-
-
-
+    if (bookingData?.categoryId && bookingData?.subcategoryId) {
+      fetchAllData();
+    } else {
+      setLoading(false);
+    }
+  }, [bookingData]);
 
   // 👇 Trigger API when usage changes (selected or custom)
   const handleUsageChange = async (value) => {
@@ -102,10 +88,18 @@ const BookingStep2 = () => {
         `${import.meta.env.VITE_API_URL}/api/ride-costs/calculation`,
         fullData
       );
-      setTotalAmount(res.data)
-      if (totalAmount) {
-        console.log('total amount:', res.data);
-      }
+      
+      const responseData = res.data;
+      setTotalAmountLocal(responseData);
+      
+      // Update Redux with usage data - ensure serializable data
+      dispatch(setUsage({
+        selectedUsage: value,
+        customUsage: ''
+      }));
+      
+      // Update Redux with total amount - ensure it's serializable
+      dispatch(setTotalAmount(responseData));
 
     } catch (err) {
       console.error('API error:', err);
@@ -115,7 +109,7 @@ const BookingStep2 = () => {
   // 👇 Trigger API when customUsage changes (with debounce)
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
-      if (customUsage) {
+      if (customUsage && bookingData) {
         const fullData = { ...bookingData, selectedUsage: customUsage };
 
         axios.post(
@@ -123,41 +117,86 @@ const BookingStep2 = () => {
           fullData
         )
           .then(res => {
-            console.log('API response:', res.data);
-            setTotalAmount(res.data); // <-- Set the response data here
+            const responseData = res.data;
+            setTotalAmountLocal(responseData);
+            
+            // Update Redux with custom usage data - ensure serializable data
+            dispatch(setUsage({
+              selectedUsage: '',
+              customUsage: customUsage
+            }));
+            
+            // Update Redux with total amount - ensure it's serializable
+            dispatch(setTotalAmount(responseData));
           })
           .catch(err => console.error('API error:', err));
       }
-    }, 500); // debounce by 500ms
+    }, 500);
 
     return () => clearTimeout(delayDebounce);
-  }, [customUsage]);
+  }, [customUsage, bookingData, dispatch]);
 
   // for set default usage based on subcategory name
   useEffect(() => {
-    const normalizedName = bookingData.subcategoryName?.toLowerCase() || "";
+    if (bookingData?.subcategoryName) {
+      const normalizedName = bookingData.subcategoryName.toLowerCase();
 
-    if (normalizedName.includes("one-way") || normalizedName.includes("oneway") || normalizedName.includes("one way")) {
-      setSelectedUsage("10");
-      handleUsageChange("10")
-    } else if (normalizedName.includes("hourly") || normalizedName.includes("hour")) {
-      setSelectedUsage("1");
-      handleUsageChange("1");
+      if (normalizedName.includes("one-way") || normalizedName.includes("oneway") || normalizedName.includes("one way")) {
+        setSelectedUsage("10");
+        handleUsageChange("10");
+      } else if (normalizedName.includes("hourly") || normalizedName.includes("hour")) {
+        setSelectedUsage("1");
+        handleUsageChange("1");
+      }
     }
-  }, [bookingData.subcategoryName]);
+  }, [bookingData?.subcategoryName]);
+
+  // Update Redux when notes change
+  useEffect(() => {
+    dispatch(setNotes(notes));
+  }, [notes, dispatch]);
+
+  // Update Redux when selected category changes
+  useEffect(() => {
+    if (selectedCategory) {
+      // Ensure the category data is serializable
+      const serializableCategory = JSON.parse(JSON.stringify(selectedCategory));
+      dispatch(setSelectedCategory(serializableCategory));
+    }
+  }, [selectedCategory, dispatch]);
+
+  // Set default category to "Prime"
+  useEffect(() => {
+    if (totalAmount?.length > 0) {
+      const defaultCategory = totalAmount.find(item => item.category.toLowerCase() === 'prime');
+      if (defaultCategory) {
+        setSelectedCategoryLocal(defaultCategory);
+      }
+    }
+  }, [totalAmount]);
 
   if (!bookingData) {
     navigate('/');
     return null;
   }
 
-  const getUsageOptions = () => {
-    const normalizedName = bookingData.subcategoryName.toLowerCase();
-    console.log('Subcategory Name:', bookingData.subcategoryName);
-    console.log('Normalized Name:', normalizedName);
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-4 px-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
+  const getUsageOptions = () => {
+    if (!bookingData.subcategoryName) return ['1', '2', '3', '4', '5'];
+    
+    const normalizedName = bookingData.subcategoryName.toLowerCase();
     if (normalizedName.includes('one-way') || normalizedName.includes('oneway') || normalizedName.includes('one way')) {
-      return ['10', '25', '50', '100',];
+      return ['10', '25', '50', '100'];
     }
     if (normalizedName.includes('hourly') || normalizedName.includes('hour')) {
       return ['1', '2', '3', '4', '5'];
@@ -166,6 +205,8 @@ const BookingStep2 = () => {
   };
 
   const getUsageUnit = () => {
+    if (!bookingData.subcategoryName) return 'Unit';
+    
     const normalizedName = bookingData.subcategoryName.toLowerCase();
     if (normalizedName.includes('one-way') || normalizedName.includes('oneway') || normalizedName.includes('one way')) {
       return 'KM';
@@ -176,244 +217,57 @@ const BookingStep2 = () => {
     return 'Unit';
   };
 
-  // Check if booking time is night time (22:00 to 6:00)
-  const isNightTime = () => {
-    if (!bookingData.selectedTime) return false;
-    const time = bookingData.selectedTime.split(':');
-    const hour = parseInt(time[0]);
-    return hour >= 22 || hour < 6;
-  };
-
-  // Check for peak charges based on date and time - prioritize peak_dates first
-  const getPeakCharges = () => {
-    if (!peakCharges.length || !bookingData.selectedDate || !bookingData.selectedTime) {
-      return { type: null, charges: 0 };
+  const handleConfirmBooking = async () => {
+    if (!selectedCategory || !selectedCategory.category) {
+      alert("Please select a driver category to proceed.");
+      return;
     }
 
-    const bookingDate = bookingData.selectedDate;
-    const bookingTime = bookingData.selectedTime;
-
-    console.log('Checking peak charges for:', { bookingDate, bookingTime });
-
-    // First check peak_dates (priority)
-    const peakDate = peakCharges.find(peak => {
-      if (peak.type === 'peak_dates') {
-        const isDateInRange = bookingDate >= peak.startDate && bookingDate <= peak.endDate;
-        console.log('Peak date check:', {
-          peakName: peak.name,
-          startDate: peak.startDate,
-          endDate: peak.endDate,
-          bookingDate,
-          isDateInRange
-        });
-        return isDateInRange;
-      }
-      return false;
-    });
-
-    if (peakDate) {
-      console.log('Found peak date match:', peakDate);
-      return { type: 'peak_dates', charges: peakDate.price, name: peakDate.name };
-    }
-
-    // Then check peak_hours
-    const peakHour = peakCharges.find(peak => {
-      if (peak.type === 'peak_hours') {
-        const isTimeInRange = bookingTime >= peak.startTime && bookingTime <= peak.endTime;
-        console.log('Peak hour check:', {
-          peakName: peak.name,
-          startTime: peak.startTime,
-          endTime: peak.endTime,
-          bookingTime,
-          isTimeInRange
-        });
-        return isTimeInRange;
-      }
-      return false;
-    });
-
-    if (peakHour) {
-      console.log('Found peak hour match:', peakHour);
-      return { type: 'peak_hours', charges: peakHour.price, name: peakHour.name };
-    }
-
-    console.log('No peak charges applied');
-    return { type: null, charges: 0 };
-  };
-
-  const calculateCosts = () => {
-    if (!filterDriver || !rideCosts) return {
-      driverCharges: 0,
-      pickCharges: 0,
-      nightCharges: 0,
-      peakCharges: 0,
-      insuranceCharges: 0,
-      subtotal: 0,
-      adminCharges: 0,
-      gstCharges: 0,
-      discount: 0,
-      total: 0
-    };
-
-    const usage = parseInt(selectedUsage || customUsage) || 0;
-    const normalizedName = bookingData.subcategoryName.toLowerCase();
-
-    // Base driver charges
-    let driverCharges = 0;
-    if (normalizedName.includes('one-way') || normalizedName.includes('oneway')) {
-      driverCharges = filterDriver.chargePerKm * usage;
-    } else if (normalizedName.includes('hourly') || normalizedName.includes('hour')) {
-      let hourlyUsage = usage * 60
-      driverCharges = filterDriver.chargePerMinute * hourlyUsage;
-    } else {
-      driverCharges = filterDriver.chargePerKm * usage;
-    }
-
-    // Additional charges from API
-    const pickCharges = rideCosts[0].pickCharges || 0;
-    console.log(pickCharges)
-    const nightCharges = isNightTime() ? (rideCosts[0].nightCharges || 0) : 0;
-    const peakInfo = getPeakCharges();
-    const peakCharges = peakInfo.charges || 0;
-    const insuranceCharges = bookingData.includeInsurance ? (rideCosts[0].insurance || 0) : 0;
-
-    // Admin charges as percentage of subtotal (from API) - now included in subtotal
-    const adminPercentage = (rideCosts.extraChargesFromAdmin || 10) / 100;
-    const baseSubtotal = Math.ceil(driverCharges + pickCharges + nightCharges + peakCharges + insuranceCharges);
-    const adminCharges = Math.ceil(baseSubtotal * adminPercentage);
-
-    // Calculate subtotal (all charges including admin)
-    const subtotal = Math.ceil(baseSubtotal + adminCharges);
-
-    // GST as percentage of subtotal (from API)
-    const gstPercentage = (rideCosts.gst || 18) / 100;
-    const gstCharges = Math.ceil(adminCharges * gstPercentage);
-
-    // Discount from API
-    const discount = rideCosts.discount || 0;
-
-    // Total
-    const total = Math.ceil(subtotal + gstCharges - discount);
-
-    console.log('Cost calculation:', {
-      driverCharges,
-      pickCharges,
-      nightCharges,
-      peakCharges: peakInfo.charges,
-      peakType: peakInfo.type,
-      peakName: peakInfo.name,
-      insuranceCharges,
-      adminCharges,
-      subtotal,
-      gstCharges,
-      discount,
-      total
-    });
-
-    return {
-      driverCharges: Math.ceil(driverCharges),
-      pickCharges,
-      nightCharges,
-      peakCharges,
-      peakType: peakInfo.type,
-      peakName: peakInfo.name,
-      insuranceCharges,
-      subtotal,
-      adminCharges,
-      gstCharges,
-      discount,
-      total: Math.max(0, total) // Ensure total is not negative
-    };
-  };
-
-  // Function to calculate total cost for a specific driver category
-  const calculateTotalForDriver = (category) => {
-    if (!rideCosts) return 0;
-
-    const usage = parseInt(selectedUsage || customUsage) || 0;
-    const normalizedName = bookingData.subcategoryName.toLowerCase();
-
-    // Base driver charges
-    let driverCharges = 0;
-    if (normalizedName.includes('one-way') || normalizedName.includes('oneway')) {
-      driverCharges = category.chargePerKm * usage;
-    } else if (normalizedName.includes('hourly') || normalizedName.includes('hour')) {
-      let hourlyUsage = usage * 60
-      driverCharges = category.chargePerMinute * hourlyUsage;
-    } else {
-      driverCharges = category.chargePerKm * usage;
-    }
-
-    // Additional charges from API
-    const pickCharges = rideCosts[0].pickCharges || 0;
-    const nightCharges = isNightTime() ? (rideCosts[0].nightCharges || 0) : 0;
-    const peakInfo = getPeakCharges();
-    const peakCharges = peakInfo.charges || 0;
-    const insuranceCharges = bookingData.includeInsurance ? (rideCosts[0].insurance || 0) : 0;
-
-    // Admin charges as percentage of subtotal (from API) - now included in subtotal
-    const adminPercentage = (rideCosts.extraChargesFromAdmin || 10) / 100;
-    const baseSubtotal = Math.ceil(driverCharges + pickCharges + nightCharges + peakCharges + insuranceCharges);
-    const adminCharges = Math.ceil(baseSubtotal * adminPercentage);
-
-    // Calculate subtotal (all charges including admin)
-    const subtotal = Math.ceil(baseSubtotal + adminCharges);
-
-    // GST as percentage of subtotal (from API)
-    const gstPercentage = (rideCosts.gst || 18) / 100;
-    const gstCharges = Math.ceil(subtotal * gstPercentage);
-
-    // Discount from API
-    const discount = rideCosts.discount || 0;
-
-    // Total
-    const total = Math.ceil(subtotal + gstCharges - discount);
-
-    return Math.max(0, total);
-  };
-
-  const handleShowPriceBreakdown = () => {
-    setShowPriceBreakdown(true);
-  };
-
-  const handleClosePriceBreakdown = () => {
-    setShowPriceBreakdown(false);
-  };
-
-  const handleConfirmBooking = () => {
-    const finalBookingData = {
+    // Create serializable booking details
+    const bookingDetails = {
       ...bookingData,
       selectedUsage: selectedUsage || customUsage,
-      driverCategory,
-
-      costs: calculateCosts()
+      selectedCategory: selectedCategory.category,
+      totalPayable: selectedCategory.totalPayable,
+      notes: notes,
     };
-    navigate('/cost-breakdown', { state: finalBookingData });
-  };
 
-  // Set default category to "Prime"
-  useEffect(() => {
-    if (totalAmount?.length) {
-      const defaultCategory = totalAmount.find(item => item.category.toLowerCase() === 'prime');
-      if (defaultCategory) {
-        setSelectedCategory(defaultCategory);
-        console.log('Default category set:', defaultCategory);
+    // Ensure all data is updated in Redux before navigation with serializable data
+    dispatch(setUsage({
+      selectedUsage: selectedUsage || '',
+      customUsage: customUsage || ''
+    }));
+    
+    const serializableCategory = JSON.parse(JSON.stringify(selectedCategory));
+    dispatch(setSelectedCategory(serializableCategory));
+    dispatch(setNotes(notes));
+    dispatch(setTotalAmount(totalAmount));
+
+    try {
+      const token = localStorage.getItem("RiderToken");
+
+      if (!token) {
+        navigate("/login", { state: bookingDetails });
+        return;
       }
+
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/rider-auth/auth/check`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (res.data.loggedIn) {
+        navigate("/confirm-payment", { state: bookingDetails });
+      } else {
+        navigate("/login", { state: bookingDetails });
+      }
+    } catch (error) {
+      console.error("Auth check failed:", error);
+      navigate("/login", { state: bookingDetails });
     }
-  }, [totalAmount]);
-
-  if (loading) {
-
-
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-4 px-4 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  };
 
   const getIcon = (category) => {
     switch (category.toLowerCase()) {
@@ -429,17 +283,14 @@ const BookingStep2 = () => {
   };
 
   const getKmRate = (category) => {
-    const currentCategory = priceCategories.filter((item) => item.priceCategoryName.toLowerCase() === category.toLowerCase())
-    return currentCategory[0]?.chargePerKm
+    const currentCategory = priceCategories.find((item) => item.priceCategoryName.toLowerCase() === category.toLowerCase());
+    return currentCategory?.chargePerKm || 0;
   };
 
   const getMinRate = (category) => {
-    const currentCategory = priceCategories.filter((item) => item.priceCategoryName.toLowerCase() === category.toLowerCase())
-    return currentCategory[0]?.chargePerMinute
+    const currentCategory = priceCategories.find((item) => item.priceCategoryName.toLowerCase() === category.toLowerCase());
+    return currentCategory?.chargePerMinute || 0;
   };
-
-  console.log(bookingData)
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-4 px-4">
@@ -520,8 +371,7 @@ const BookingStep2 = () => {
               key={index}
               type="button"
               onClick={() => {
-                console.log(item)
-                setSelectedCategory(item)
+                setSelectedCategoryLocal(item);
               }}
               className={`w-full text-left rounded-xl p-4 shadow-sm mb-4 flex items-center justify-between transition-all duration-200
       ${selectedCategory?.category === item.category ? 'border-2 border-blue-700 bg-blue-50 shadow-md' : 'border border-gray-200 bg-white hover:shadow-md hover:border-gray-300'}
@@ -568,38 +418,13 @@ const BookingStep2 = () => {
                     id="notes"
                     placeholder="Enter any special instructions or requirements..."
                     value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
+                    onChange={(e) => setNotesLocal(e.target.value)}
                     rows={3}
                   />
                 </CardContent>
               </Card>
             )}
           </div>
-
-          {/* Instructions Section */}
-          {/* {instructions.length > 0 && (
-            <Card className="bg-white shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Info className="w-5 h-5 mr-2 text-blue-600" />
-                  T & C
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {instructions.map((instruction, index) => (
-                    <Card key={instruction._id} className="border border-gray-200 bg-gray-50">
-                      <CardContent className="p-4">
-                        <p className="text-sm text-gray-700 leading-relaxed">
-                          {instruction}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )} */}
 
           {/* Total and Price Breakdown Section */}
           {selectedCategory?.category && (
@@ -621,7 +446,7 @@ const BookingStep2 = () => {
                       T & C
                     </Button>
                     <Button
-                      onClick={handleShowPriceBreakdown}
+                      onClick={() => setShowPriceBreakdown(true)}
                       variant="outline"
                       className="flex items-center space-x-2 border-blue-500 text-blue-600 hover:bg-blue-50 mt-11"
                     >
@@ -638,7 +463,6 @@ const BookingStep2 = () => {
                   Confirm & Pay ₹{selectedCategory.totalPayable}
                 </Button>
               </CardContent>
-
             </Card>
           )}
         </div>
@@ -690,7 +514,7 @@ const BookingStep2 = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleClosePriceBreakdown}
+                onClick={() => setShowPriceBreakdown(false)}
                 className="p-2 hover:bg-gray-100 rounded-full"
               >
                 <X className="w-5 h-5" />
@@ -728,23 +552,11 @@ const BookingStep2 = () => {
                     <span className="font-medium text-green-600">Included</span>
                   </div>
                 )}
-                {isNightTime() && (
-                  <div className="flex justify-between text-sm">
-                    <span>Night Time:</span>
-                    <span className="font-medium text-orange-600">22:00-06:00</span>
-                  </div>
-                )}
-
               </div>
 
               {/* Simplified Cost Breakdown */}
               <div className="space-y-3">
                 <h4 className="font-semibold text-gray-800">Cost Details</h4>
-
-                {/* <div className="flex justify-between text-sm font-medium">
-                  <span>Insurance Charges:</span>
-                  <span>₹{selectedCategory.insuranceCharges}</span>
-                </div> */}
 
                 {selectedCategory.insuranceCharges > 0 && (
                   <div className="flex justify-between text-sm font-medium">
@@ -774,7 +586,7 @@ const BookingStep2 = () => {
               {/* Modal Actions */}
               <div className="flex space-x-3 pt-4">
                 <Button
-                  onClick={handleClosePriceBreakdown}
+                  onClick={() => setShowPriceBreakdown(false)}
                   variant="outline"
                   className="flex-1"
                 >
@@ -782,7 +594,7 @@ const BookingStep2 = () => {
                 </Button>
                 <Button
                   onClick={() => {
-                    handleClosePriceBreakdown();
+                    setShowPriceBreakdown(false);
                     handleConfirmBooking();
                   }}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
@@ -794,7 +606,6 @@ const BookingStep2 = () => {
           </div>
         </div>
       )}
-
     </div>
   );
 };

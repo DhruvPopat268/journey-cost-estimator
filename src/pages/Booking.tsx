@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux'; // Add these imports
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,27 +8,32 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, MapPin, Calendar, Shield } from 'lucide-react';
+import { Navbar } from '../components/Sidebar';
+import { setBookingStep1, updateField } from '../store/slices/bookingSlice'; // Import your actions
 
 const Booking = () => {
   const navigate = useNavigate();
   const { categoryId, subcategoryId } = useParams();
-
-  const [fromLocation, setFromLocation] = useState('');
-  const [toLocation, setToLocation] = useState('');
-  const [carType, setCarType] = useState('');
-  const [transmissionType, setTransmissionType] = useState('');
+  const dispatch = useDispatch();
+  const location = useLocation();
+  
+  // Get existing booking data from Redux
+  const bookingData = useSelector(state => state.booking);
+  
+  // Initialize state with Redux data or empty values
+  const [fromLocation, setFromLocation] = useState(bookingData.fromLocation || '');
+  const [toLocation, setToLocation] = useState(bookingData.toLocation || '');
+  const [carType, setCarType] = useState(bookingData.carType || '');
+  const [transmissionType, setTransmissionType] = useState(bookingData.transmissionType || '');
+  const [selectedDate, setSelectedDate] = useState(bookingData.selectedDate || '');
+  const [selectedTime, setSelectedTime] = useState(bookingData.selectedTime || '');
+  const [includeInsurance, setIncludeInsurance] = useState(bookingData.includeInsurance || false);
   const [vehicleCategories, setVehicleCategories] = useState([]);
-  const [subcategoryName, setSubcategoryName] = useState('');
+  const [subcategoryName, setSubcategoryName] = useState(bookingData.subcategoryName || '');
   const [loading, setLoading] = useState(true);
 
-  // Updated date and time fields - only 2 fields instead of 4
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
-
-
-  // Set default time  to current time in HH:MM format and date also
+  // Set default time to current time in HH:MM format and date also
   useEffect(() => {
-
     const today = new Date().toISOString().split('T')[0];
     if (!selectedDate) setSelectedDate(today);
 
@@ -35,15 +41,8 @@ const Booking = () => {
     const hours = now.getHours().toString().padStart(2, '0');
     const minutes = now.getMinutes().toString().padStart(2, '0');
     const formattedTime = `${hours}:${minutes}`;
-    setSelectedTime(formattedTime);
-
-
+    if (!selectedTime) setSelectedTime(formattedTime);
   }, []);
-
-  const location = useLocation();
-
-  // Insurance toggle field
-  const [includeInsurance, setIncludeInsurance] = useState(false);
 
   // Check if subcategory is "one way" to show/hide drop location
   const isOneWay = subcategoryName.toLowerCase() === 'one way';
@@ -53,6 +52,9 @@ const Booking = () => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/subcategories/${subcategoryId}`);
         setSubcategoryName(res.data.name);
+        
+        // Update Redux with subcategory name
+        dispatch(updateField({ field: 'subcategoryName', value: res.data.name }));
       } catch (error) {
         console.error('Failed to fetch subcategory details', error);
         setSubcategoryName('Service');
@@ -65,9 +67,11 @@ const Booking = () => {
         const categories = res.data?.data || [];
         setVehicleCategories(categories);
 
-        // Auto-set first car type
-        if (categories.length > 0) {
-          setCarType(categories[0].vehicleName.toLowerCase());
+        // Auto-set first car type if not already set
+        if (categories.length > 0 && !carType) {
+          const firstCarType = categories[0].vehicleName.toLowerCase();
+          setCarType(firstCarType);
+          dispatch(updateField({ field: 'carType', value: firstCarType }));
         }
       } catch (error) {
         console.error('Failed to fetch vehicle categories', error);
@@ -85,48 +89,56 @@ const Booking = () => {
 
     if (subcategoryId) {
       fetchAllData();
+      
+      // Update Redux with category IDs
+      dispatch(updateField({ field: 'categoryId', value: categoryId }));
+      dispatch(updateField({ field: 'subcategoryId', value: subcategoryId }));
     }
 
-    if (transmissionOptions.length > 0) {
-      setTransmissionType(transmissionOptions[0].toLowerCase());
+    // Set default transmission if not already set
+    const transmissionOptions = ['Manual', 'Automatic'];
+    if (transmissionOptions.length > 0 && !transmissionType) {
+      const defaultTransmission = transmissionOptions[0].toLowerCase();
+      setTransmissionType(defaultTransmission);
+      dispatch(updateField({ field: 'transmissionType', value: defaultTransmission }));
     }
 
-  }, [import.meta.env.VITE_API_URL, subcategoryId]);
+  }, [categoryId, subcategoryId]);
 
-  // // Set default date to today
-  // useEffect(() => {
-  //   const today = new Date().toISOString().split('T')[0];
-  //   if (!selectedDate) setSelectedDate(today);
-  // }, []);
-
-  // Add this useEffect after your existing useEffects to restore data from navigation state
+  // Update Redux when form fields change
   useEffect(() => {
-    // Check if we're coming back from Step 2 with existing data
-    if (location.state) {
-      const {
-        fromLocation: prevFromLocation,
-        toLocation: prevToLocation,
-        carType: prevCarType,
-        transmissionType: prevTransmissionType,
-        selectedDate: prevSelectedDate,
-        selectedTime: prevSelectedTime,
-        includeInsurance: prevIncludeInsurance
-      } = location.state;
+    dispatch(updateField({ field: 'fromLocation', value: fromLocation }));
+  }, [fromLocation, dispatch]);
 
-      if (prevFromLocation) setFromLocation(prevFromLocation);
-      if (prevToLocation) setToLocation(prevToLocation);
-      if (prevCarType) setCarType(prevCarType);
-      if (prevTransmissionType) setTransmissionType(prevTransmissionType);
-      if (prevSelectedDate) setSelectedDate(prevSelectedDate);
-      if (prevSelectedTime) setSelectedTime(prevSelectedTime);
-      if (prevIncludeInsurance !== undefined) setIncludeInsurance(prevIncludeInsurance);
-    }
-  }, [location.state]);
+  useEffect(() => {
+    dispatch(updateField({ field: 'toLocation', value: toLocation }));
+  }, [toLocation, dispatch]);
+
+  useEffect(() => {
+    dispatch(updateField({ field: 'carType', value: carType }));
+  }, [carType, dispatch]);
+
+  useEffect(() => {
+    dispatch(updateField({ field: 'transmissionType', value: transmissionType }));
+  }, [transmissionType, dispatch]);
+
+  useEffect(() => {
+    dispatch(updateField({ field: 'selectedDate', value: selectedDate }));
+  }, [selectedDate, dispatch]);
+
+  useEffect(() => {
+    dispatch(updateField({ field: 'selectedTime', value: selectedTime }));
+  }, [selectedTime, dispatch]);
+
+  useEffect(() => {
+    dispatch(updateField({ field: 'includeInsurance', value: includeInsurance }));
+  }, [includeInsurance, dispatch]);
 
   // Clear toLocation when subcategory changes and it's not "one way"
   useEffect(() => {
     if (!isOneWay) {
       setToLocation('');
+      dispatch(updateField({ field: 'toLocation', value: '' }));
     }
   }, [isOneWay]);
 
@@ -145,6 +157,10 @@ const Booking = () => {
       selectedTime,
       includeInsurance,
     };
+    
+    // Dispatch the complete step 1 data to Redux
+    dispatch(setBookingStep1(bookingData));
+    
     navigate('/booking-step2', { state: bookingData });
   };
 
@@ -190,10 +206,6 @@ const Booking = () => {
 
               {/* Location Selection Section */}
               <div>
-                {/* <div className="flex items-center mb-4">
-                  <MapPin className="w-5 h-5 mr-2 text-blue-600" />
-                  <h3 className="text-lg font-semibold">Select Locations</h3>
-                </div> */}
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="from">From</Label>
@@ -233,10 +245,6 @@ const Booking = () => {
 
               {/* Schedule Details Section */}
               <div>
-                {/* <div className="flex items-center mb-4">
-                  <Calendar className="w-5 h-5 mr-2 text-blue-600" />
-                  <h3 className="text-lg font-semibold">Schedule Details</h3>
-                </div> */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="selectedDate">Date</Label>
@@ -265,7 +273,6 @@ const Booking = () => {
 
               {/* Car Preferences Section */}
               <div>
-                {/* <h3 className="text-lg font-semibold mb-4">Car Preferences</h3> */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Car Type</Label>
@@ -274,7 +281,7 @@ const Booking = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {vehicleCategories.map((vehicle: any) => (
+                        {vehicleCategories.map((vehicle) => (
                           <SelectItem key={vehicle._id} value={vehicle.vehicleName.toLowerCase()}>
                             {vehicle.vehicleName}
                           </SelectItem>
@@ -303,10 +310,6 @@ const Booking = () => {
 
               {/* Insurance Coverage Section */}
               <div>
-                {/* <div className="flex items-center mb-4">
-                  <Shield className="w-5 h-5 mr-2 text-blue-600" />
-                  <h3 className="text-lg font-semibold">Insurance Coverage</h3>
-                </div> */}
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">

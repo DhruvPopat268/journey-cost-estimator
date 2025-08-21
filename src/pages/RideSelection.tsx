@@ -7,6 +7,8 @@ import {
   ArrowLeft, Clock, MapPin, Calendar, RotateCcw, Repeat, Car,
   User, Package, CircleHelp, ChevronDown
 } from 'lucide-react';
+import { Navbar } from '../components/Sidebar';
+
 
 const RideSelection = () => {
   const navigate = useNavigate();
@@ -29,6 +31,45 @@ const RideSelection = () => {
     Cab: Car,
     Parcel: Package,
   };
+
+  //fetch rider using mobile from local storage
+  useEffect(() => {
+    const fetchRider = async () => {
+      try {
+        // 1️⃣ Get RiderMobile from localStorage
+        const mobile = localStorage.getItem("RiderMobile");
+
+        if (!mobile) {
+          console.warn("No RiderMobile found in localStorage");
+          return;
+        }
+
+        // 2️⃣ Make POST API call
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/find-rider`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ mobile }),
+        });
+
+        const data = await res.json();
+
+        // 3️⃣ Check response and store rider info
+        if (data.success && data.rider) {
+          const { name, gender, email } = data.rider;
+          localStorage.setItem("rider", JSON.stringify({ name, gender, email }));
+          console.log("Rider stored:", { name, gender, email });
+        } else {
+          console.warn("Rider not found:", data.message);
+        }
+      } catch (error) {
+        console.error("Error fetching rider:", error);
+      }
+    };
+
+    fetchRider();
+  }, []);
 
   // Fetch categories on component mount
   useEffect(() => {
@@ -176,17 +217,14 @@ const RideSelection = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 pb-8 px-4">
+      <Navbar title="Book Your Service" />
+
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex items-center mb-8">
-
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Book Your Service
-            </h1>
-            <p className="text-gray-600">Select category and service type</p>
-          </div>
+       {/* Header */}
+        <div className="flex items-center justify-center mb-8">
+          <h2 className="text-gray-600 text-center font-medium mt-4">Select category and service type</h2>
         </div>
 
         {/* Dropdown Selection Section */}

@@ -1,0 +1,125 @@
+import { createSlice } from '@reduxjs/toolkit'
+
+const initialState = {
+  // Step 1 data
+  categoryId: '',
+  subcategoryId: '',
+  subcategoryName: '',
+  fromLocation: '',
+  toLocation: '',
+  carType: '',
+  transmissionType: '',
+  selectedDate: '',
+  selectedTime: '',
+  includeInsurance: false,
+  
+  // Step 2 data
+  selectedUsage: '',
+  customUsage: '',
+  selectedCategory: null,
+  totalAmount: [],
+  notes: '',
+  
+  // UI state
+  currentStep: 1,
+  vehicleCategories: [],
+  priceCategories: [],
+  instructions: []
+}
+
+export const bookingSlice = createSlice({
+  name: 'booking',
+  initialState,
+  reducers: {
+    // Step 1 actions
+    setBookingStep1: (state, action) => {
+      const {
+        categoryId,
+        subcategoryId,
+        subcategoryName,
+        fromLocation,
+        toLocation,
+        carType,
+        transmissionType,
+        selectedDate,
+        selectedTime,
+        includeInsurance
+      } = action.payload
+      
+      state.categoryId = categoryId
+      state.subcategoryId = subcategoryId
+      state.subcategoryName = subcategoryName
+      state.fromLocation = fromLocation
+      state.toLocation = toLocation
+      state.carType = carType
+      state.transmissionType = transmissionType
+      state.selectedDate = selectedDate
+      state.selectedTime = selectedTime
+      state.includeInsurance = includeInsurance
+      state.currentStep = 2
+    },
+    
+    // Step 2 actions
+    setUsage: (state, action) => {
+      state.selectedUsage = action.payload.selectedUsage || ''
+      state.customUsage = action.payload.customUsage || ''
+    },
+    
+    setTotalAmount: (state, action) => {
+      state.totalAmount = action.payload
+    },
+    
+    setSelectedCategory: (state, action) => {
+      state.selectedCategory = action.payload
+    },
+    
+    setNotes: (state, action) => {
+      state.notes = action.payload
+    },
+    
+    // Data loading actions
+    setVehicleCategories: (state, action) => {
+      state.vehicleCategories = action.payload
+    },
+    
+    setPriceCategories: (state, action) => {
+      state.priceCategories = action.payload
+    },
+    
+    setInstructions: (state, action) => {
+      state.instructions = action.payload
+    },
+    
+    // Navigation actions
+    setCurrentStep: (state, action) => {
+      state.currentStep = action.payload
+    },
+    
+    // Reset booking
+    resetBooking: (state) => {
+      return initialState
+    },
+    
+    // Update individual fields
+    updateField: (state, action) => {
+      const { field, value } = action.payload
+      state[field] = value
+    }
+  }
+})
+
+export const {
+  setBookingStep1,
+  setUsage,
+  setTotalAmount,
+  setSelectedCategory,
+  setNotes,
+  setVehicleCategories,
+  setPriceCategories,
+  setInstructions,
+  setCurrentStep,
+  resetBooking,
+  updateField
+} = bookingSlice.actions
+
+export default bookingSlice.reducer
