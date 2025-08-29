@@ -16,20 +16,26 @@ const AllBookedServices = ({ onBack }) => {
     try {
       setLoading(true);
 
-      const token = localStorage.getItem("RiderToken"); // get JWT from localStorage
+      const token = localStorage.getItem("RiderToken");
 
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/rides/my-rides`,
-        {}, // body empty since backend only uses riderId from token
+        {},
         {
           headers: {
-            Authorization: `Bearer ${token}`, // attach token
+            Authorization: `Bearer ${token}`,
           },
         }
       );
 
       if (response.data.success) {
-        setRides(response.data.rides);
+        // flatten rideInfo into root
+        const formatted = response.data.rides.map((ride) => ({
+          ...ride.rideInfo,   // spread nested rideInfo fields
+          ...ride,            // keep root fields (overrides if duplicate keys)
+        }));
+
+        setRides(formatted);
       } else {
         throw new Error("API returned error");
       }
@@ -39,6 +45,7 @@ const AllBookedServices = ({ onBack }) => {
       setLoading(false);
     }
   };
+
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -78,27 +85,27 @@ const AllBookedServices = ({ onBack }) => {
     }
   };
 
-const formatDestination = (fromLocation, toLocation) => {
-  const from = fromLocation
-    ? fromLocation.charAt(0).toUpperCase() + fromLocation.slice(1)
-    : "Unknown";
+  const formatDestination = (fromLocation, toLocation) => {
+    const from = fromLocation
+      ? fromLocation.charAt(0).toUpperCase() + fromLocation.slice(1)
+      : "Unknown";
 
-  if (!toLocation || toLocation.trim() === "") {
-    return from;
-  }
+    if (!toLocation || toLocation.trim() === "") {
+      return from;
+    }
 
-  const to =
-    toLocation.charAt(0).toUpperCase() + toLocation.slice(1);
+    const to =
+      toLocation.charAt(0).toUpperCase() + toLocation.slice(1);
 
-  return `${from} to ${to}`;
-};
+    return `${from} to ${to}`;
+  };
 
 
   if (loading) {
     return (
       <div className="p-6 bg-gray-50 min-h-screen">
         <div className="max-w-md mx-auto">
-          
+
 
           <div className="flex items-center justify-center py-12">
             <Loader2 className="animate-spin mr-2" size={24} />
@@ -113,7 +120,7 @@ const formatDestination = (fromLocation, toLocation) => {
 
   return (
     <div className="px-[6px] pb-[6px] bg-gray-50 min-h-screen">
-        <Navbar title="All Booked Services"  />
+      <Navbar title="All Booked Services" />
 
       <div className="max-w-md mx-auto mt-4">
 

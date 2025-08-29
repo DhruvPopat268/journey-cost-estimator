@@ -117,40 +117,53 @@ const Sidebar = ({ onNavigate }) => {
     navigate('/login');
   };
 
-  const menuItems = [
-    {
-      icon: House,
-      label: 'Home',
-      onClick: () => handleNavigation('/', 'Home')
-    },
-    {
-      icon: Clock,
-      label: 'Current Booked Service',
-      onClick: () => handleNavigation('/currentBookings', 'Current Bookings')
-    },
-    {
-      icon: Bike,
-      label: 'All Booked Services',
-      onClick: () => handleNavigation('/allBookings', 'All Booked Services')
-    },
-    {
-      icon: User,
-      label: 'My Profile',
-      onClick: () => handleNavigation('/my-profile', 'My Profile')
-    },
-    {
-      icon: LogOut,
-      label: 'Logout',
-      onClick: () => setShowLogoutDialog(true),
-      className: 'text-orange-600 hover:bg-orange-50'
-    },
-    {
-      icon: Trash2,
-      label: 'Delete Account',
-      onClick: () => setShowDeleteDialog(true),
-      className: 'text-red-600 hover:bg-red-50'
+const menuItems = [
+  {
+    icon: House,
+    label: 'Home',
+    onClick: () => {
+      handleNavigation('/', 'Home');
+      window.location.reload();
     }
-  ];
+  },
+  {
+    icon: Clock,
+    label: 'Current Booked Service',
+    onClick: () => {
+      handleNavigation('/currentBookings', 'Current Bookings');
+      window.location.reload();
+    }
+  },
+  {
+    icon: Bike,
+    label: 'All Booked Services',
+    onClick: () => {
+      handleNavigation('/allBookings', 'All Booked Services');
+      window.location.reload();
+    }
+  },
+  {
+    icon: User,
+    label: 'My Profile',
+    onClick: () => {
+      handleNavigation('/my-profile', 'My Profile');
+      window.location.reload();
+    }
+  },
+  {
+    icon: LogOut,
+    label: 'Logout',
+    onClick: () => setShowLogoutDialog(true),
+    className: 'text-orange-600 hover:bg-orange-50'
+  },
+  {
+    icon: Trash2,
+    label: 'Delete Account',
+    onClick: () => setShowDeleteDialog(true),
+    className: 'text-red-600 hover:bg-red-50'
+  }
+];
+
 
   const loginButton = {
     icon: LogIn,

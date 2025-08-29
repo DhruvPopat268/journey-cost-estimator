@@ -17,6 +17,7 @@ interface Booking {
     _id: string;
     subcategoryName?: string;
     carType?: string;
+    transmissionType?: string;   // ✅ update to match API
     status: string;
     fromLocation: string;
     toLocation?: string;
@@ -28,12 +29,12 @@ interface Booking {
     selectedUsage?: string;
     createdAt?: string;
     updatedAt?: string;
-    transmission?: string;
     includeInsurance?: boolean;
     notes?: string;
     selectedCategory?: string;
     categoryId?: string;
 }
+
 
 interface BookingDetailViewProps {
     onBack: () => void;
@@ -194,13 +195,9 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                     <div className="flex items-center justify-between mb-4 pb-3 border-b">
                         <div>
                             <h3 className="font-semibold text-lg">
-                                {booking.subcategoryName || booking.carType}
+                                {booking.rideInfo?.subcategoryName}
                             </h3>
-                            <div className="text-sm text-gray-500 mt-1">
-                                {booking.selectedCategory && `${booking.selectedCategory} • `}
-                                {booking.transmission && `${booking.transmission} • `}
-                                {booking.selectedUsage && `${booking.selectedUsage} hours`}
-                            </div>
+
                         </div>
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${booking.status === 'BOOKED' ? 'bg-blue-100 text-blue-800' :
                             booking.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
@@ -221,6 +218,40 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                             </div>
                         )}
                     </div>
+
+                    {/* ✅ Ride Charges Breakdown */}
+                    <div className="mb-5 pb-4 border-b">
+                        <h4 className="font-semibold text-gray-800 mb-3 text-sm">Ride Charges Breakdown</h4>
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Subtotal</span>
+                                <span className="font-medium">₹{booking.rideInfo?.subtotal || 0}</span>
+                            </div>
+
+                            {booking.rideInfo?.includeInsurance && (
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Insurance Charges</span>
+                                    <span className="font-medium">₹{booking.rideInfo?.insuranceCharges || 0}</span>
+                                </div>
+                            )}
+
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">GST</span>
+                                <span className="font-medium">₹{booking.rideInfo?.gstCharges || 0}</span>
+                            </div>
+
+                            <div className="flex justify-between border-t pt-2 font-semibold">
+                                <span className="text-gray-800">Total Payable</span>
+                                <span className="text-gray-800">₹{booking.totalPayable}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Location Details */}
+                    <div className="mb-5">
+                        ...
+                    </div>
+
 
                     {/* Location Details */}
                     <div className="mb-5">
@@ -257,17 +288,41 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                             <div className="text-sm font-medium">{booking._id?.slice(-8) || 'N/A'}</div>
                         </div>
 
-                        {booking.selectedDate && (
+                        <div>
+                            <div className="text-xs text-gray-500">Driver Category</div>
+                            <div className="text-sm font-medium">{booking.rideInfo?.selectedCategory}</div>
+                        </div>
+
+                        <div>
+                            <div className="text-xs text-gray-500">Car</div>
+                            <div className="text-sm font-medium">{booking.rideInfo?.carType}</div>
+                        </div>
+
+                        <div>
+                            <div className="text-xs text-gray-500">Car Type</div>
+                            <div className="text-sm font-medium">{booking.rideInfo?.transmissionType}</div>
+                        </div>
+
+                        <div>
+                            <div className="text-xs text-gray-500">Ride Duration</div>
+                            <div className="text-sm font-medium">
+                                {booking.rideInfo?.selectedUsage}{" "}
+                                {booking.rideInfo?.subcategoryName === "Hourly" ? "hr" : "km"}
+                            </div>
+                        </div>
+
+
+                        {booking.rideInfo?.selectedDate && (
                             <div>
                                 <div className="text-xs text-gray-500">Service Date</div>
-                                <div className="text-sm font-medium">{formatDate(booking.selectedDate)}</div>
+                                <div className="text-sm font-medium">{formatDate(booking.rideInfo?.selectedDate)}</div>
                             </div>
                         )}
 
-                        {booking.selectedTime && (
+                        {booking.rideInfo?.selectedTime && (
                             <div>
                                 <div className="text-xs text-gray-500">Service Time</div>
-                                <div className="text-sm font-medium">{booking.selectedTime}</div>
+                                <div className="text-sm font-medium">{booking.rideInfo?.selectedTime}</div>
                             </div>
                         )}
 

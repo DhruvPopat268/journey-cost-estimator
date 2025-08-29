@@ -1,25 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux'; // Add these imports
+import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, MapPin, Calendar, Shield } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Clock } from 'lucide-react';
 import { Navbar } from '../components/Sidebar';
-import { setBookingStep1, updateField } from '../store/slices/bookingSlice'; // Import your actions
+import { setBookingStep1, updateField } from '../store/slices/bookingSlice';
 
 const Booking = () => {
   const navigate = useNavigate();
   const { categoryId, subcategoryId } = useParams();
   const dispatch = useDispatch();
   const location = useLocation();
-  
+
   // Get existing booking data from Redux
   const bookingData = useSelector(state => state.booking);
-  
+
   // Initialize state with Redux data or empty values
   const [fromLocation, setFromLocation] = useState(bookingData.fromLocation || '');
   const [toLocation, setToLocation] = useState(bookingData.toLocation || '');
@@ -27,7 +27,6 @@ const Booking = () => {
   const [transmissionType, setTransmissionType] = useState(bookingData.transmissionType || '');
   const [selectedDate, setSelectedDate] = useState(bookingData.selectedDate || '');
   const [selectedTime, setSelectedTime] = useState(bookingData.selectedTime || '');
-  const [includeInsurance, setIncludeInsurance] = useState(bookingData.includeInsurance || false);
   const [vehicleCategories, setVehicleCategories] = useState([]);
   const [subcategoryName, setSubcategoryName] = useState(bookingData.subcategoryName || '');
   const [loading, setLoading] = useState(true);
@@ -45,14 +44,14 @@ const Booking = () => {
   }, []);
 
   // Check if subcategory is "one way" to show/hide drop location
-  const isOneWay = subcategoryName.toLowerCase() === 'one way';
+  const isOneWay = subcategoryName.replace(/[-\s]/g, '').toLowerCase() === 'oneway';
 
   useEffect(() => {
     const fetchSubcategoryDetails = async () => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/subcategories/${subcategoryId}`);
         setSubcategoryName(res.data.name);
-        
+
         // Update Redux with subcategory name
         dispatch(updateField({ field: 'subcategoryName', value: res.data.name }));
       } catch (error) {
@@ -89,7 +88,7 @@ const Booking = () => {
 
     if (subcategoryId) {
       fetchAllData();
-      
+
       // Update Redux with category IDs
       dispatch(updateField({ field: 'categoryId', value: categoryId }));
       dispatch(updateField({ field: 'subcategoryId', value: subcategoryId }));
@@ -130,10 +129,6 @@ const Booking = () => {
     dispatch(updateField({ field: 'selectedTime', value: selectedTime }));
   }, [selectedTime, dispatch]);
 
-  useEffect(() => {
-    dispatch(updateField({ field: 'includeInsurance', value: includeInsurance }));
-  }, [includeInsurance, dispatch]);
-
   // Clear toLocation when subcategory changes and it's not "one way"
   useEffect(() => {
     if (!isOneWay) {
@@ -150,24 +145,23 @@ const Booking = () => {
       subcategoryId,
       subcategoryName,
       fromLocation,
-      toLocation: isOneWay ? toLocation : '', // Only include toLocation if it's one way
+      toLocation: isOneWay ? toLocation : '',
       carType,
       transmissionType,
       selectedDate,
       selectedTime,
-      includeInsurance,
     };
-    
+
     // Dispatch the complete step 1 data to Redux
     dispatch(setBookingStep1(bookingData));
-    
+
     navigate('/booking-step2', { state: bookingData });
   };
 
-  // Updated form validation - toLocation is only required for "one way"
+  // Updated form validation - removed includeInsurance dependency
   const isFormValid =
     fromLocation &&
-    (isOneWay ? toLocation : true) && // Only require toLocation if it's one way
+    (isOneWay ? toLocation : true) &&
     carType &&
     transmissionType &&
     selectedDate &&
@@ -249,20 +243,19 @@ const Booking = () => {
                   <div>
                     <Label htmlFor="selectedDate">Date</Label>
                     <Input
-                      id="selectedDate"
                       type="date"
                       value={selectedDate}
                       onChange={(e) => setSelectedDate(e.target.value)}
-                      min={new Date().toISOString().split('T')[0]}
+                      className="pr-2"
                     />
                   </div>
                   <div>
                     <Label htmlFor="selectedTime">Time</Label>
                     <Input
-                      id="selectedTime"
                       type="time"
                       value={selectedTime}
                       onChange={(e) => setSelectedTime(e.target.value)}
+                      className="pr-2"
                     />
                   </div>
                 </div>
@@ -302,35 +295,6 @@ const Booking = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-              </div>
-
-              {/* Divider */}
-              <hr className="border-gray-200" />
-
-              {/* Insurance Coverage Section */}
-              <div>
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                      <Shield className="w-5 h-5 text-green-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold">Travel Insurance</h4>
-                      <p className="text-sm text-gray-500">
-                        Comprehensive coverage for your journey
-                      </p>
-                    </div>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={includeInsurance}
-                      onChange={(e) => setIncludeInsurance(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  </label>
                 </div>
               </div>
 

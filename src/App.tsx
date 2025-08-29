@@ -4,7 +4,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
-import RideSelection from "./pages/RideSelection";
 import Booking from "./pages/Booking";
 import BookingStep2 from './pages/BookingStep2';
 import NotFound from "./pages/NotFound";
@@ -18,6 +17,9 @@ import BookingDetailView from "./pages/BookingDetailView";
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from './store/store';
+import Category from './pages/Category';
+import Subcategory from './pages/Subcategory';
+import WalletPage from './pages/Wallet';
 
 const queryClient = new QueryClient();
 
@@ -32,11 +34,14 @@ const AppWithSidebar = () => {
   return (
     <>
       <Routes>
-        <Route path="/" element={<RideSelection />} />
+        <Route path="/" element={<Category />} />
+        <Route path="/subcategories/:categoryId" element={<Subcategory />} />
         <Route path="/login" element={<Login />} />
         <Route path="/booking/:categoryId/:subcategoryId" element={<Booking />} />
         <Route path="/booking-step2" element={<BookingStep2 />} />
         <Route path="/confirm-payment" element={<ConfirmPayment />} />
+        <Route path="/wallet" element={<WalletPage />} />
+
 
         <Route path="/my-profile" element={<MyProfile />} />
        

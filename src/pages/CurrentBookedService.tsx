@@ -14,6 +14,8 @@ interface Driver {
 
 interface Booking {
   _id: string;
+  riderId?: string;
+  riderMobile?: string;
   subcategoryName?: string;
   carType?: string;
   status: string;
@@ -27,12 +29,13 @@ interface Booking {
   selectedUsage?: string;
   createdAt?: string;
   updatedAt?: string;
-  transmission?: string;
+  transmissionType?: string;
   includeInsurance?: boolean;
   notes?: string;
   selectedCategory?: string;
   categoryId?: string;
 }
+
 
 interface CurrentBookedServiceProps {
   onBack: () => void;
@@ -69,10 +72,24 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
       );
 
       if (response.data && response.data.rides) {
-        setCurrentBookings(response.data.rides);
+        const formatted = response.data.rides.map((ride: any) => ({
+          _id: ride._id,
+          riderId: ride.riderId,
+          riderMobile: ride.riderMobile,
+          status: ride.status,
+          totalPayable: ride.totalPayable,
+          paymentType: ride.paymentType,
+          createdAt: ride.createdAt,
+          updatedAt: ride.updatedAt,
+          // flatten rideInfo
+          ...ride.rideInfo,
+          driver: ride.driver || undefined,
+        }));
+        setCurrentBookings(formatted);
       } else {
         setCurrentBookings([]);
       }
+
     } catch (error) {
       console.error("Error fetching rides:", error);
       setCurrentBookings([]);
@@ -81,39 +98,39 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
     }
   };
 
-const handleCancelBooking = async (bookingId: string) => {
-  try {
-    const confirmed = window.confirm("Are you sure you want to cancel this booking?");
-    if (!confirmed) return;
+  const handleCancelBooking = async (bookingId: string) => {
+    try {
+      const confirmed = window.confirm("Are you sure you want to cancel this booking?");
+      if (!confirmed) return;
 
-    const token = localStorage.getItem("RiderToken");
+      const token = localStorage.getItem("RiderToken");
 
-    // ✅ Send bookingId in body instead of URL
-    const response = await axios.post(
-      `${import.meta.env.VITE_API_URL}/api/rides/booking/cancel`,
-      { bookingId }, // sending in body
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      // ✅ Send bookingId in body instead of URL
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/rides/booking/cancel`,
+        { bookingId }, // sending in body
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        fetchBookings(); // Refresh bookings
+        alert("Booking cancelled successfully");
       }
-    );
-
-    if (response.status === 200) {
-      fetchBookings(); // Refresh bookings
-      alert("Booking cancelled successfully");
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      alert("Error cancelling booking");
     }
-  } catch (error) {
-    console.error("Error cancelling booking:", error);
-    alert("Error cancelling booking");
-  }
-};
+  };
 
 
   const handleViewDetails = (booking: Booking) => {
     // Use navigate to go to the detail view
     navigate(`/detailView/${booking._id}`);
-    
+
     // Call the parent callback if provided
     if (onViewDetails) {
       onViewDetails(booking);
@@ -143,12 +160,11 @@ const handleCancelBooking = async (bookingId: string) => {
                     <h3 className="font-semibold text-lg">
                       {booking.subcategoryName || booking.carType}
                     </h3>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      booking.status === 'BOOKED' ? 'bg-blue-100 text-blue-800' :
-                      booking.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
-                      booking.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${booking.status === 'BOOKED' ? 'bg-blue-100 text-blue-800' :
+                        booking.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
+                          booking.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                      }`}>
                       {booking.status}
                     </span>
                   </div>

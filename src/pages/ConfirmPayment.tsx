@@ -26,59 +26,59 @@ export default function PaymentComponent() {
   const paymentData = location.state;
   console.log('Payment Data:', paymentData);
 
-const handlePayment = async () => {
-  setIsProcessing(true);
+  const handlePayment = async () => {
+    setIsProcessing(true);
 
-  try {
-    const token = localStorage.getItem("RiderToken"); // 👈 get token from localStorage
-    if (!token) {
-      alert("You must be logged in to book a ride");
-      setIsProcessing(false);
-      navigate("/login");
-      return;
-    }
-
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rides/book`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`, // 👈 send token in header
-      },
-      body: JSON.stringify({
-        ...paymentData,
-        paymentType: selectedPaymentType,
-      }),
-    });
-
-    // Check if unauthorized
-    if (response.status === 401) {
-      alert("Your session has expired. Please login again.");
-      localStorage.removeItem("RiderToken"); // Clear invalid token
-      navigate("/login"); // 👈 redirect to login
-      return;
-    }
-
-    const data = await response.json();
-
-    if (response.status === 201) {
-      // Clear persisted Redux state on successful booking
-      if (typeof persistor !== "undefined" && persistor.purge) {
-        persistor.purge();
+    try {
+      const token = localStorage.getItem("RiderToken"); // 👈 get token from localStorage
+      if (!token) {
+        alert("You must be logged in to book a ride");
+        setIsProcessing(false);
+        navigate("/login");
+        return;
       }
 
-      alert("Ride booked successfully!");
-      console.log("Ride:", data.ride);
-      navigate("/currentBookings"); // 👈 redirect here
-    } else {
-      alert(data.message || "Failed to book ride");
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rides/book`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`, // 👈 send token in header
+        },
+        body: JSON.stringify({
+          ...paymentData,
+          paymentType: selectedPaymentType,
+        }),
+      });
+
+      // Check if unauthorized
+      if (response.status === 401) {
+        alert("Your session has expired. Please login again.");
+        localStorage.removeItem("RiderToken"); // Clear invalid token
+        navigate("/login"); // 👈 redirect to login
+        return;
+      }
+
+      const data = await response.json();
+
+      if (response.status === 201) {
+        // Clear persisted Redux state on successful booking
+        if (typeof persistor !== "undefined" && persistor.purge) {
+          persistor.purge();
+        }
+
+        alert("Ride booked successfully!");
+        console.log("Ride:", data.ride);
+        navigate("/currentBookings"); // 👈 redirect here
+      } else {
+        alert(data.message || "Failed to book ride");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Something went wrong!");
+    } finally {
+      setIsProcessing(false);
     }
-  } catch (error) {
-    console.error(error);
-    alert("Something went wrong!");
-  } finally {
-    setIsProcessing(false);
-  }
-};
+  };
 
 
   const canProceed = selectedPaymentType === 'cash' ||
