@@ -220,24 +220,87 @@ const BookingStep2 = () => {
     return 'Unit';
   };
 
+  // Updated function to check login first before showing terms
   const handleConfirmBooking = async () => {
     if (!selectedCategory || !selectedCategory.category) {
       alert("Please select a driver category to proceed.");
       return;
     }
 
-    // Show terms modal first
-    setShowTermsModal(true);
+    // First check if user is logged in
+    try {
+      const token = localStorage.getItem("RiderToken");
+      if (!token) {
+        // If no token, redirect to login with booking details
+        const bookingDetails = {
+          ...bookingData,
+          selectedUsage: selectedUsage || customUsage,
+          selectedCategory: selectedCategory.category,
+          insuranceCharges: selectedCategory.insuranceCharges,
+          subtotal: selectedCategory.subtotal,
+          gstCharges: selectedCategory.gstCharges,
+          totalPayable: selectedCategory.totalPayable,
+          notes: notes,
+          includeInsurance: includeInsurance
+        };
+        navigate("/login", { state: bookingDetails });
+        return;
+      }
+
+      // Check if token is valid
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/rider-auth/auth/check`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!res.data.loggedIn) {
+        // If token is invalid, redirect to login
+        const bookingDetails = {
+          ...bookingData,
+          selectedUsage: selectedUsage || customUsage,
+          selectedCategory: selectedCategory.category,
+          insuranceCharges: selectedCategory.insuranceCharges,
+          subtotal: selectedCategory.subtotal,
+          gstCharges: selectedCategory.gstCharges,
+          totalPayable: selectedCategory.totalPayable,
+          notes: notes,
+          includeInsurance: includeInsurance
+        };
+        navigate("/login", { state: bookingDetails });
+        return;
+      }
+
+      // If user is logged in, show terms modal
+      setShowTermsModal(true);
+
+    } catch (error) {
+      console.error("Auth check failed:", error);
+      // If auth check fails, redirect to login
+      const bookingDetails = {
+        ...bookingData,
+        selectedUsage: selectedUsage || customUsage,
+        selectedCategory: selectedCategory.category,
+        insuranceCharges: selectedCategory.insuranceCharges,
+        subtotal: selectedCategory.subtotal,
+        gstCharges: selectedCategory.gstCharges,
+        totalPayable: selectedCategory.totalPayable,
+        notes: notes,
+        includeInsurance: includeInsurance
+      };
+      navigate("/login", { state: bookingDetails });
+    }
   };
 
-  // New function to handle terms acceptance
+  // Function to handle terms acceptance
   const handleTermsAccept = () => {
     setTermsAccepted(true);
     setShowTermsModal(false);
     setShowPaymentModal(true);
   };
 
-  // New function to handle payment method selection
+  // Function to handle payment method selection
   const handlePaymentMethodSelect = async (method) => {
     setSelectedPaymentMethod(method);
 
@@ -245,19 +308,16 @@ const BookingStep2 = () => {
       ...bookingData,
       selectedUsage: selectedUsage || customUsage,
       selectedCategory: selectedCategory.category,
-
-      // new fields from selectedCategory
       insuranceCharges: selectedCategory.insuranceCharges,
       subtotal: selectedCategory.subtotal,
       gstCharges: selectedCategory.gstCharges,
-
       totalPayable: selectedCategory.totalPayable,
       notes: notes,
       includeInsurance: includeInsurance,
       paymentMethod: method
     };
 
-
+    // Update Redux store
     dispatch(setUsage({
       selectedUsage: selectedUsage || '',
       customUsage: customUsage || ''
@@ -267,34 +327,12 @@ const BookingStep2 = () => {
     dispatch(setNotes(notes));
     dispatch(setTotalAmount(totalAmount));
 
-    try {
-      const token = localStorage.getItem("RiderToken");
-      if (!token) {
-        navigate("/login", { state: bookingDetails });
-        return;
-      }
-
-      const res = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/rider-auth/auth/check`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      if (res.data.loggedIn) {
-        if (method === 'cash') {
-          // For cash payment, book ride directly and redirect to current bookings
-          await bookRideDirectly(bookingDetails);
-        } else if (method === 'wallet') {
-          // For wallet payment, redirect to wallet page
-          navigate("/wallet", { state: bookingDetails });
-        }
-      } else {
-        navigate("/login", { state: bookingDetails });
-      }
-    } catch (error) {
-      console.error("Auth check failed:", error);
-      navigate("/login", { state: bookingDetails });
+    if (method === 'cash') {
+      // For cash payment, book ride directly and redirect to current bookings
+      await bookRideDirectly(bookingDetails);
+    } else if (method === 'wallet') {
+      // For wallet payment, redirect to wallet page
+      navigate("/wallet", { state: bookingDetails });
     }
   };
 
