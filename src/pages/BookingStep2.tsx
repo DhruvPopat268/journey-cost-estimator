@@ -33,19 +33,26 @@ const iconMap = {
 const BookingStep2 = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const bookingData = location.state;
   const dispatch = useDispatch();
+  
+  // Get data from Redux store first
+  const bookingDataFromStore = useSelector(state => state.booking);
+  
+  // Use location state only if Redux store data is not available
+  const bookingData = bookingDataFromStore && Object.keys(bookingDataFromStore).length > 0 
+    ? bookingDataFromStore 
+    : location.state;
 
-  const [selectedUsage, setSelectedUsage] = useState('');
-  const [customUsage, setCustomUsage] = useState('');
-  const [notes, setNotesLocal] = useState('');
-  const [includeInsurance, setIncludeInsurance] = useState(true);
+  const [selectedUsage, setSelectedUsage] = useState(bookingData?.selectedUsage || '');
+  const [customUsage, setCustomUsage] = useState(bookingData?.customUsage || '');
+  const [notes, setNotesLocal] = useState(bookingData?.notes || '');
+  const [includeInsurance, setIncludeInsurance] = useState(bookingData?.includeInsurance !== undefined ? bookingData.includeInsurance : true);
   const [priceCategories, setPriceCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
   const [instructions, setInstructions] = useState(["hello"]);
-  const [totalAmount, setTotalAmountLocal] = useState([]);
-  const [selectedCategory, setSelectedCategoryLocal] = useState(null);
+  const [totalAmount, setTotalAmountLocal] = useState(bookingData?.totalAmount || []);
+  const [selectedCategory, setSelectedCategoryLocal] = useState(bookingData?.selectedCategory || null);
   const [showInstructions, setShowInstructions] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -82,7 +89,6 @@ const BookingStep2 = () => {
       setInstructionsLoading(false);
     }
   };
-
 
   // Update Redux when any field changes
   useEffect(() => {
@@ -180,17 +186,16 @@ const BookingStep2 = () => {
   }, [includeInsurance]);
 
   // ✅ Always at the top level
-useEffect(() => {
-  if (selectedCategory && totalAmount?.length > 0) {
-    const updated = totalAmount.find(
-      (item) => item.category === selectedCategory.category
-    );
-    if (updated) {
-      setSelectedCategoryLocal(updated);
+  useEffect(() => {
+    if (selectedCategory && totalAmount?.length > 0) {
+      const updated = totalAmount.find(
+        (item) => item.category === selectedCategory.category
+      );
+      if (updated) {
+        setSelectedCategoryLocal(updated);
+      }
     }
-  }
-}, [totalAmount]);
-
+  }, [totalAmount]);
 
   // Set default usage based on subcategory name
   useEffect(() => {

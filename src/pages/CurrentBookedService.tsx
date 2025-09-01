@@ -160,37 +160,69 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
                     <h3 className="font-semibold text-lg">
                       {booking.subcategoryName || booking.carType}
                     </h3>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${booking.status === 'BOOKED' ? 'bg-blue-100 text-blue-800' :
-                        booking.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
-                          booking.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                      }`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${booking.status === "BOOKED"
+                        ? "bg-blue-100 text-blue-800"
+                        : booking.status === "CONFIRMED"
+                          ? "bg-green-100 text-green-800"
+                          : booking.status === "CANCELLED"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                    >
                       {booking.status}
                     </span>
                   </div>
-
-                  <div className="space-y-3 mb-4">
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    {/* From */}
                     <div className="flex items-start">
-                      <div className="w-3 h-3 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                      <div className="w-3 h-3 bg-green-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
                       <div>
                         <div className="font-medium text-sm">From</div>
-                        <div className="text-gray-600 text-sm">
-                          {booking.fromLocation}
-                        </div>
+                        <div className="text-gray-600 text-sm">{booking.fromLocation}</div>
                       </div>
                     </div>
-                    {booking.subcategoryName === "One Way" && booking.toLocation && (
+
+                    {/* Usage */}
+                    {booking.selectedUsage && (
                       <div className="flex items-start">
-                        <div className="w-3 h-3 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                        <div className="w-3 h-3 bg-purple-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
                         <div>
-                          <div className="font-medium text-sm">To</div>
+                          <div className="font-medium text-sm">Usage</div>
                           <div className="text-gray-600 text-sm">
-                            {booking.toLocation}
+                            {booking.selectedUsage}{" "}
+                            {booking.subcategoryName === "Hourly" ? "hr" : "km"}
                           </div>
                         </div>
                       </div>
                     )}
+
+                    {/* Date */}
+                    {booking.selectedDate && (
+                      <div className="flex items-start">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                        <div>
+                          <div className="font-medium text-sm">Date</div>
+                          <div className="text-gray-600 text-sm">
+                            {new Date(booking.selectedDate).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Time */}
+                    {booking.selectedTime && (
+                      <div className="flex items-start">
+                        <div className="w-3 h-3 bg-yellow-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                        <div>
+                          <div className="font-medium text-sm">Time</div>
+                          <div className="text-gray-600 text-sm">{booking.selectedTime}</div>
+                        </div>
+                      </div>
+                    )}
                   </div>
+
+
 
                   <div className="border-t pt-4">
                     <div className="flex justify-between items-center mb-2">
@@ -206,9 +238,7 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
                       )}
 
                       <div className="text-right">
-                        <span className="font-semibold text-lg">
-                          ₹{booking.totalPayable}
-                        </span>
+                        <span className="font-semibold text-lg">₹{booking.totalPayable}</span>
                         {/* Payment Type Display */}
                         {booking.paymentType && (
                           <div className="text-xs text-gray-500 capitalize flex items-center justify-end mt-1">
@@ -267,6 +297,7 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
       </div>
     </div>
   );
+
 };
 
 export default CurrentBookedService;
