@@ -35,34 +35,54 @@ const BookingStep2 = () => {
   const location = useLocation();
   const bookingData = location.state;
   const dispatch = useDispatch();
-  // const [selectedUsage, setSelectedUsage] = useState('');
-  // const [customUsage, setCustomUsage] = useState('');
 
-  // Get booking data from Redux store
-  const reduxBooking = useSelector((state) => state.booking);
-  console.log('Redux Booking Data:', reduxBooking);
-
-  const [selectedUsage, setSelectedUsage] = useState(reduxBooking.selectedUsage || '');
-  const [customUsage, setCustomUsage] = useState(reduxBooking.customUsage || '');
-  const [notes, setNotesLocal] = useState(reduxBooking.notes || '');
-  const [includeInsurance, setIncludeInsurance] = useState(
-    reduxBooking.includeInsurance !== undefined ? reduxBooking.includeInsurance : true
-  );
+  const [selectedUsage, setSelectedUsage] = useState('');
+  const [customUsage, setCustomUsage] = useState('');
+  const [notes, setNotesLocal] = useState('');
+  const [includeInsurance, setIncludeInsurance] = useState(true);
   const [priceCategories, setPriceCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
-  // const [notes, setNotesLocal] = useState('');
-  const [instructions, setInstructions] = useState([]);
+  const [instructions, setInstructions] = useState(["hello"]);
   const [totalAmount, setTotalAmountLocal] = useState([]);
   const [selectedCategory, setSelectedCategoryLocal] = useState(null);
   const [showInstructions, setShowInstructions] = useState(false);
-  // const [includeInsurance, setIncludeInsurance] = useState(true);
-
-  // New states for terms modal and payment selection
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [instructionsLoading, setInstructionsLoading] = useState(false);
+
+  // Fetch instructions when a category is selected
+  const fetchInstructions = async (categoryName) => {
+    if (!categoryName) {
+      console.log("No category name provided");
+      return;
+    }
+
+    console.log("Fetching instructions for category:", categoryName);
+    setInstructionsLoading(true);
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/instructions/getInstructions`,
+        {
+          categoryId: bookingData.categoryId,
+          subCategoryId: bookingData.subcategoryId,
+          selectedCategoryName: categoryName
+        }
+      );
+      console.log("Instructions API response:", res.data);
+
+      // Extract just the instructions array from the response
+      setInstructions(res.data.instructions || []);
+    } catch (error) {
+      console.error('Failed to fetch instructions', error);
+      setInstructions([]);
+    } finally {
+      setInstructionsLoading(false);
+    }
+  };
+
 
   // Update Redux when any field changes
   useEffect(() => {
@@ -84,16 +104,11 @@ const BookingStep2 = () => {
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const [priceRes, instructionsRes] = await Promise.all([
+        const [priceRes] = await Promise.all([
           axios.get(`${import.meta.env.VITE_API_URL}/api/price-categories`),
-          axios.post(`${import.meta.env.VITE_API_URL}/api/instructions/getInstructions`, {
-            "categoryId": bookingData.categoryId,
-            "subCategoryId": bookingData.subcategoryId
-          }),
         ]);
 
         setPriceCategories(priceRes.data || []);
-        setInstructions(instructionsRes.data?.instructions || []);
       } catch (error) {
         console.error('Failed to fetch data', error);
       } finally {
@@ -106,11 +121,6 @@ const BookingStep2 = () => {
       setLoading(false);
     }
   }, [bookingData]);
-
-  // Update Redux when insurance changes
-  useEffect(() => {
-    dispatch(updateField({ field: 'includeInsurance', value: includeInsurance }));
-  }, [includeInsurance, dispatch]);
 
   // Function to call API with current data including insurance
   const callCalculationAPI = async (usageValue) => {
@@ -138,8 +148,7 @@ const BookingStep2 = () => {
   const handleUsageChange = async (value) => {
     setSelectedUsage(value);
     setCustomUsage('');
-    
-    // Update Redux immediately
+
     dispatch(setUsage({
       selectedUsage: value,
       customUsage: ''
@@ -148,11 +157,10 @@ const BookingStep2 = () => {
     await callCalculationAPI(value);
   };
 
-  // Trigger API when customUsage changes (with debounce)
+  // Trigger API when customUsage changes
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       if (customUsage && bookingData) {
-        // Update Redux immediately
         dispatch(setUsage({
           selectedUsage: '',
           customUsage: customUsage
@@ -171,7 +179,20 @@ const BookingStep2 = () => {
     }
   }, [includeInsurance]);
 
-  // for set default usage based on subcategory name
+  // ✅ Always at the top level
+useEffect(() => {
+  if (selectedCategory && totalAmount?.length > 0) {
+    const updated = totalAmount.find(
+      (item) => item.category === selectedCategory.category
+    );
+    if (updated) {
+      setSelectedCategoryLocal(updated);
+    }
+  }
+}, [totalAmount]);
+
+
+  // Set default usage based on subcategory name
   useEffect(() => {
     if (!selectedUsage && !customUsage && bookingData?.subcategoryName) {
       const normalizedName = bookingData.subcategoryName.toLowerCase();
@@ -197,9 +218,22 @@ const BookingStep2 = () => {
 
   // Update Redux when selected category changes
   useEffect(() => {
+    console.log("Selected category changed:", selectedCategory);
     if (selectedCategory) {
       const serializableCategory = JSON.parse(JSON.stringify(selectedCategory));
       dispatch(setSelectedCategory(serializableCategory));
+
+      // Use the category name instead of ID
+      const categoryName = selectedCategory.category;
+
+      console.log("Using category name:", categoryName);
+
+      // Fetch instructions for the selected category
+      if (categoryName) {
+        fetchInstructions(categoryName);
+      } else {
+        console.error("No category name found in selectedCategory:", selectedCategory);
+      }
     }
   }, [selectedCategory, dispatch]);
 
@@ -252,6 +286,18 @@ const BookingStep2 = () => {
       return 'Hr';
     }
     return 'Unit';
+  };
+
+  // Handle category selection
+  const handleCategorySelect = (item) => {
+    setSelectedCategoryLocal(item);
+  };
+
+  // Handle info button click
+  const handleInfoClick = (e, item) => {
+    e.stopPropagation();
+    setSelectedCategoryLocal(item);
+    setShowPriceBreakdown(true);
   };
 
   // Updated function to check login first before showing terms
@@ -504,17 +550,15 @@ const BookingStep2 = () => {
             </CardContent>
           </Card>
 
-          {/* selected category */}
+          {/* Price Categories */}
           {totalAmount.map((item, index) => (
             <button
               key={index}
               type="button"
-              onClick={() => {
-                setSelectedCategoryLocal(item);
-              }}
+              onClick={() => handleCategorySelect(item)}
               className={`w-full text-left rounded-xl p-4 shadow-sm mb-4 flex items-center justify-between transition-all duration-200
-      ${selectedCategory?.category === item.category ? 'border-2 border-blue-700 bg-blue-50 shadow-md' : 'border border-gray-200 bg-white hover:shadow-md hover:border-gray-300'}
-    `}
+              ${selectedCategory?.category === item.category ? 'border-2 border-blue-700 bg-blue-50 shadow-md' : 'border border-gray-200 bg-white hover:shadow-md hover:border-gray-300'}
+            `}
             >
               <div className="flex items-center gap-4">
                 <div className="text-2xl">
@@ -529,9 +573,23 @@ const BookingStep2 = () => {
                 </div>
               </div>
 
-              <div className="text-right">
-                <p className="text-lg font-bold text-gray-800">₹{item.totalPayable.toFixed(2)}</p>
-                <p className="text-sm text-gray-500">Total Cost</p>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <p className="text-lg font-bold text-gray-800">₹{item.totalPayable.toFixed(2)}</p>
+                  <p className="text-sm text-gray-500">Total Cost</p>
+                </div>
+
+                {/* Info button - only show when category is selected */}
+                {selectedCategory?.category === item.category && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => handleInfoClick(e, item)}
+                    className="p-1 h-8 w-8 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600"
+                  >
+                    <Info className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
             </button>
           ))}
@@ -580,32 +638,14 @@ const BookingStep2 = () => {
 
           {/* Total and Price Breakdown Section */}
           {selectedCategory?.category && (
-            <Card className="bg-white shadow-lg border-2">
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800">Total Amount</h3>
-                    <p className="text-3xl font-bold text-green-600">₹{selectedCategory.totalPayable}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      onClick={() => setShowPriceBreakdown(true)}
-                      variant="outline"
-                      className="flex items-center space-x-2 border-blue-500 text-blue-600 hover:bg-blue-50 mt-11"
-                    >
-                      <Receipt className="w-4 h-4" />
-                      <span>View Breakup</span>
-                    </Button>
-                  </div>
-                </div>
-                <Button
-                  onClick={handleConfirmBooking}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-semibold rounded-lg"
-                >
-                  Book Ride ₹{selectedCategory.totalPayable}
-                </Button>
-              </CardContent>
-            </Card>
+
+
+            <Button
+              onClick={handleConfirmBooking}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-semibold rounded-lg"
+            >
+              Book Ride ₹{selectedCategory.totalPayable}
+            </Button>
           )}
         </div>
       </div>
@@ -815,23 +855,44 @@ const BookingStep2 = () => {
               </div>
 
               {/* Instructions Section with Horizontal Scroll */}
-              {instructions.length > 0 && (
+              {instructions && instructions.length > 0 ? (
                 <div className="space-y-3 pt-4">
                   <h4 className="font-semibold text-gray-800">Important Instructions</h4>
-                  <div className="flex gap-3 overflow-x-auto pb-2">
+                  <div className="space-y-2">
                     {instructions.map((instruction, index) => (
                       <div
                         key={index}
-                        className="bg-blue-50 border border-blue-200 rounded-lg p-3 min-w-[200px] max-w-[250px] flex-shrink-0"
+                        className="bg-blue-50 border border-blue-200 rounded-lg p-3"
                       >
-                        <p className="text-xs text-gray-700 leading-relaxed">
+                        <p className="text-sm text-gray-700 leading-relaxed">
                           {instruction}
                         </p>
                       </div>
                     ))}
                   </div>
                 </div>
+              ) : (
+                !instructionsLoading && (
+                  <div className="text-center py-4 text-gray-500">
+                    No special instructions for this category.
+                  </div>
+                )
               )}
+
+              {/* Loading state */}
+              {instructionsLoading && (
+                <div className="flex justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                </div>
+              )}
+
+              {/* No instructions message */}
+              {!instructionsLoading && instructions.length === 0 && (
+                <div className="text-center py-4 text-gray-500">
+                  No special instructions for this category.
+                </div>
+              )}
+
 
               {/* Modal Actions */}
               <div className="flex space-x-3 pt-4">
