@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,17 +35,28 @@ const BookingStep2 = () => {
   const location = useLocation();
   const bookingData = location.state;
   const dispatch = useDispatch();
-  const [selectedUsage, setSelectedUsage] = useState('');
-  const [customUsage, setCustomUsage] = useState('');
+  // const [selectedUsage, setSelectedUsage] = useState('');
+  // const [customUsage, setCustomUsage] = useState('');
+
+  // Get booking data from Redux store
+  const reduxBooking = useSelector((state) => state.booking);
+  console.log('Redux Booking Data:', reduxBooking);
+
+  const [selectedUsage, setSelectedUsage] = useState(reduxBooking.selectedUsage || '');
+  const [customUsage, setCustomUsage] = useState(reduxBooking.customUsage || '');
+  const [notes, setNotesLocal] = useState(reduxBooking.notes || '');
+  const [includeInsurance, setIncludeInsurance] = useState(
+    reduxBooking.includeInsurance !== undefined ? reduxBooking.includeInsurance : true
+  );
   const [priceCategories, setPriceCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
-  const [notes, setNotesLocal] = useState('');
+  // const [notes, setNotesLocal] = useState('');
   const [instructions, setInstructions] = useState([]);
   const [totalAmount, setTotalAmountLocal] = useState([]);
   const [selectedCategory, setSelectedCategoryLocal] = useState(null);
   const [showInstructions, setShowInstructions] = useState(false);
-  const [includeInsurance, setIncludeInsurance] = useState(true);
+  // const [includeInsurance, setIncludeInsurance] = useState(true);
 
   // New states for terms modal and payment selection
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -53,6 +64,22 @@ const BookingStep2 = () => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
+  // Update Redux when any field changes
+  useEffect(() => {
+    dispatch(updateField({ field: 'selectedUsage', value: selectedUsage }));
+  }, [selectedUsage, dispatch]);
+
+  useEffect(() => {
+    dispatch(updateField({ field: 'customUsage', value: customUsage }));
+  }, [customUsage, dispatch]);
+
+  useEffect(() => {
+    dispatch(updateField({ field: 'notes', value: notes }));
+  }, [notes, dispatch]);
+
+  useEffect(() => {
+    dispatch(updateField({ field: 'includeInsurance', value: includeInsurance }));
+  }, [includeInsurance, dispatch]);
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -111,7 +138,8 @@ const BookingStep2 = () => {
   const handleUsageChange = async (value) => {
     setSelectedUsage(value);
     setCustomUsage('');
-
+    
+    // Update Redux immediately
     dispatch(setUsage({
       selectedUsage: value,
       customUsage: ''
@@ -124,6 +152,7 @@ const BookingStep2 = () => {
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       if (customUsage && bookingData) {
+        // Update Redux immediately
         dispatch(setUsage({
           selectedUsage: '',
           customUsage: customUsage
@@ -144,17 +173,22 @@ const BookingStep2 = () => {
 
   // for set default usage based on subcategory name
   useEffect(() => {
-    if (bookingData?.subcategoryName) {
+    if (!selectedUsage && !customUsage && bookingData?.subcategoryName) {
       const normalizedName = bookingData.subcategoryName.toLowerCase();
+      let defaultUsage = "";
+
       if (normalizedName.includes("one-way") || normalizedName.includes("oneway") || normalizedName.includes("one way")) {
-        setSelectedUsage("10");
-        handleUsageChange("10");
+        defaultUsage = "10";
       } else if (normalizedName.includes("hourly") || normalizedName.includes("hour")) {
-        setSelectedUsage("1");
-        handleUsageChange("1");
+        defaultUsage = "1";
+      }
+
+      if (defaultUsage) {
+        setSelectedUsage(defaultUsage);
+        handleUsageChange(defaultUsage);
       }
     }
-  }, [bookingData?.subcategoryName]);
+  }, [bookingData?.subcategoryName, selectedUsage, customUsage]);
 
   // Update Redux when notes change
   useEffect(() => {
@@ -171,13 +205,13 @@ const BookingStep2 = () => {
 
   // Set default category to "Prime"
   useEffect(() => {
-    if (totalAmount?.length > 0) {
+    if (!selectedCategory && totalAmount?.length > 0) {
       const defaultCategory = totalAmount.find(item => item.category.toLowerCase() === 'prime');
       if (defaultCategory) {
         setSelectedCategoryLocal(defaultCategory);
       }
     }
-  }, [totalAmount]);
+  }, [totalAmount, selectedCategory]);
 
   if (!bookingData) {
     navigate('/');
@@ -748,14 +782,14 @@ const BookingStep2 = () => {
               <div className="space-y-3">
                 <h4 className="font-semibold text-gray-800">Cost Details</h4>
 
-                
+
 
                 <div className="flex justify-between text-sm font-medium">
                   <span>Base fare:</span>
                   <span>₹{selectedCategory.subtotal}</span>
                 </div>
 
-                 <div className="flex justify-between text-sm font-medium">
+                <div className="flex justify-between text-sm font-medium">
                   <span>Cancellation Charges:</span>
                   <span>₹{selectedCategory.cancellationCharges}</span>
                 </div>
