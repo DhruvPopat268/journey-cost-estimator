@@ -224,8 +224,13 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                         <h4 className="font-semibold text-gray-800 mb-3 text-sm">Ride Charges Breakdown</h4>
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-gray-600">Subtotal</span>
+                                <span className="text-gray-600">Base fare</span>
                                 <span className="font-medium">₹{booking.rideInfo?.subtotal || 0}</span>
+                            </div>
+
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Cancellation Charges</span>
+                                <span className="font-medium">₹{booking.rideInfo?.cancellationCharges || 0}</span>
                             </div>
 
                             {booking.rideInfo?.includeInsurance && (
