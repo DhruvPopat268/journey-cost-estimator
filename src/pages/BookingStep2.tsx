@@ -748,22 +748,29 @@ const BookingStep2 = () => {
               <div className="space-y-3">
                 <h4 className="font-semibold text-gray-800">Cost Details</h4>
 
-                {selectedCategory.insuranceCharges > 0 && (
-                  <div className="flex justify-between text-sm font-medium">
-                    <span>Insurance Charges:</span>
-                    <span>₹{selectedCategory.insuranceCharges}</span>
-                  </div>
-                )}
+                
 
                 <div className="flex justify-between text-sm font-medium">
-                  <span>Subtotal:</span>
+                  <span>Base fare:</span>
                   <span>₹{selectedCategory.subtotal}</span>
+                </div>
+
+                 <div className="flex justify-between text-sm font-medium">
+                  <span>Cancellation Charges:</span>
+                  <span>₹{selectedCategory.cancellationCharges}</span>
                 </div>
 
                 <div className="flex justify-between text-sm">
                   <span>GST Charges:</span>
                   <span className="font-medium">₹{selectedCategory.gstCharges}</span>
                 </div>
+
+                {selectedCategory.insuranceCharges > 0 && (
+                  <div className="flex justify-between text-sm font-medium">
+                    <span>Insurance Charges:</span>
+                    <span>₹{selectedCategory.insuranceCharges}</span>
+                  </div>
+                )}
 
                 <Separator className="my-3" />
 
