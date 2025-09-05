@@ -34,13 +34,13 @@ const BookingStep2 = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
-  
+
   // Get data from Redux store first
   const bookingDataFromStore = useSelector(state => state.booking);
-  
+
   // Use location state only if Redux store data is not available
-  const bookingData = bookingDataFromStore && Object.keys(bookingDataFromStore).length > 0 
-    ? bookingDataFromStore 
+  const bookingData = bookingDataFromStore && Object.keys(bookingDataFromStore).length > 0
+    ? bookingDataFromStore
     : location.state;
 
   const [selectedUsage, setSelectedUsage] = useState(bookingData?.selectedUsage || '');
@@ -59,6 +59,10 @@ const BookingStep2 = () => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [instructionsLoading, setInstructionsLoading] = useState(false);
+
+  const [useReferral, setUseReferral] = useState(false);
+  const [referralBalance, setReferralBalance] = useState(0);
+
 
   // Fetch instructions when a category is selected
   const fetchInstructions = async (categoryName) => {
@@ -252,6 +256,51 @@ const BookingStep2 = () => {
     }
   }, [totalAmount, selectedCategory]);
 
+  useEffect(() => {
+    // Check if RiderToken exists in localStorage
+    const token = localStorage.getItem("RiderToken");
+
+
+    if (!token) return; // Skip fetching rider data if not logged in
+
+    const fetchRider = async () => {
+      try {
+        const res = await axios.post(
+          `${import.meta.env.VITE_API_URL}/api/rider-auth/find-rider`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        )
+        if (res.data?.success && res.data.rider) {
+          const rider = res.data.rider;
+          setReferralBalance(rider.referralEarning?.currentBalance || 0);
+        }
+      } catch (err) {
+        console.error("Error fetching rider:", err);
+        if (err.response?.status === 401) {
+          localStorage.removeItem("RiderToken");
+
+        }
+      }
+    };
+
+    fetchRider();
+  }, [navigate]);
+
+  // Compute final payable dynamically
+  const finalPayable = React.useMemo(() => {
+    if (!selectedCategory) return 0;
+    const baseTotal = selectedCategory.totalPayable || 0;
+    if (useReferral && referralBalance > 0) {
+      return Math.max(0, baseTotal - Math.min(referralBalance, baseTotal));
+    }
+    return baseTotal;
+  }, [selectedCategory, useReferral, referralBalance]);
+
+
   if (!bookingData) {
     navigate('/');
     return null;
@@ -324,7 +373,7 @@ const BookingStep2 = () => {
           insuranceCharges: selectedCategory.insuranceCharges,
           subtotal: selectedCategory.subtotal,
           gstCharges: selectedCategory.gstCharges,
-          totalPayable: selectedCategory.totalPayable,
+          totalPayable: finalPayable,
           notes: notes,
           includeInsurance: includeInsurance
         };
@@ -396,7 +445,7 @@ const BookingStep2 = () => {
       insuranceCharges: selectedCategory.insuranceCharges,
       subtotal: selectedCategory.subtotal,
       gstCharges: selectedCategory.gstCharges,
-      totalPayable: selectedCategory.totalPayable,
+      totalPayable: finalPayable,
       notes: notes,
       includeInsurance: includeInsurance,
       paymentMethod: method
@@ -432,7 +481,9 @@ const BookingStep2 = () => {
         },
         body: JSON.stringify({
           ...bookingDetails,
-          paymentType: 'cash',
+          paymentType: "cash",
+          referralEarning: useReferral ? true : false, // ✅ send if referral used
+          referralBalance: useReferral ? referralBalance : 0 // ✅ send current balance if referral used
         }),
       });
 
@@ -478,6 +529,7 @@ const BookingStep2 = () => {
     const currentCategory = priceCategories.find((item) => item.priceCategoryName.toLowerCase() === category.toLowerCase());
     return currentCategory?.chargePerMinute || 0;
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-4 px-4">
@@ -581,7 +633,6 @@ const BookingStep2 = () => {
               <div className="flex items-center gap-3">
                 <div className="text-right">
                   <p className="text-lg font-bold text-gray-800">₹{item.totalPayable.toFixed(2)}</p>
-                  <p className="text-sm text-gray-500">Total Cost</p>
                 </div>
 
                 {/* Info button - only show when category is selected */}
@@ -643,13 +694,12 @@ const BookingStep2 = () => {
 
           {/* Total and Price Breakdown Section */}
           {selectedCategory?.category && (
-
-
             <Button
               onClick={handleConfirmBooking}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-semibold rounded-lg"
             >
-              Book Ride ₹{selectedCategory.totalPayable}
+              Book Ride ₹{finalPayable}
+
             </Button>
           )}
         </div>
@@ -796,38 +846,29 @@ const BookingStep2 = () => {
                 </div>
               </div>
 
-              {/* Trip Summary */}
-              <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                <h4 className="font-semibold text-gray-800">Trip Summary</h4>
-                <div className="flex justify-between text-sm">
-                  <span>From:</span>
-                  <span className="font-medium">{bookingData.fromLocation}</span>
-                </div>
-                {bookingData.toLocation && (
-                  <div className="flex justify-between text-sm">
-                    <span>To:</span>
-                    <span className="font-medium">{bookingData.toLocation}</span>
+              {/* Referral Earning Section */}
+              {referralBalance > 0 && (
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-gray-800">
+                      Use Referral Balance (₹{referralBalance})
+                    </h4>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={useReferral}
+                        onChange={(e) => setUseReferral(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-green-300 peer-checked:bg-green-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                    </label>
                   </div>
-                )}
-                <div className="flex justify-between text-sm">
-                  <span>Date & Time:</span>
-                  <span className="font-medium">{bookingData.selectedDate} at {bookingData.selectedTime}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span>Usage:</span>
-                  <span className="font-medium">{selectedUsage || customUsage} {getUsageUnit()}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Driver Category:</span>
-                  <span className="font-medium capitalize">{selectedCategory.category}</span>
-                </div>
-              </div>
+              )}
 
               {/* Simplified Cost Breakdown */}
               <div className="space-y-3">
                 <h4 className="font-semibold text-gray-800">Cost Details</h4>
-
-
 
                 <div className="flex justify-between text-sm font-medium">
                   <span>Base fare:</span>
@@ -839,7 +880,7 @@ const BookingStep2 = () => {
                   <span>₹{selectedCategory.cancellationCharges}</span>
                 </div>
 
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-sm font-medium">
                   <span>GST Charges:</span>
                   <span className="font-medium">₹{selectedCategory.gstCharges}</span>
                 </div>
@@ -851,11 +892,25 @@ const BookingStep2 = () => {
                   </div>
                 )}
 
+                {useReferral && referralBalance > 0 && (
+                  <div className="flex justify-between text-sm font-medium ">
+                    <span>Referral Discount:</span>
+                    <span>-₹{Math.min(referralBalance, selectedCategory.totalPayable)}</span>
+                  </div>
+                )}
+
                 <Separator className="my-3" />
 
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total Amount:</span>
-                  <span className="text-green-600">₹{selectedCategory.totalPayable}</span>
+                  <span className="text-green-600">
+                    ₹
+                    {Math.max(
+                      0,
+                      selectedCategory.totalPayable -
+                      (useReferral ? Math.min(referralBalance, selectedCategory.totalPayable) : 0)
+                    )}
+                  </span>
                 </div>
               </div>
 

@@ -27,11 +27,22 @@ export default function OtpLoginFlow() {
     defaultValues: {
       name: "",
       gender: "",
-      email: ""
+      email: "",
+      referralCodeUsed: ""
     }
   });
 
   const navigate = useNavigate();
+
+  // extract referral code from URL if present
+  useEffect(() => {
+    const url = window.location.href;
+    const match = url.match(/\/ref\/([^/]+)/);
+    if (match && match[1]) {
+      profileForm.setValue("referralCodeUsed", match[1]); // ✅ set value in form
+    }
+  }, [profileForm]);
+
 
   // Countdown timer for resend OTP
   useEffect(() => {
@@ -157,9 +168,29 @@ export default function OtpLoginFlow() {
     loginForm.clearErrors("otp");
   };
 
+
   useEffect(() => {
     if (showSuccess) {
-      navigate("/booking-step2", { state: bookingData });
+      // Check if booking data exists in localStorage (Redux Persist)
+      try {
+        const persistedState = localStorage.getItem('persist:root');
+        if (persistedState) {
+          const parsedState = JSON.parse(persistedState);
+          if (parsedState.booking) {
+            const bookingData = JSON.parse(parsedState.booking);
+            // Check if booking object has meaningful data and valid subcategoryId
+            if (bookingData && Object.keys(bookingData).length > 0 && bookingData.subcategoryId !== "") {
+              navigate("/booking-step2", { state: bookingData });
+              return;
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing localStorage booking data:", error);
+      }
+
+      // If no booking data found or subcategoryId is null, navigate to home
+      navigate("/");
     }
   }, [showSuccess, navigate]);
 
@@ -346,6 +377,18 @@ export default function OtpLoginFlow() {
                   </p>
                 )}
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Referral Code (Optional)
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Enter referral code"
+                  {...profileForm.register("referralCodeUsed")}
+                />
+              </div>
+
               <Button
                 type="submit"
                 disabled={loading}

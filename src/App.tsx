@@ -20,13 +20,14 @@ import { store, persistor } from './store/store';
 import Category from './pages/Category';
 import Subcategory from './pages/Subcategory';
 import WalletPage from './pages/Wallet';
+import ReferAndEarnPage from './pages/ReferAndEarnPage';
 
 const queryClient = new QueryClient();
 
 // Wrapper component to handle sidebar navigation
 const AppWithSidebar = () => {
   const navigate = useNavigate();
-  
+
   const handleNavigation = (path: string, title?: string) => {
     navigate(path);
   };
@@ -42,19 +43,23 @@ const AppWithSidebar = () => {
         <Route path="/confirm-payment" element={<ConfirmPayment />} />
         <Route path="/wallet" element={<WalletPage />} />
 
+        <Route path="/refer-and-earn" element={<ReferAndEarnPage />} />
+
+        {/* signup redirection on refer link */}
+        <Route path="/ref/:referralCode" element={<Login />} />
 
         <Route path="/my-profile" element={<MyProfile />} />
-       
+
         <Route path="/currentBookings" element={<CurrentBookedService />} />
         <Route path="/allBookings" element={<AllBookedServices />} />
 
         <Route path="/detailView/:id" element={<BookingDetailView />} />
-    
-        
+
+
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-      
+
       {/* Global Sidebar - will be available on all pages */}
       <Sidebar onNavigate={handleNavigation} />
     </>
