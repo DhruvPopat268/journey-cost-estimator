@@ -4,9 +4,9 @@ import { useSidebar } from './SidebarContext';
 
 const Navbar = ({ title = "Bike Ride", showBackButton = false, onBackClick = null }) => {
   const { toggleSidebar } = useSidebar();
-
+  
   return (
-    <div className="flex items-center justify-between p-4 border-b-2 border-t-2 sticky top-0 z-30">
+    <div className="flex items-center justify-between p-4 border-b-2 border-t-2 sticky top-0 z-30 bg-white shadow-sm">
       <div className="flex items-center">
         <button
           onClick={toggleSidebar}
@@ -17,9 +17,9 @@ const Navbar = ({ title = "Bike Ride", showBackButton = false, onBackClick = nul
         {showBackButton && onBackClick && (
           <button
             onClick={onBackClick}
-            className="p-2  hover:bg-[#e0e7ff] transition-colors"
+            className="p-2 hover:bg-[#e0e7ff] transition-colors"
           >
-            <ArrowLeft size={20} className="text-[#e0e7ff] -700" />
+            <ArrowLeft size={20} className="text-gray-700" />
           </button>
         )}
       </div>
