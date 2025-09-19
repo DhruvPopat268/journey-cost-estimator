@@ -3,12 +3,8 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, MapPin, Calendar, Clock } from 'lucide-react';
-import { Navbar } from '../components/Sidebar';
+import { ArrowLeft } from 'lucide-react';
+import { CommonFields } from '../components/booking/common/CommonFields';
 import { setBookingStep1, updateField } from '../store/slices/bookingSlice';
 
 const Booking = () => {
@@ -28,6 +24,7 @@ const Booking = () => {
   const [selectedDate, setSelectedDate] = useState(bookingData.selectedDate || '');
   const [selectedTime, setSelectedTime] = useState(bookingData.selectedTime || '');
   const [vehicleCategories, setVehicleCategories] = useState([]);
+  const [categoryName, setCategoryName] = useState(bookingData.categoryName || '');
   const [subcategoryName, setSubcategoryName] = useState(bookingData.subcategoryName || '');
   const [loading, setLoading] = useState(true);
 
@@ -43,17 +40,26 @@ const Booking = () => {
     if (!selectedTime) setSelectedTime(formattedTime);
   }, []);
 
-  // Check if subcategory is "one way" to show/hide drop location
-  const isOneWay = subcategoryName.replace(/[-\s]/g, '').toLowerCase() === 'oneway';
+  // Check if subcategory needs drop location based on category + subcategory
+  const needsDropLocation = () => {
+    const normalizedSubcategory = subcategoryName.replace(/[-\s]/g, '').toLowerCase();
+    const normalizedCategory = categoryName.replace(/[-\s]/g, '').toLowerCase();
+
+    // Define combinations that need drop location
+    return normalizedSubcategory === 'oneway' || normalizedSubcategory === 'pointtopoint';
+  };
 
   useEffect(() => {
     const fetchSubcategoryDetails = async () => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/subcategories/${subcategoryId}`);
         setSubcategoryName(res.data.name);
+        setCategoryName(res.data?.categoryId?.name || '');
 
-        // Update Redux with subcategory name
+
+        // Update Redux with subcategory and category names
         dispatch(updateField({ field: 'subcategoryName', value: res.data.name }));
+        dispatch(updateField({ field: 'categoryName', value: res.data?.categoryId?.name || '' }));
       } catch (error) {
         console.error('Failed to fetch subcategory details', error);
         setSubcategoryName('Service');
@@ -129,13 +135,13 @@ const Booking = () => {
     dispatch(updateField({ field: 'selectedTime', value: selectedTime }));
   }, [selectedTime, dispatch]);
 
-  // Clear toLocation when subcategory changes and it's not "one way"
+  // Clear toLocation when subcategory changes and doesn't need drop location
   useEffect(() => {
-    if (!isOneWay) {
+    if (!needsDropLocation()) {
       setToLocation('');
       dispatch(updateField({ field: 'toLocation', value: '' }));
     }
-  }, [isOneWay]);
+  }, [subcategoryName]);
 
   const transmissionOptions = ['Manual', 'Automatic'];
 
@@ -143,9 +149,10 @@ const Booking = () => {
     const bookingData = {
       categoryId,
       subcategoryId,
+      categoryName,
       subcategoryName,
       fromLocation,
-      toLocation: isOneWay ? toLocation : '',
+      toLocation: needsDropLocation() ? toLocation : '',
       carType,
       transmissionType,
       selectedDate,
@@ -154,14 +161,14 @@ const Booking = () => {
 
     // Dispatch the complete step 1 data to Redux
     dispatch(setBookingStep1(bookingData));
-
+    console.log('Booking Step 1 Data:', bookingData);
     navigate('/booking-step2', { state: bookingData });
   };
 
   // Updated form validation - removed includeInsurance dependency
   const isFormValid =
     fromLocation &&
-    (isOneWay ? toLocation : true) &&
+    (needsDropLocation() ? toLocation : true) &&
     carType &&
     transmissionType &&
     selectedDate &&
@@ -191,115 +198,39 @@ const Booking = () => {
         </div>
 
         <div className="space-y-6">
-          {/* Single Card with All Sections */}
-          <Card className="bg-white shadow-lg">
-            <CardHeader>
-              {/* <CardTitle>Booking Details</CardTitle> */}
-            </CardHeader>
-            <CardContent className="space-y-8">
-
-              {/* Location Selection Section */}
-              <div>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="from">From</Label>
-                    <div className="relative">
-                      <div className="absolute left-3 top-3 w-3 h-3 bg-green-500 rounded-full"></div>
-                      <Input
-                        id="from"
-                        placeholder="Enter pickup location"
-                        value={fromLocation}
-                        onChange={(e) => setFromLocation(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Conditionally render To location only for "one way" */}
-                  {isOneWay && (
-                    <div>
-                      <Label htmlFor="to">To</Label>
-                      <div className="relative">
-                        <div className="absolute left-3 top-3 w-3 h-3 bg-red-500 rounded-full"></div>
-                        <Input
-                          id="to"
-                          placeholder="Enter destination"
-                          value={toLocation}
-                          onChange={(e) => setToLocation(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Divider */}
-              <hr className="border-gray-200" />
-
-              {/* Schedule Details Section */}
-              <div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="selectedDate">Date</Label>
-                    <Input
-                      type="date"
-                      value={selectedDate}
-                      onChange={(e) => setSelectedDate(e.target.value)}
-                      className="pr-2"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="selectedTime">Time</Label>
-                    <Input
-                      type="time"
-                      value={selectedTime}
-                      onChange={(e) => setSelectedTime(e.target.value)}
-                      className="pr-2"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Divider */}
-              <hr className="border-gray-200" />
-
-              {/* Car Preferences Section */}
-              <div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Car Type</Label>
-                    <Select value={carType} onValueChange={setCarType}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {vehicleCategories.map((vehicle) => (
-                          <SelectItem key={vehicle._id} value={vehicle.vehicleName.toLowerCase()}>
-                            {vehicle.vehicleName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Transmission</Label>
-                    <Select value={transmissionType} onValueChange={setTransmissionType}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {transmissionOptions.map((trans) => (
-                          <SelectItem key={trans} value={trans.toLowerCase()}>{trans}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
-            </CardContent>
-          </Card>
+          <CommonFields
+            fromLocation={fromLocation}
+            toLocation={toLocation}
+            selectedDate={selectedDate}
+            selectedTime={selectedTime}
+            carType={carType}
+            transmissionType={transmissionType}
+            vehicleCategories={vehicleCategories}
+            transmissionOptions={transmissionOptions}
+            showToLocation={needsDropLocation()}
+            onFieldChange={(field, value) => {
+              switch (field) {
+                case 'fromLocation':
+                  setFromLocation(value);
+                  break;
+                case 'toLocation':
+                  setToLocation(value);
+                  break;
+                case 'selectedDate':
+                  setSelectedDate(value);
+                  break;
+                case 'selectedTime':
+                  setSelectedTime(value);
+                  break;
+                case 'carType':
+                  setCarType(value);
+                  break;
+                case 'transmissionType':
+                  setTransmissionType(value);
+                  break;
+              }
+            }}
+          />
 
           {/* Next Button */}
           <Button

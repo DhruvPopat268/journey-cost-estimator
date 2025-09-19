@@ -4,18 +4,10 @@ import { useSelector, useDispatch } from 'react-redux';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Clock, Star, Award, Crown, MapPin, CreditCard, X, Receipt, Info, Shield, Wallet, Banknote } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { ArrowLeft, CreditCard, X, Info, Wallet, Banknote } from 'lucide-react';
+import { FormRenderer } from '../components/booking/FormRenderer';
 import {
   setUsage,
   setTotalAmount,
@@ -24,11 +16,11 @@ import {
   updateField
 } from '../store/slices/bookingSlice';
 
-const iconMap = {
-  normal: Star,
-  classic: Award,
-  prime: Crown,
-};
+// const iconMap = {
+//   normal: Star,
+//   classic: Award,
+//   prime: Crown,
+// };
 
 const BookingStep2 = () => {
   const navigate = useNavigate();
@@ -37,11 +29,16 @@ const BookingStep2 = () => {
 
   // Get data from Redux store first
   const bookingDataFromStore = useSelector(state => state.booking);
+  console.log("Booking data from Redux store:", bookingDataFromStore);
+  const categoryId = bookingDataFromStore?.categoryId;
 
   // Use location state only if Redux store data is not available
   const bookingData = bookingDataFromStore && Object.keys(bookingDataFromStore).length > 0
     ? bookingDataFromStore
     : location.state;
+  console.log("Booking data from Redux store:", bookingDataFromStore);
+  console.log("Booking data from location state:", location.state);
+  console.log("Booking data used:", bookingData);
 
   const [selectedUsage, setSelectedUsage] = useState(bookingData?.selectedUsage || '');
   const [customUsage, setCustomUsage] = useState(bookingData?.customUsage || '');
@@ -52,6 +49,7 @@ const BookingStep2 = () => {
   const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
   const [instructions, setInstructions] = useState(["hello"]);
   const [totalAmount, setTotalAmountLocal] = useState(bookingData?.totalAmount || []);
+  console.log("Total amount state:", totalAmount);
   const [selectedCategory, setSelectedCategoryLocal] = useState(bookingData?.selectedCategory || null);
   const [showInstructions, setShowInstructions] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -59,19 +57,15 @@ const BookingStep2 = () => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [instructionsLoading, setInstructionsLoading] = useState(false);
-
   const [useReferral, setUseReferral] = useState(false);
   const [referralBalance, setReferralBalance] = useState(0);
-
 
   // Fetch instructions when a category is selected
   const fetchInstructions = async (categoryName) => {
     if (!categoryName) {
-      console.log("No category name provided");
       return;
     }
 
-    console.log("Fetching instructions for category:", categoryName);
     setInstructionsLoading(true);
     try {
       const res = await axios.post(
@@ -82,7 +76,6 @@ const BookingStep2 = () => {
           selectedCategoryName: categoryName
         }
       );
-      console.log("Instructions API response:", res.data);
 
       // Extract just the instructions array from the response
       setInstructions(res.data.instructions || []);
@@ -114,17 +107,20 @@ const BookingStep2 = () => {
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const [priceRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_API_URL}/api/price-categories`),
-        ]);
-
+        // Instead of GET, use POST with categoryId
+        const priceRes = await axios.post(
+          `${import.meta.env.VITE_API_URL}/api/price-categories/by-category`,
+          { categoryId: bookingDataFromStore?.categoryId }
+        );
+        console.log("Price categories response:", priceRes.data);
         setPriceCategories(priceRes.data || []);
       } catch (error) {
-        console.error('Failed to fetch data', error);
+        console.error("Failed to fetch data", error);
       } finally {
         setLoading(false);
       }
     };
+
     if (bookingData?.categoryId && bookingData?.subcategoryId) {
       fetchAllData();
     } else {
@@ -557,55 +553,29 @@ const BookingStep2 = () => {
         </div>
 
         <div className="space-y-6">
-          {/* Estimated Usage */}
-          <Card className="bg-white shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Clock className="w-5 h-5 mr-2 text-blue-600" />
-                Estimated Usage
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-3 items-end">
-                {/* Always show dropdown */}
-                <div className="flex-1">
-                  <Label htmlFor="usage-select">Usage Options</Label>
-                  <Select
-                    value={selectedUsage}
-                    onValueChange={handleUsageChange}
-                  >
-                    <SelectTrigger id="usage-select">
-                      <SelectValue placeholder={`Select ${getUsageUnit().toLowerCase()}`} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getUsageOptions().map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option} {getUsageUnit()}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+          {/* Dynamic Subcategory Form - Based on category + subcategory */}
+          {(() => {
+            const normalizedSubcategory = bookingData.subcategoryName?.toLowerCase() || '';
+            const normalizedCategory = bookingData.categoryName?.toLowerCase() || '';
 
-                {/* Show Custom Usage input only if One-Way */}
-                {bookingData?.subcategoryName === "One-Way" && (
-                  <div className="flex-1">
-                    <Label htmlFor="custom">Custom {getUsageUnit()}</Label>
-                    <Input
-                      id="custom"
-                      placeholder={`Custom ${getUsageUnit().toLowerCase()}`}
-                      value={customUsage}
-                      onChange={(e) => {
-                        setCustomUsage(e.target.value);
-                        setSelectedUsage('');
-                      }}
-                      type="number"
-                    />
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+            // Show usage forms for One-Way and Hourly, but not for Point-to-Point or Round-Trip
+            const showUsageForm = !normalizedSubcategory.includes('point-to-point') &&
+              !normalizedSubcategory.includes('round-trip');
+
+            return showUsageForm;
+          })() && (
+              <FormRenderer
+                subcategoryName={bookingData.subcategoryName}
+                categoryName={bookingData.categoryName}
+                selectedUsage={selectedUsage}
+                customUsage={customUsage}
+                onUsageChange={handleUsageChange}
+                onCustomUsageChange={(value) => {
+                  setCustomUsage(value);
+                  setSelectedUsage('');
+                }}
+              />
+            )}
 
           {/* Price Categories */}
           {totalAmount.map((item, index) => (
@@ -629,7 +599,6 @@ const BookingStep2 = () => {
                   </p>
                 </div>
               </div>
-
               <div className="flex items-center gap-3">
                 <div className="text-right">
                   <p className="text-lg font-bold text-gray-800">₹{item.totalPayable.toFixed(2)}</p>
