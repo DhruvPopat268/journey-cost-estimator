@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Clock, User, LogOut, Trash2, Bike, AlertTriangle, House, LogIn , Gift } from 'lucide-react';
+import { X, Clock, User, LogOut, Trash2, Bike, AlertTriangle, House, LogIn , Gift , Wallet} from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -147,6 +147,14 @@ const menuItems = [
     label: 'Refer & Earn',
     onClick: () => {
       handleNavigation('/refer-and-earn', 'Refer & Earn');
+      window.location.reload();
+    }
+  },
+  {
+    icon: Wallet,
+    label: 'Wallet',
+    onClick: () => {
+      handleNavigation('/wallet', 'Wallet');
       window.location.reload();
     }
   },
