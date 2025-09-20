@@ -28,6 +28,9 @@ const Booking = () => {
   const [subcategoryName, setSubcategoryName] = useState(bookingData.subcategoryName || '');
   const [loading, setLoading] = useState(true);
 
+  console.log('category',categoryName.toLowerCase());
+  console.log('subcategory',subcategoryName.toLowerCase());
+
   // Set default time to current time in HH:MM format and date also
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -55,8 +58,6 @@ const Booking = () => {
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/subcategories/${subcategoryId}`);
         setSubcategoryName(res.data.name);
         setCategoryName(res.data?.categoryId?.name || '');
-
-
         // Update Redux with subcategory and category names
         dispatch(updateField({ field: 'subcategoryName', value: res.data.name }));
         dispatch(updateField({ field: 'categoryName', value: res.data?.categoryId?.name || '' }));
@@ -193,7 +194,7 @@ const Booking = () => {
             <ArrowLeft className="w-6 h-6" />
           </Button>
           <h1 className="text-2xl font-bold text-gray-900">
-            {subcategoryName} Booking - Step 1
+            {categoryName} - {subcategoryName} Booking - Step 1
           </h1>
         </div>
 
