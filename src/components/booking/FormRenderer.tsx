@@ -1,13 +1,17 @@
 import React from 'react';
-import { OneWayForm, HourlyForm } from './subcategory-forms';
+import { OneWayForm, HourlyForm, MonthlyForm, WeeklyForm } from './subcategory-forms';
 
 interface FormRendererProps {
   subcategoryName: string;
   categoryName?: string;
   selectedUsage: string;
   customUsage: string;
+  numberOfMonths?: string;
+  numberOfWeeks?: string;
   onUsageChange: (value: string) => void;
   onCustomUsageChange: (value: string) => void;
+  onNumberOfMonthsChange?: (value: string) => void;
+  onNumberOfWeeksChange?: (value: string) => void;
 }
 
 export const FormRenderer: React.FC<FormRendererProps> = ({
@@ -15,8 +19,12 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
   categoryName = '',
   selectedUsage,
   customUsage,
+  numberOfMonths = '',
+  numberOfWeeks = '',
   onUsageChange,
   onCustomUsageChange,
+  onNumberOfMonthsChange,
+  onNumberOfWeeksChange,
 }) => {
   const normalizedSubcategory = subcategoryName.toLowerCase();
   const normalizedCategory = categoryName.toLowerCase();
@@ -37,6 +45,28 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
       <HourlyForm
         selectedUsage={selectedUsage}
         onUsageChange={onUsageChange}
+      />
+    );
+  }
+
+  if (normalizedSubcategory.includes('weekly') || normalizedSubcategory.includes('week')) {
+    return (
+      <WeeklyForm
+        selectedUsage={selectedUsage}
+        numberOfWeeks={numberOfWeeks}
+        onUsageChange={onUsageChange}
+        onNumberOfWeeksChange={onNumberOfWeeksChange || (() => {})}
+      />
+    );
+  }
+
+  if (normalizedSubcategory.includes('monthly') || normalizedSubcategory.includes('month')) {
+    return (
+      <MonthlyForm
+        selectedUsage={selectedUsage}
+        numberOfMonths={numberOfMonths}
+        onUsageChange={onUsageChange}
+        onNumberOfMonthsChange={onNumberOfMonthsChange || (() => {})}
       />
     );
   }

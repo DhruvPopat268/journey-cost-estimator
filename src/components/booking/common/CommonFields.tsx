@@ -9,11 +9,15 @@ interface CommonFieldsProps {
   toLocation: string;
   selectedDate: string;
   selectedTime: string;
+  startTime?: string;
+  endTime?: string;
   carType: string;
   transmissionType: string;
   vehicleCategories: any[];
   transmissionOptions: string[];
   showToLocation: boolean;
+  showTimeDuration?: boolean;
+  dateLabel?: string;
   onFieldChange: (field: string, value: string) => void;
 }
 
@@ -22,11 +26,15 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
   toLocation,
   selectedDate,
   selectedTime,
+  startTime = '',
+  endTime = '',
   carType,
   transmissionType,
   vehicleCategories,
   transmissionOptions,
   showToLocation,
+  showTimeDuration = false,
+  dateLabel = 'Date',
   onFieldChange,
 }) => {
   return (
@@ -69,26 +77,62 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
         <hr className="border-gray-200" />
 
         {/* Schedule Fields */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="selectedDate">Date</Label>
-            <Input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => onFieldChange('selectedDate', e.target.value)}
-              className="pr-2"
-            />
+        {showTimeDuration ? (
+          // Layout for Time Duration (Driver/Cab Weekly/Monthly)
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="selectedDate">{dateLabel}</Label>
+              <Input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => onFieldChange('selectedDate', e.target.value)}
+                className="pr-2"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="startTime">Start Time</Label>
+                <Input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => onFieldChange('startTime', e.target.value)}
+                  className="pr-2"
+                />
+              </div>
+              <div>
+                <Label htmlFor="endTime">End Time</Label>
+                <Input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => onFieldChange('endTime', e.target.value)}
+                  className="pr-2"
+                />
+              </div>
+            </div>
           </div>
-          <div>
-            <Label htmlFor="selectedTime">Time</Label>
-            <Input
-              type="time"
-              value={selectedTime}
-              onChange={(e) => onFieldChange('selectedTime', e.target.value)}
-              className="pr-2"
-            />
+        ) : (
+          // Layout for Regular Services
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="selectedDate">{dateLabel}</Label>
+              <Input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => onFieldChange('selectedDate', e.target.value)}
+                className="pr-2"
+              />
+            </div>
+            <div>
+              <Label htmlFor="selectedTime">Time</Label>
+              <Input
+                type="time"
+                value={selectedTime}
+                onChange={(e) => onFieldChange('selectedTime', e.target.value)}
+                className="pr-2"
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         <hr className="border-gray-200" />
 

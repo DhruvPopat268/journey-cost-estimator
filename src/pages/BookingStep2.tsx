@@ -16,12 +16,6 @@ import {
   updateField
 } from '../store/slices/bookingSlice';
 
-// const iconMap = {
-//   normal: Star,
-//   classic: Award,
-//   prime: Crown,
-// };
-
 const BookingStep2 = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,14 +36,13 @@ const BookingStep2 = () => {
 
   const [selectedUsage, setSelectedUsage] = useState(bookingData?.selectedUsage || '');
   const [customUsage, setCustomUsage] = useState(bookingData?.customUsage || '');
-  const [numberOfWeeks, setNumberOfWeeks] = useState(bookingData?.numberOfWeeks || '');
+
   const [notes, setNotesLocal] = useState(bookingData?.notes || '');
   const [includeInsurance, setIncludeInsurance] = useState(bookingData?.includeInsurance !== undefined ? bookingData.includeInsurance : true);
   const [loading, setLoading] = useState(true);
   const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
   const [instructions, setInstructions] = useState(["hello"]);
   const [totalAmount, setTotalAmountLocal] = useState(bookingData?.totalAmount || []);
-  console.log("Total amount state:", totalAmount);
   const [selectedCategory, setSelectedCategoryLocal] = useState(bookingData?.selectedCategory || null);
   const [showInstructions, setShowInstructions] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -58,6 +51,19 @@ const BookingStep2 = () => {
   const [instructionsLoading, setInstructionsLoading] = useState(false);
   const [useReferral, setUseReferral] = useState(false);
   const [referralBalance, setReferralBalance] = useState(0);
+
+
+  const [numberOfWeeks, setNumberOfWeeks] = useState(bookingData?.numberOfWeeks || '');
+  const [numberOfMonths, setNumberOfMonths] = useState(bookingData?.numberOfMonths || '');
+
+  // Add these useEffect hooks with other useEffect declarations:
+  useEffect(() => {
+    dispatch(updateField({ field: 'numberOfMonths', value: numberOfMonths }));
+  }, [numberOfMonths, dispatch]);
+
+  useEffect(() => {
+    dispatch(updateField({ field: 'numberOfWeeks', value: numberOfWeeks }));
+  }, [numberOfWeeks, dispatch]);
 
   // Fetch instructions when a category is selected
   const fetchInstructions = async (categoryName) => {
@@ -86,11 +92,13 @@ const BookingStep2 = () => {
   };
 
   // Function to call API with current data including insurance
-  const callCalculationAPI = async (usageValue) => {
+  const callCalculationAPI = async (usageValue, weeksValue = numberOfWeeks, monthsValue = numberOfMonths) => {
     const fullData = {
       ...bookingData,
       selectedUsage: usageValue,
-      includeInsurance: includeInsurance
+      includeInsurance: includeInsurance,
+      numberOfWeeks: weeksValue,
+      numberOfMonths: monthsValue
     };
 
     try {
@@ -170,9 +178,20 @@ const BookingStep2 = () => {
     dispatch(updateField({ field: 'includeInsurance', value: includeInsurance }));
   }, [includeInsurance, dispatch]);
 
-  useEffect(() => {
-    dispatch(updateField({ field: 'numberOfWeeks', value: numberOfWeeks }));
-  }, [numberOfWeeks, dispatch]);
+  // Handler functions for weeks and months changes
+  const handleNumberOfWeeksChange = (value) => {
+    setNumberOfWeeks(value);
+    if (value && bookingData && (selectedUsage || customUsage)) {
+      callCalculationAPI(selectedUsage || customUsage, value, numberOfMonths);
+    }
+  };
+
+  const handleNumberOfMonthsChange = (value) => {
+    setNumberOfMonths(value);
+    if (value && bookingData && (selectedUsage || customUsage)) {
+      callCalculationAPI(selectedUsage || customUsage, numberOfWeeks, value);
+    }
+  };
 
   // Trigger API when usage changes (selected or custom)
   const handleUsageChange = async (value) => {
@@ -228,15 +247,12 @@ const BookingStep2 = () => {
 
   // Update Redux when selected category changes
   useEffect(() => {
-    console.log("Selected category changed:", selectedCategory);
     if (selectedCategory) {
       const serializableCategory = JSON.parse(JSON.stringify(selectedCategory));
       dispatch(setSelectedCategory(serializableCategory));
 
       // Use the category name instead of ID
       const categoryName = selectedCategory.category;
-
-      console.log("Using category name:", categoryName);
 
       // Fetch instructions for the selected category
       if (categoryName) {
@@ -573,11 +589,15 @@ const BookingStep2 = () => {
                 categoryName={bookingData.categoryName}
                 selectedUsage={selectedUsage}
                 customUsage={customUsage}
+                numberOfMonths={numberOfMonths}
+                numberOfWeeks={numberOfWeeks}
                 onUsageChange={handleUsageChange}
                 onCustomUsageChange={(value) => {
                   setCustomUsage(value);
                   setSelectedUsage('');
                 }}
+                onNumberOfMonthsChange={handleNumberOfMonthsChange}
+                onNumberOfWeeksChange={handleNumberOfWeeksChange}
               />
             )}
 

@@ -28,10 +28,11 @@ const Booking = () => {
   const [subcategoryName, setSubcategoryName] = useState(bookingData.subcategoryName || '');
   const [loading, setLoading] = useState(true);
 
-  console.log('category',categoryName.toLowerCase());
-  console.log('subcategory',subcategoryName.toLowerCase());
 
-  // Set default time to current time in HH:MM format and date also
+  // 1. Add new state variables for time duration (add these after existing useState declarations)
+  const [startTime, setStartTime] = useState(bookingData.startTime || '');
+  const [endTime, setEndTime] = useState(bookingData.endTime || '');
+
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     if (!selectedDate) setSelectedDate(today);
@@ -40,8 +41,41 @@ const Booking = () => {
     const hours = now.getHours().toString().padStart(2, '0');
     const minutes = now.getMinutes().toString().padStart(2, '0');
     const formattedTime = `${hours}:${minutes}`;
-    if (!selectedTime) setSelectedTime(formattedTime);
-  }, []);
+
+    // Check if it's weekly/monthly driver/cab service
+    const isWeeklyMonthlyDriverCab = () => {
+      const normalizedCategory = categoryName.replace(/[-\s]/g, '').toLowerCase();
+      const normalizedSubcategory = subcategoryName.replace(/[-\s]/g, '').toLowerCase();
+      return (normalizedCategory === 'driver' || normalizedCategory === 'cab') &&
+        (normalizedSubcategory === 'weekly' || normalizedSubcategory === 'monthly');
+    };
+
+    if (isWeeklyMonthlyDriverCab()) {
+      // Set default start and end time for duration
+      if (!startTime) setStartTime('03:00');
+      if (!endTime) setEndTime('05:00');
+    } else {
+      // Set regular time for other services
+      if (!selectedTime) setSelectedTime(formattedTime);
+    }
+  }, [categoryName, subcategoryName]);
+
+  // 3. Add new function to check if service needs time duration
+  const needsTimeDuration = () => {
+    const normalizedCategory = categoryName.replace(/[-\s]/g, '').toLowerCase();
+    const normalizedSubcategory = subcategoryName.replace(/[-\s]/g, '').toLowerCase();
+    return (normalizedCategory === 'driver' || normalizedCategory === 'cab') &&
+      (normalizedSubcategory === 'weekly' || normalizedSubcategory === 'monthly');
+  };
+
+  // 4. Add new useEffects for Redux updates
+  useEffect(() => {
+    dispatch(updateField({ field: 'startTime', value: startTime }));
+  }, [startTime, dispatch]);
+
+  useEffect(() => {
+    dispatch(updateField({ field: 'endTime', value: endTime }));
+  }, [endTime, dispatch]);
 
   // Check if subcategory needs drop location based on category + subcategory
   const needsDropLocation = () => {
@@ -146,6 +180,7 @@ const Booking = () => {
 
   const transmissionOptions = ['Manual', 'Automatic'];
 
+  // 5. Update the handleNextPage function
   const handleNextPage = () => {
     const bookingData = {
       categoryId,
@@ -157,14 +192,17 @@ const Booking = () => {
       carType,
       transmissionType,
       selectedDate,
-      selectedTime,
+      selectedTime: needsTimeDuration() ? '' : selectedTime,
+      startTime: needsTimeDuration() ? startTime : '',
+      endTime: needsTimeDuration() ? endTime : '',
     };
 
     // Dispatch the complete step 1 data to Redux
     dispatch(setBookingStep1(bookingData));
-    console.log('Booking Step 1 Data:', bookingData);
+    
     navigate('/booking-step2', { state: bookingData });
   };
+
 
   // Updated form validation - removed includeInsurance dependency
   const isFormValid =
@@ -173,7 +211,7 @@ const Booking = () => {
     carType &&
     transmissionType &&
     selectedDate &&
-    selectedTime;
+    (needsTimeDuration() ? (startTime && endTime) : selectedTime);
 
   if (loading) {
     return (
@@ -204,11 +242,15 @@ const Booking = () => {
             toLocation={toLocation}
             selectedDate={selectedDate}
             selectedTime={selectedTime}
+            startTime={startTime}
+            endTime={endTime}
             carType={carType}
             transmissionType={transmissionType}
             vehicleCategories={vehicleCategories}
             transmissionOptions={transmissionOptions}
             showToLocation={needsDropLocation()}
+            showTimeDuration={needsTimeDuration()}
+            dateLabel={needsTimeDuration() ? 'Start Date' : 'Date'}
             onFieldChange={(field, value) => {
               switch (field) {
                 case 'fromLocation':
@@ -223,6 +265,12 @@ const Booking = () => {
                 case 'selectedTime':
                   setSelectedTime(value);
                   break;
+                case 'startTime':
+                  setStartTime(value);
+                  break;
+                case 'endTime':
+                  setEndTime(value);
+                  break;
                 case 'carType':
                   setCarType(value);
                   break;
@@ -232,6 +280,7 @@ const Booking = () => {
               }
             }}
           />
+          /
 
           {/* Next Button */}
           <Button
