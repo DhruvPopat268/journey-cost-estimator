@@ -11,9 +11,18 @@ import {
   ArrowDownLeft,
   Calendar,
   Filter,
-  Menu
+  Menu,
+  Lock,
+  Shield
 } from 'lucide-react';
 import { Navbar } from '@/components/Sidebar';
+
+// Declare Razorpay on window object
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 // Card components
 const Card = ({ children, className = "" }) => (
@@ -69,106 +78,253 @@ const Input = ({ className = "", ...props }) => (
 );
 
 const WalletPage = () => {
-  const [walletBalance, setWalletBalance] = useState(1250.50);
+  const [walletData, setWalletData] = useState({
+    balance: 0,
+    totalDeposited: 0,
+    totalSpent: 0,
+    lastTransactionAt: null,
+    isActive: false
+  });
   const [loading, setLoading] = useState(false);
   const [addMoneyAmount, setAddMoneyAmount] = useState('');
   const [showAddMoney, setShowAddMoney] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState('deposit');
-  const [transactions, setTransactions] = useState({});
+  const [transactions, setTransactions] = useState([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    hasNext: false,
+    hasPrev: false
+  });
 
-  // Mock transaction data
-  const mockTransactions = {
-    deposit: [
-      {
-        id: 1,
-        amount: 500,
-        type: 'deposit',
-        description: 'Added via UPI',
-        date: '2024-01-15T10:30:00',
-        status: 'completed'
-      },
-      {
-        id: 2,
-        amount: 200,
-        type: 'deposit',
-        description: 'Quick add',
-        date: '2024-01-14T15:45:00',
-        status: 'completed'
-      },
-      {
-        id: 3,
-        amount: 1000,
-        type: 'deposit',
-        description: 'Bank transfer',
-        date: '2024-01-13T09:15:00',
-        status: 'completed'
-      },
-      {
-        id: 4,
-        amount: 300,
-        type: 'deposit',
-        description: 'Cashback credit',
-        date: '2024-01-12T11:20:00',
-        status: 'completed'
+  // Get RiderToken from localStorage
+  const getRiderToken = () => {
+    const token = localStorage.getItem('RiderToken');
+    console.log('RiderToken from localStorage:', token);
+    return token;
+  };
+
+  // Create headers with authorization
+  const getAuthHeaders = () => {
+    const token = getRiderToken();
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` })
+    };
+    return headers;
+  };
+
+  // Fetch wallet data
+  const fetchWalletData = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/wallet`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    ],
-    spend: [
-      {
-        id: 5,
-        amount: 150,
-        type: 'spend',
-        description: 'Ride to Downtown Mall',
-        date: '2024-01-15T14:20:00',
-        status: 'completed'
-      },
-      {
-        id: 6,
-        amount: 220,
-        type: 'spend',
-        description: 'Airport ride',
-        date: '2024-01-14T18:30:00',
-        status: 'completed'
-      },
-      {
-        id: 7,
-        amount: 95,
-        type: 'spend',
-        description: 'Mall trip',
-        date: '2024-01-13T16:45:00',
-        status: 'completed'
-      },
-      {
-        id: 8,
-        amount: 180,
-        type: 'spend',
-        description: 'Business district ride',
-        date: '2024-01-12T09:15:00',
-        status: 'completed'
-      },
-      {
-        id: 9,
-        amount: 75,
-        type: 'spend',
-        description: 'Local ride',
-        date: '2024-01-11T20:30:00',
-        status: 'completed'
+
+      const data = await response.json();
+      console.log('Wallet data:', data);
+      setWalletData(data);
+    } catch (error) {
+      console.error('Error fetching wallet data:', error);
+      alert('Failed to load wallet data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch transaction history
+  const fetchTransactionHistory = async (page = 1) => {
+    setLoadingTransactions(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/history?page=${page}&limit=10`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    ]
+
+      const data = await response.json();
+      console.log('Transaction history:', data);
+      
+      // Transform API data to match our component structure
+      const transformedTransactions = data.payments.map(payment => ({
+        id: payment.id,
+        amount: payment.amount,
+        type: 'deposit', // Since this API only returns deposits
+        description: payment.description,
+        date: payment.date,
+        status: payment.status === 'paid' ? 'completed' : payment.status,
+        paymentMethod: payment.paymentMethod,
+        razorpayPaymentId: payment.razorpayPaymentId,
+        paidAt: payment.paidAt
+      }));
+
+      setTransactions(transformedTransactions);
+      setPagination(data.pagination);
+    } catch (error) {
+      console.error('Error fetching transaction history:', error);
+      alert('Failed to load transaction history');
+    } finally {
+      setLoadingTransactions(false);
+    }
   };
 
   useEffect(() => {
-    fetchTransactions();
+    fetchWalletData();
+    fetchTransactionHistory();
+    loadRazorpayScript().then((loaded) => {
+      if (!loaded) {
+        console.error('Failed to load Razorpay script');
+      }
+    });
   }, []);
 
-  const fetchTransactions = async () => {
-    setLoadingTransactions(true);
-    // Simulate API call
-    setTimeout(() => {
-      setTransactions(mockTransactions);
-      setLoadingTransactions(false);
-    }, 1000);
+  // Load Razorpay script
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      // Check if already loaded
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
+      
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => {
+        console.log('Razorpay script loaded successfully');
+        resolve(true);
+      };
+      script.onerror = () => {
+        console.error('Failed to load Razorpay script');
+        resolve(false);
+      };
+      document.body.appendChild(script);
+    });
+  };
+
+  const createRazorpayOrder = async (amount) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/create-order`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          amount: amount * 100, // Convert to paise
+          currency: 'INR'
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create order');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating order:', error);
+      throw error;
+    }
+  };
+
+  const handleRazorpayPayment = async (amount) => {
+    try {
+      setIsProcessing(true);
+      
+      // Check if Razorpay script is loaded
+      if (!window.Razorpay) {
+        throw new Error('Razorpay SDK not loaded');
+      }
+      
+      // Create order on backend
+      console.log('Creating order for amount:', amount);
+      const order = await createRazorpayOrder(amount);
+      console.log('Order created:', order);
+
+      const razorpayKey = import.meta.env.VITE_REACT_APP_RAZORPAY_KEY_ID;
+      console.log('Razorpay Key:', razorpayKey);
+      
+      if (!razorpayKey) {
+        throw new Error('Razorpay key not configured');
+      }
+
+      const options = {
+        key: razorpayKey,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'DriveGo',
+        description: 'Add money to wallet',
+        order_id: order.id,
+        handler: async function (response) {
+          try {
+            // Verify payment on backend
+            const verifyResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/verify`, {
+              method: 'POST',
+              headers: getAuthHeaders(),
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                amount: amount
+              }),
+            });
+
+            if (verifyResponse.ok) {
+              const result = await verifyResponse.json();
+              
+              // Refresh wallet data and transactions
+              await fetchWalletData();
+              await fetchTransactionHistory();
+              
+              setAddMoneyAmount('');
+              setShowAddMoney(false);
+              
+              alert('Payment successful! Money added to wallet.');
+            } else {
+              throw new Error('Payment verification failed');
+            }
+          } catch (error) {
+            console.error('Payment verification error:', error);
+            alert('Payment verification failed. Please contact support.');
+          } finally {
+            setIsProcessing(false);
+          }
+        },
+        prefill: {
+          name: 'User Name', // Get from user profile
+          email: 'user@example.com', // Get from user profile
+          contact: '9999999999' // Get from user profile
+        },
+        notes: {
+          purpose: 'wallet_recharge'
+        },
+        theme: {
+          color: '#3B82F6'
+        },
+        modal: {
+          ondismiss: function() {
+            setIsProcessing(false);
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+      
+    } catch (error) {
+      console.error('Payment error:', error);
+      alert('Payment failed. Please try again.');
+      setIsProcessing(false);
+    }
   };
 
   const handleAddMoney = async () => {
@@ -177,25 +333,24 @@ const WalletPage = () => {
       return;
     }
 
-    setIsProcessing(true);
-    try {
-      // Simulate API call
-      setTimeout(() => {
-        setWalletBalance(prev => prev + parseFloat(addMoneyAmount));
-        setAddMoneyAmount('');
-        setShowAddMoney(false);
-        alert('Money added successfully!');
-        fetchTransactions();
-        setIsProcessing(false);
-      }, 1500);
-    } catch (error) {
-      console.error('Error adding money:', error);
-      alert('Something went wrong!');
-      setIsProcessing(false);
+    const amount = parseFloat(addMoneyAmount);
+    
+    if (amount < 1) {
+      alert('Minimum amount is ₹1');
+      return;
     }
+
+    if (amount > 50000) {
+      alert('Maximum amount is ₹50,000');
+      return;
+    }
+
+    await handleRazorpayPayment(amount);
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       month: 'short',
@@ -203,6 +358,28 @@ const WalletPage = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const getStatusBadge = (status) => {
+    const statusConfig = {
+      'paid': { color: 'green', text: 'Completed' },
+      'completed': { color: 'green', text: 'Completed' },
+      'created': { color: 'yellow', text: 'Pending' },
+      'failed': { color: 'red', text: 'Failed' }
+    };
+
+    const config = statusConfig[status] || { color: 'gray', text: status };
+    
+    return (
+      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+        config.color === 'green' ? 'bg-green-100 text-green-800' :
+        config.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
+        config.color === 'red' ? 'bg-red-100 text-red-800' :
+        'bg-gray-100 text-gray-800'
+      }`}>
+        {config.text}
+      </span>
+    );
   };
 
   const quickAddAmounts = [100, 200, 500, 1000];
@@ -233,10 +410,19 @@ const WalletPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-100 mb-3 text-sm font-medium tracking-wide">AVAILABLE BALANCE</p>
-                <p className="text-4xl font-bold mb-2">₹{walletBalance.toFixed(2)}</p>
+                <p className="text-4xl font-bold mb-2">₹{walletData.balance.toFixed(2)}</p>
                 <div className="flex items-center space-x-2 text-blue-200 text-sm">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span>Active • Last updated now</span>
+                  <div className={`w-2 h-2 rounded-full animate-pulse ${
+                    walletData.isActive ? 'bg-green-400' : 'bg-red-400'
+                  }`}></div>
+                  <span>
+                    {walletData.isActive ? 'Active' : 'Inactive'} • 
+                    Last updated: {walletData.lastTransactionAt ? formatDate(walletData.lastTransactionAt) : 'Never'}
+                  </span>
+                </div>
+                <div className="flex space-x-4 mt-3 text-blue-200 text-sm">
+                  <span>Deposited: ₹{walletData.totalDeposited.toFixed(2)}</span>
+                  <span>Spent: ₹{walletData.totalSpent.toFixed(2)}</span>
                 </div>
               </div>
               <div className="p-6 bg-white/15 rounded-3xl backdrop-blur-sm">
@@ -246,20 +432,23 @@ const WalletPage = () => {
           </div>
         </Card>
 
-        {/* Add Money Section - Now in prominent position */}
+        {/* Add Money Section */}
         <Card className="bg-white/80 backdrop-blur-sm shadow-xl border-0">
           <CardHeader className="">
             <CardTitle className="flex items-center text-gray-800">
-              <div className=" bg-green-100 rounded-lg mr-3">
+              <div className="p-2 bg-green-100 rounded-lg mr-3">
                 <Plus className="w-5 h-5 text-green-600" />
               </div>
               Add Money to Wallet
+              <div className="ml-auto flex items-center space-x-2">
+                <Shield className="w-4 h-4 text-green-600" />
+                <span className="text-sm text-green-600 font-medium">Secured by Razorpay</span>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
             {!showAddMoney ? (
-              <div className="text-center py-2 text-center flex justify-center">
-                
+              <div className="text-center py-2 flex justify-center">
                 <Button
                   onClick={() => setShowAddMoney(true)}
                   className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-4 px-8 rounded-xl shadow-lg font-medium transition-all duration-200"
@@ -272,7 +461,7 @@ const WalletPage = () => {
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-3">
-                    Enter Amount
+                    Enter Amount (₹1 - ₹50,000)
                   </label>
                   <Input
                     type="number"
@@ -280,6 +469,8 @@ const WalletPage = () => {
                     value={addMoneyAmount}
                     onChange={(e) => setAddMoneyAmount(e.target.value)}
                     className="w-full py-3 px-4 rounded-xl border-2 border-gray-200 focus:border-green-500 transition-colors"
+                    min="1"
+                    max="50000"
                   />
                 </div>
 
@@ -299,6 +490,17 @@ const WalletPage = () => {
                   </div>
                 </div>
 
+                {/* Payment Method Info */}
+                <div className="bg-blue-50 p-4 rounded-xl">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <CreditCard className="w-5 h-5 text-blue-600" />
+                    <span className="font-medium text-blue-800">Payment Methods Available</span>
+                  </div>
+                  <p className="text-sm text-blue-700">
+                    UPI, Credit/Debit Cards, Net Banking, and Wallets
+                  </p>
+                </div>
+
                 <div className="flex space-x-3">
                   <Button
                     onClick={() => {
@@ -307,6 +509,7 @@ const WalletPage = () => {
                     }}
                     variant="outline"
                     className="flex-1 py-3 rounded-xl border-2 border-gray-300 hover:bg-gray-50"
+                    disabled={isProcessing}
                   >
                     Cancel
                   </Button>
@@ -315,7 +518,17 @@ const WalletPage = () => {
                     disabled={!addMoneyAmount || isProcessing}
                     className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-3 rounded-xl shadow-lg font-medium"
                   >
-                    {isProcessing ? 'Adding...' : 'Add Money'}
+                    {isProcessing ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4 mr-2" />
+                        Pay Securely
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
@@ -331,10 +544,13 @@ const WalletPage = () => {
                 <History className="w-5 h-5 text-purple-600" />
               </div>
               Transaction History
+              <div className="ml-auto text-sm text-gray-500">
+                Page {pagination.currentPage} of {pagination.totalPages} • {pagination.totalItems} items
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {/* Toggle Tabs */}
+            {/* Toggle Tabs - Only deposits available from API */}
             <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
               <button
                 onClick={() => setActiveTab('deposit')}
@@ -354,9 +570,11 @@ const WalletPage = () => {
                     ? 'bg-white text-red-600 shadow-md'
                     : 'text-gray-600 hover:text-gray-800'
                 }`}
+                disabled
+                title="Spending history not available"
               >
                 <ArrowUpRight className="w-4 h-4 mr-2" />
-                Spending
+                Spending (Coming Soon)
               </button>
             </div>
 
@@ -367,58 +585,85 @@ const WalletPage = () => {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
                   <p className="text-gray-500">Loading transactions...</p>
                 </div>
-              ) : transactions[activeTab]?.length > 0 ? (
-                transactions[activeTab].map((transaction) => (
-                  <div
-                    key={transaction.id}
-                    className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className={`p-2 rounded-full ${
-                        transaction.type === 'deposit' 
-                          ? 'bg-green-100' 
-                          : 'bg-red-100'
-                      }`}>
-                        {transaction.type === 'deposit' ? (
+              ) : transactions.length > 0 ? (
+                <>
+                  {transactions.map((transaction) => (
+                    <div
+                      key={transaction.id}
+                      className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 rounded-full bg-green-100">
                           <ArrowDownLeft className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <ArrowUpRight className="w-4 h-4 text-red-600" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-800">{transaction.description}</p>
-                        <div className="flex items-center space-x-2 text-sm text-gray-500">
-                          <Calendar className="w-3 h-3" />
-                          <span>{formatDate(transaction.date)}</span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-800">{transaction.description}</p>
+                          <div className="flex items-center space-x-2 text-sm text-gray-500">
+                            <Calendar className="w-3 h-3" />
+                            <span>{formatDate(transaction.date)}</span>
+                            {transaction.paymentMethod && (
+                              <>
+                                <span>•</span>
+                                <span>{transaction.paymentMethod}</span>
+                              </>
+                            )}
+                          </div>
+                          {transaction.razorpayPaymentId && (
+                            <p className="text-xs text-gray-400 mt-1">
+                              ID: {transaction.razorpayPaymentId}
+                            </p>
+                          )}
                         </div>
                       </div>
+                      <div className="text-right">
+                        <p className="font-bold text-green-600">
+                          +₹{transaction.amount}
+                        </p>
+                        {getStatusBadge(transaction.status)}
+                        {transaction.paidAt && (
+                          <p className="text-xs text-gray-400 mt-1">
+                            Paid: {formatDate(transaction.paidAt)}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className={`font-bold ${
-                        transaction.type === 'deposit' ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {transaction.type === 'deposit' ? '+' : '-'}₹{transaction.amount}
-                      </p>
-                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                        transaction.status === 'completed' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {transaction.status}
+                  ))}
+                  
+                  {/* Pagination Controls */}
+                  {pagination.totalPages > 1 && (
+                    <div className="flex justify-center items-center space-x-4 mt-4 pt-4 border-t border-gray-200">
+                      <Button
+                        onClick={() => fetchTransactionHistory(pagination.currentPage - 1)}
+                        disabled={!pagination.hasPrev}
+                        variant="outline"
+                        className="px-3 py-1"
+                      >
+                        Previous
+                      </Button>
+                      <span className="text-sm text-gray-600">
+                        Page {pagination.currentPage} of {pagination.totalPages}
                       </span>
+                      <Button
+                        onClick={() => fetchTransactionHistory(pagination.currentPage + 1)}
+                        disabled={!pagination.hasNext}
+                        variant="outline"
+                        className="px-3 py-1"
+                      >
+                        Next
+                      </Button>
                     </div>
-                  </div>
-                ))
+                  )}
+                </>
               ) : (
                 <div className="text-center py-8">
                   <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                     <History className="w-8 h-8 text-gray-400" />
                   </div>
                   <p className="text-gray-500 font-medium">
-                    No {activeTab} history found
+                    No transaction history found
                   </p>
                   <p className="text-gray-400 text-sm mt-1">
-                    Your {activeTab} transactions will appear here
+                    Your deposit transactions will appear here
                   </p>
                 </div>
               )}
