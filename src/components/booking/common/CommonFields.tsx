@@ -13,10 +13,14 @@ interface CommonFieldsProps {
   endTime?: string;
   carType: string;
   transmissionType: string;
+  receiverName?: string;
+  receiverPhone?: string;
   vehicleCategories: any[];
   transmissionOptions: string[];
   showToLocation: boolean;
   showTimeDuration?: boolean;
+  showVehicleFields?: boolean;
+  showReceiverFields?: boolean;
   dateLabel?: string;
   onFieldChange: (field: string, value: string) => void;
 }
@@ -30,10 +34,14 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
   endTime = '',
   carType,
   transmissionType,
+  receiverName = '',
+  receiverPhone = '',
   vehicleCategories,
   transmissionOptions,
   showToLocation,
   showTimeDuration = false,
+  showVehicleFields = true,
+  showReceiverFields = false,
   dateLabel = 'Date',
   onFieldChange,
 }) => {
@@ -74,7 +82,7 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
           )}
         </div>
 
-        <hr className="border-gray-200" />
+        {/* <hr className="border-gray-200" /> */}
 
         {/* Schedule Fields */}
         {showTimeDuration ? (
@@ -134,39 +142,69 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
           </div>
         )}
 
-        <hr className="border-gray-200" />
+        {/* <hr className="border-gray-200" /> */}
 
-        {/* Vehicle Fields */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label>Car Type</Label>
-            <Select value={carType} onValueChange={(value) => onFieldChange('carType', value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {vehicleCategories.map((vehicle) => (
-                  <SelectItem key={vehicle._id} value={vehicle.vehicleName.toLowerCase()}>
-                    {vehicle.vehicleName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Vehicle Fields - Show only if showVehicleFields is true */}
+        {showVehicleFields && (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Car Type</Label>
+              <Select value={carType} onValueChange={(value) => onFieldChange('carType', value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {vehicleCategories.map((vehicle) => (
+                    <SelectItem key={vehicle._id} value={vehicle.vehicleName.toLowerCase()}>
+                      {vehicle.vehicleName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Transmission</Label>
+              <Select value={transmissionType} onValueChange={(value) => onFieldChange('transmissionType', value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {transmissionOptions.map((trans) => (
+                    <SelectItem key={trans} value={trans.toLowerCase()}>{trans}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div>
-            <Label>Transmission</Label>
-            <Select value={transmissionType} onValueChange={(value) => onFieldChange('transmissionType', value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {transmissionOptions.map((trans) => (
-                  <SelectItem key={trans} value={trans.toLowerCase()}>{trans}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        )}
+
+        {/* Receiver Fields - Show only if showReceiverFields is true */}
+        {showReceiverFields && (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="receiverName">Receiver Name</Label>
+              <Input
+                id="receiverName"
+                placeholder="Enter receiver name"
+                value={receiverName}
+                onChange={(e) => onFieldChange('receiverName', e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="receiverPhone">Receiver's Phone No</Label>
+              <Input
+                id="receiverPhone"
+                placeholder="Enter receiver phone number"
+                value={receiverPhone}
+                onChange={(e) => onFieldChange('receiverPhone', e.target.value)}
+                type="tel"
+              />
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Add separator only if both vehicle and receiver fields are shown */}
+        {/* {showVehicleFields && showReceiverFields && <hr className="border-gray-200" />} */}
       </CardContent>
     </Card>
   );

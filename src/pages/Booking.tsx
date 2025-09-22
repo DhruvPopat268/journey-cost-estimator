@@ -28,10 +28,11 @@ const Booking = () => {
   const [subcategoryName, setSubcategoryName] = useState(bookingData.subcategoryName || '');
   const [loading, setLoading] = useState(true);
 
-
-  // 1. Add new state variables for time duration (add these after existing useState declarations)
+  // Add new state variables for time duration
   const [startTime, setStartTime] = useState(bookingData.startTime || '');
   const [endTime, setEndTime] = useState(bookingData.endTime || '');
+
+
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -60,7 +61,7 @@ const Booking = () => {
     }
   }, [categoryName, subcategoryName]);
 
-  // 3. Add new function to check if service needs time duration
+  // Function to check if service needs time duration
   const needsTimeDuration = () => {
     const normalizedCategory = categoryName.replace(/[-\s]/g, '').toLowerCase();
     const normalizedSubcategory = subcategoryName.replace(/[-\s]/g, '').toLowerCase();
@@ -68,7 +69,13 @@ const Booking = () => {
       (normalizedSubcategory === 'weekly' || normalizedSubcategory === 'monthly');
   };
 
-  // 4. Add new useEffects for Redux updates
+  // Function to check if it's a parcel service
+  const isParcelService = () => {
+    const normalizedCategory = categoryName.replace(/[-\s]/g, '').toLowerCase();
+    return normalizedCategory === 'parcel';
+  };
+
+  // Add new useEffects for Redux updates
   useEffect(() => {
     dispatch(updateField({ field: 'startTime', value: startTime }));
   }, [startTime, dispatch]);
@@ -77,13 +84,17 @@ const Booking = () => {
     dispatch(updateField({ field: 'endTime', value: endTime }));
   }, [endTime, dispatch]);
 
-  // Check if subcategory needs drop location based on category + subcategory
+
+
+  // Updated function to check if subcategory needs drop location
   const needsDropLocation = () => {
     const normalizedSubcategory = subcategoryName.replace(/[-\s]/g, '').toLowerCase();
     const normalizedCategory = categoryName.replace(/[-\s]/g, '').toLowerCase();
 
     // Define combinations that need drop location
-    return normalizedSubcategory === 'oneway' || normalizedSubcategory === 'pointtopoint';
+    return normalizedSubcategory === 'oneway' || 
+           normalizedSubcategory === 'pointtopoint' ||
+           normalizedCategory === 'parcel'; // Add parcel service
   };
 
   useEffect(() => {
@@ -107,8 +118,8 @@ const Booking = () => {
         const categories = res.data?.data || [];
         setVehicleCategories(categories);
 
-        // Auto-set first car type if not already set
-        if (categories.length > 0 && !carType) {
+        // Auto-set first car type if not already set and not a parcel service
+        if (categories.length > 0 && !carType && !isParcelService()) {
           const firstCarType = categories[0].vehicleName.toLowerCase();
           setCarType(firstCarType);
           dispatch(updateField({ field: 'carType', value: firstCarType }));
@@ -129,15 +140,14 @@ const Booking = () => {
 
     if (subcategoryId) {
       fetchAllData();
-
       // Update Redux with category IDs
       dispatch(updateField({ field: 'categoryId', value: categoryId }));
       dispatch(updateField({ field: 'subcategoryId', value: subcategoryId }));
     }
 
-    // Set default transmission if not already set
+    // Set default transmission if not already set and not a parcel service
     const transmissionOptions = ['Manual', 'Automatic'];
-    if (transmissionOptions.length > 0 && !transmissionType) {
+    if (transmissionOptions.length > 0 && !transmissionType && !isParcelService()) {
       const defaultTransmission = transmissionOptions[0].toLowerCase();
       setTransmissionType(defaultTransmission);
       dispatch(updateField({ field: 'transmissionType', value: defaultTransmission }));
@@ -178,9 +188,11 @@ const Booking = () => {
     }
   }, [subcategoryName]);
 
+
+
   const transmissionOptions = ['Manual', 'Automatic'];
 
-  // 5. Update the handleNextPage function
+  // Updated handleNextPage function
   const handleNextPage = () => {
     const bookingData = {
       categoryId,
@@ -189,12 +201,13 @@ const Booking = () => {
       subcategoryName,
       fromLocation,
       toLocation: needsDropLocation() ? toLocation : '',
-      carType,
-      transmissionType,
+      carType: isParcelService() ? '' : carType,
+      transmissionType: isParcelService() ? '' : transmissionType,
       selectedDate,
       selectedTime: needsTimeDuration() ? '' : selectedTime,
       startTime: needsTimeDuration() ? startTime : '',
       endTime: needsTimeDuration() ? endTime : '',
+
     };
 
     // Dispatch the complete step 1 data to Redux
@@ -203,15 +216,21 @@ const Booking = () => {
     navigate('/booking-step2', { state: bookingData });
   };
 
+  // Updated form validation
+  const isFormValid = () => {
+    const basicValidation = fromLocation &&
+      (needsDropLocation() ? toLocation : true) &&
+      selectedDate &&
+      (needsTimeDuration() ? (startTime && endTime) : selectedTime);
 
-  // Updated form validation - removed includeInsurance dependency
-  const isFormValid =
-    fromLocation &&
-    (needsDropLocation() ? toLocation : true) &&
-    carType &&
-    transmissionType &&
-    selectedDate &&
-    (needsTimeDuration() ? (startTime && endTime) : selectedTime);
+    if (isParcelService()) {
+      // For parcel service: need basic fields, but not car/transmission
+      return basicValidation;
+    } else {
+      // For other services: need basic fields + car/transmission info
+      return basicValidation && carType && transmissionType;
+    }
+  };
 
   if (loading) {
     return (
@@ -246,10 +265,13 @@ const Booking = () => {
             endTime={endTime}
             carType={carType}
             transmissionType={transmissionType}
+
             vehicleCategories={vehicleCategories}
             transmissionOptions={transmissionOptions}
             showToLocation={needsDropLocation()}
             showTimeDuration={needsTimeDuration()}
+            showVehicleFields={!isParcelService()}
+            showReceiverFields={false}
             dateLabel={needsTimeDuration() ? 'Start Date' : 'Date'}
             onFieldChange={(field, value) => {
               switch (field) {
@@ -277,15 +299,14 @@ const Booking = () => {
                 case 'transmissionType':
                   setTransmissionType(value);
                   break;
+
               }
             }}
           />
-          /
-
           {/* Next Button */}
           <Button
             onClick={handleNextPage}
-            disabled={!isFormValid}
+            disabled={!isFormValid()}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 text-lg font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next Step

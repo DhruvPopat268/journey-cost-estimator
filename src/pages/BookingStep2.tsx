@@ -5,6 +5,8 @@ import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, CreditCard, X, Info, Wallet, Banknote } from 'lucide-react';
 import { FormRenderer } from '../components/booking/FormRenderer';
@@ -52,9 +54,13 @@ const BookingStep2 = () => {
   const [useReferral, setUseReferral] = useState(false);
   const [referralBalance, setReferralBalance] = useState(0);
 
+  // Add receiver fields state
+  const [receiverName, setReceiverName] = useState(bookingData?.receiverName || '');
+  const [receiverPhone, setReceiverPhone] = useState(bookingData?.receiverPhone || '');
 
-  const [numberOfWeeks, setNumberOfWeeks] = useState(bookingData?.numberOfWeeks || '');
-  const [numberOfMonths, setNumberOfMonths] = useState(bookingData?.numberOfMonths || '');
+  // Set default values to 1 if not present in bookingData
+  const [numberOfWeeks, setNumberOfWeeks] = useState(bookingData?.numberOfWeeks || '1');
+  const [numberOfMonths, setNumberOfMonths] = useState(bookingData?.numberOfMonths || '1');
 
   // Add these useEffect hooks with other useEffect declarations:
   useEffect(() => {
@@ -64,6 +70,15 @@ const BookingStep2 = () => {
   useEffect(() => {
     dispatch(updateField({ field: 'numberOfWeeks', value: numberOfWeeks }));
   }, [numberOfWeeks, dispatch]);
+
+  // Add useEffects for receiver fields
+  useEffect(() => {
+    dispatch(updateField({ field: 'receiverName', value: receiverName }));
+  }, [receiverName, dispatch]);
+
+  useEffect(() => {
+    dispatch(updateField({ field: 'receiverPhone', value: receiverPhone }));
+  }, [receiverPhone, dispatch]);
 
   // Fetch instructions when a category is selected
   const fetchInstructions = async (categoryName) => {
@@ -322,6 +337,12 @@ const BookingStep2 = () => {
     fetchRider();
   }, [navigate]);
 
+  // Function to check if it's a parcel service
+  const isParcelService = () => {
+    const normalizedCategory = bookingData?.categoryName?.replace(/[-\s]/g, '').toLowerCase() || '';
+    return normalizedCategory === 'parcel';
+  };
+
   // Compute final payable dynamically
   const finalPayable = React.useMemo(() => {
     if (!selectedCategory) return 0;
@@ -406,7 +427,9 @@ const BookingStep2 = () => {
           gstCharges: selectedCategory.gstCharges,
           totalPayable: finalPayable,
           notes: notes,
-          includeInsurance: includeInsurance
+          includeInsurance: includeInsurance,
+          receiverName: isParcelService() ? receiverName : '',
+          receiverPhone: isParcelService() ? receiverPhone : ''
         };
         navigate("/login", { state: bookingDetails });
         return;
@@ -431,7 +454,9 @@ const BookingStep2 = () => {
           gstCharges: selectedCategory.gstCharges,
           totalPayable: selectedCategory.totalPayable,
           notes: notes,
-          includeInsurance: includeInsurance
+          includeInsurance: includeInsurance,
+          receiverName: isParcelService() ? receiverName : '',
+          receiverPhone: isParcelService() ? receiverPhone : ''
         };
         navigate("/login", { state: bookingDetails });
         return;
@@ -476,7 +501,9 @@ const BookingStep2 = () => {
       totalPayable: finalPayable,
       notes: notes,
       includeInsurance: includeInsurance,
-      paymentMethod: selectedPaymentMethod
+      paymentMethod: selectedPaymentMethod,
+      receiverName: isParcelService() ? receiverName : '',
+      receiverPhone: isParcelService() ? receiverPhone : ''
     };
 
     // Update Redux store
@@ -580,7 +607,8 @@ const BookingStep2 = () => {
             // Show usage forms for One-Way and Hourly, but not for Point-to-Point or Round-Trip
             const showUsageForm = !normalizedSubcategory.includes('point-to-point') &&
               !normalizedSubcategory.includes('Round-Trip') &&
-              !normalizedSubcategory.includes('roundtrip');
+              !normalizedSubcategory.includes('roundtrip') &&
+              !normalizedCategory.includes('parcel');
 
             return showUsageForm;
           })() && (
@@ -684,6 +712,31 @@ const BookingStep2 = () => {
               </Card>
             )}
           </div>
+
+          {/* Receiver Fields - Show only for parcel service */}
+          {isParcelService() && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="receiverName">Receiver Name</Label>
+                <Input
+                  id="receiverName"
+                  placeholder="Enter receiver name"
+                  value={receiverName}
+                  onChange={(e) => setReceiverName(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="receiverPhone">Receiver's Phone No</Label>
+                <Input
+                  id="receiverPhone"
+                  placeholder="Enter receiver phone number"
+                  value={receiverPhone}
+                  onChange={(e) => setReceiverPhone(e.target.value)}
+                  type="tel"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Payment Method Selection */}
           {termsAccepted && (
