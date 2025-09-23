@@ -181,7 +181,7 @@ const WalletPage = () => {
 
     setLoadingTransactions(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/history?page=${page}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/history`, {
         method: 'GET',
         headers: getAuthHeaders(),
       });
