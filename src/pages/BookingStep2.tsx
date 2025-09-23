@@ -62,6 +62,9 @@ const BookingStep2 = () => {
   const [numberOfWeeks, setNumberOfWeeks] = useState(bookingData?.numberOfWeeks || '1');
   const [numberOfMonths, setNumberOfMonths] = useState(bookingData?.numberOfMonths || '1');
 
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [walletLoading, setWalletLoading] = useState(false);
+
   // Add these useEffect hooks with other useEffect declarations:
   useEffect(() => {
     dispatch(updateField({ field: 'numberOfMonths', value: numberOfMonths }));
@@ -337,6 +340,31 @@ const BookingStep2 = () => {
     fetchRider();
   }, [navigate]);
 
+  useEffect(() => {
+    const fetchWalletBalance = async () => {
+      const token = localStorage.getItem("RiderToken");
+      if (!token || selectedPaymentMethod !== 'wallet') return;
+
+      setWalletLoading(true);
+      try {
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_URL}/api/payments/wallet`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        setWalletBalance(res.data.balance || 0);
+      } catch (error) {
+        console.error("Failed to fetch wallet balance:", error);
+        setWalletBalance(0);
+      } finally {
+        setWalletLoading(false);
+      }
+    };
+
+    fetchWalletBalance();
+  }, [selectedPaymentMethod]);
+
   // Function to check if it's a parcel service
   const isParcelService = () => {
     const normalizedCategory = bookingData?.categoryName?.replace(/[-\s]/g, '').toLowerCase() || '';
@@ -519,7 +547,42 @@ const BookingStep2 = () => {
     if (selectedPaymentMethod === 'cash') {
       await bookRideDirectly(bookingDetails);
     } else if (selectedPaymentMethod === 'wallet') {
-      navigate("/wallet", { state: bookingDetails });
+      await handleWalletPayment(bookingDetails);
+    }
+  };
+
+  const handleWalletPayment = async (bookingDetails) => {
+    try {
+      const token = localStorage.getItem("RiderToken");
+
+      // First deduct money from wallet
+      const deductRes = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/payments/deduct`,
+        {
+          amount: finalPayable,
+          description: `Ride payment for ${bookingData.subcategoryName}`
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      if (deductRes.data.success) {
+        // If wallet deduction successful, book the ride
+        await bookRideDirectly({
+          ...bookingDetails,
+          walletTransactionId: deductRes.data.transactionId
+        });
+      } else {
+        alert("Wallet payment failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Wallet payment error:", error);
+      if (error.response?.data?.error === 'Insufficient balance') {
+        alert("Insufficient wallet balance. Please add money to your wallet.");
+      } else {
+        alert("Wallet payment failed. Please try again.");
+      }
     }
   };
 
@@ -740,10 +803,10 @@ const BookingStep2 = () => {
 
           {/* Payment Method Selection */}
           {termsAccepted && (
-            <div className=" p-4 ">
+            <div className="p-4">
               <h3 className="font-semibold text-gray-800 mb-3">Choose Payment Method</h3>
-              <div className="flex space-x-4">
-                <label className="flex items-center space-x-2 cursor-pointer">
+              <div className="space-y-3">
+                <label className="flex items-center space-x-3 cursor-pointer p-3 border rounded-lg ">
                   <input
                     type="radio"
                     name="paymentMethod"
@@ -752,11 +815,11 @@ const BookingStep2 = () => {
                     onChange={(e) => setSelectedPaymentMethod(e.target.value)}
                     className="text-blue-600"
                   />
-                  {/* <Banknote className="w-4 h-4 text-green-600" /> */}
-                  <span className="text-sm font-medium">Cash</span>
+                  <Banknote className="w-5 h-5 text-green-600" />
+                  <span className="font-medium">Cash on Delivery</span>
                 </label>
 
-                <label className="flex items-center space-x-2 cursor-pointer">
+                <label className="flex items-center space-x-3 cursor-pointer p-3 border rounded-lg ">
                   <input
                     type="radio"
                     name="paymentMethod"
@@ -765,8 +828,54 @@ const BookingStep2 = () => {
                     onChange={(e) => setSelectedPaymentMethod(e.target.value)}
                     className="text-blue-600"
                   />
-                  {/* <Wallet className="w-4 h-4 text-blue-600" /> */}
-                  <span className="text-sm font-medium">Wallet</span>
+                  <Wallet className="w-5 h-5 text-blue-600" />
+                  <div className="flex-1">
+                    <span className="font-medium">Wallet Payment</span>
+                    {selectedPaymentMethod === 'wallet' && (
+                      <div className="mt-2 text-sm">
+                        {walletLoading ? (
+                          <div className="flex items-center space-x-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            <span className="text-gray-500">Loading balance...</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Current Balance:</span>
+                              <span className="font-medium text-green-600">₹{walletBalance.toFixed(2)}</span>
+                            </div>
+                            {walletBalance < finalPayable ? (
+                              <div className="text-red-600">
+                                <div className="flex justify-between">
+                                  <span>Required:</span>
+                                  <span>₹{finalPayable.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Need to add:</span>
+                                  <span className="font-medium">₹{(finalPayable - walletBalance).toFixed(2)}</span>
+                                </div>
+                                <Button
+                                  onClick={() => navigate("/wallet", { state: bookingDetails })}
+                                  variant="outline"
+                                  size="sm"
+                                  className="mt-2 w-full text-blue-600 border-blue-600 hover:bg-blue-50"
+                                >
+                                  Add Balance
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="text-green-600">
+                                <div className="flex justify-between">
+                                  <span>After payment:</span>
+                                  <span className="font-medium">₹{(walletBalance - finalPayable).toFixed(2)}</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </label>
               </div>
             </div>
@@ -776,9 +885,19 @@ const BookingStep2 = () => {
           {selectedCategory?.category && (
             <Button
               onClick={termsAccepted ? handleFinalBooking : handleConfirmBooking}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-semibold rounded-lg"
+              disabled={selectedPaymentMethod === 'wallet' && walletBalance < finalPayable}
+              className={`w-full py-3 text-lg font-semibold rounded-lg ${selectedPaymentMethod === 'wallet' && walletBalance < finalPayable
+                  ? 'bg-gray-400 hover:bg-gray-400 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700'
+                } text-white`}
             >
-              {termsAccepted ? `Confirm Booking ₹${finalPayable}` : `Book Ride ₹${finalPayable}`}
+              {termsAccepted ?
+                (selectedPaymentMethod === 'wallet' && walletBalance < finalPayable ?
+                  'Insufficient Wallet Balance' :
+                  `Confirm Booking ₹${finalPayable.toFixed(2)}`
+                ) :
+                `Book Ride ₹${finalPayable.toFixed(2)}`
+              }
             </Button>
           )}
         </div>
@@ -831,8 +950,6 @@ const BookingStep2 = () => {
           </div>
         </div>
       )}
-
-
 
       {/* Price Breakdown Modal */}
       {showPriceBreakdown && (
