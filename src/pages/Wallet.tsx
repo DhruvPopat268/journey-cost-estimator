@@ -219,7 +219,7 @@ const WalletPage = () => {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          amount: amount * 100, // Convert to paise
+          amount: amount, // Convert to paise
           currency: 'INR'
         }),
       });
