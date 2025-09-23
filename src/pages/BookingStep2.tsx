@@ -855,7 +855,7 @@ const BookingStep2 = () => {
                                   <span className="font-medium">₹{(finalPayable - walletBalance).toFixed(2)}</span>
                                 </div>
                                 <Button
-                                  onClick={() => navigate("/wallet", { state: bookingDetails })}
+                                  onClick={() => navigate("/wallet")}
                                   variant="outline"
                                   size="sm"
                                   className="mt-2 w-full text-blue-600 border-blue-600 hover:bg-blue-50"

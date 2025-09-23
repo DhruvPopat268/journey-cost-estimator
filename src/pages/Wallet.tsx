@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Wallet, 
   ArrowLeft, 
@@ -15,7 +15,7 @@ import {
   Lock,
   Shield
 } from 'lucide-react';
-import { Navbar } from '@/components/Sidebar';
+import { useNavigate } from 'react-router-dom';
 
 // Declare Razorpay on window object
 declare global {
@@ -54,7 +54,8 @@ const Button = ({ children, onClick, disabled = false, variant = "default", clas
   const baseClasses = "px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center";
   const variantClasses = {
     default: "bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300",
-    outline: "border-2 border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+    outline: "border-2 border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50",
+    ghost: "hover:bg-gray-100 text-gray-700"
   };
 
   return (
@@ -78,6 +79,7 @@ const Input = ({ className = "", ...props }) => (
 );
 
 const WalletPage = () => {
+  const navigate = useNavigate();
   const [walletData, setWalletData] = useState({
     balance: 0,
     totalDeposited: 0,
@@ -85,7 +87,7 @@ const WalletPage = () => {
     lastTransactionAt: null,
     isActive: false
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [addMoneyAmount, setAddMoneyAmount] = useState('');
   const [showAddMoney, setShowAddMoney] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -100,98 +102,24 @@ const WalletPage = () => {
     hasPrev: false
   });
 
-  // Get RiderToken from localStorage
-  const getRiderToken = () => {
+  // Get RiderToken from localStorage - memoized
+  const getRiderToken = useCallback(() => {
     const token = localStorage.getItem('RiderToken');
     console.log('RiderToken from localStorage:', token);
     return token;
-  };
+  }, []);
 
-  // Create headers with authorization
-  const getAuthHeaders = () => {
+  // Create headers with authorization - memoized
+  const getAuthHeaders = useCallback(() => {
     const token = getRiderToken();
-    const headers = {
+    return {
       'Content-Type': 'application/json',
       ...(token && { 'Authorization': `Bearer ${token}` })
     };
-    return headers;
-  };
+  }, [getRiderToken]);
 
-  // Fetch wallet data
-  const fetchWalletData = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/wallet`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('Wallet data:', data);
-      setWalletData(data);
-    } catch (error) {
-      console.error('Error fetching wallet data:', error);
-      alert('Failed to load wallet data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch transaction history
-  const fetchTransactionHistory = async (page = 1) => {
-    setLoadingTransactions(true);
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/history`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('Transaction history:', data);
-      
-      // Transform API data to match our component structure
-      const transformedTransactions = data.payments.map(payment => ({
-        id: payment.id,
-        amount: payment.amount,
-        type: 'deposit', // Since this API only returns deposits
-        description: payment.description,
-        date: payment.date,
-        status: payment.status === 'paid' ? 'completed' : payment.status,
-        paymentMethod: payment.paymentMethod,
-        razorpayPaymentId: payment.razorpayPaymentId,
-        paidAt: payment.paidAt
-      }));
-
-      setTransactions(transformedTransactions);
-      setPagination(data.pagination);
-    } catch (error) {
-      console.error('Error fetching transaction history:', error);
-      alert('Failed to load transaction history');
-    } finally {
-      setLoadingTransactions(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchWalletData();
-    fetchTransactionHistory();
-    loadRazorpayScript().then((loaded) => {
-      if (!loaded) {
-        console.error('Failed to load Razorpay script');
-      }
-    });
-  }, []);
-
-  // Load Razorpay script
-  const loadRazorpayScript = () => {
+  // Load Razorpay script - memoized
+  const loadRazorpayScript = useCallback(() => {
     return new Promise((resolve) => {
       // Check if already loaded
       if (window.Razorpay) {
@@ -211,15 +139,97 @@ const WalletPage = () => {
       };
       document.body.appendChild(script);
     });
-  };
+  }, []);
 
-  const createRazorpayOrder = async (amount) => {
+  // Fetch wallet data - memoized to prevent infinite loop
+  const fetchWalletData = useCallback(async () => {
+    if (!import.meta.env.VITE_API_URL) {
+      console.error('VITE_API_URL is not defined');
+      alert('API URL is not configured');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/wallet`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Wallet data:', data);
+      setWalletData(data);
+    } catch (error) {
+      console.error('Error fetching wallet data:', error);
+      alert('Failed to load wallet data. Please check your connection.');
+    } finally {
+      setLoading(false);
+    }
+  }, [getAuthHeaders]);
+
+  // Fetch transaction history - memoized
+  const fetchTransactionHistory = useCallback(async (page = 1) => {
+    if (!import.meta.env.VITE_API_URL) {
+      console.error('VITE_API_URL is not defined');
+      return;
+    }
+
+    setLoadingTransactions(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/history?page=${page}`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Transaction history:', data);
+      
+      // Transform API data to match our component structure with safety checks
+      const transformedTransactions = (data.payments || []).map(payment => ({
+        id: payment.id,
+        amount: payment.amount,
+        type: 'deposit',
+        description: payment.description || 'Wallet recharge',
+        date: payment.date,
+        status: payment.status === 'paid' ? 'completed' : payment.status,
+        paymentMethod: payment.paymentMethod,
+        razorpayPaymentId: payment.razorpayPaymentId,
+        paidAt: payment.paidAt
+      }));
+
+      setTransactions(transformedTransactions);
+      setPagination(data.pagination || {
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: 0,
+        hasNext: false,
+        hasPrev: false
+      });
+    } catch (error) {
+      console.error('Error fetching transaction history:', error);
+      alert('Failed to load transaction history');
+    } finally {
+      setLoadingTransactions(false);
+    }
+  }, [getAuthHeaders]);
+
+  // Create Razorpay order
+  const createRazorpayOrder = useCallback(async (amount) => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/create-order`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          amount: amount, // Convert to paise
+          amount: amount,
           currency: 'INR'
         }),
       });
@@ -234,9 +244,10 @@ const WalletPage = () => {
       console.error('Error creating order:', error);
       throw error;
     }
-  };
+  }, [getAuthHeaders]);
 
-  const handleRazorpayPayment = async (amount) => {
+  // Handle Razorpay payment
+  const handleRazorpayPayment = useCallback(async (amount) => {
     try {
       setIsProcessing(true);
       
@@ -279,11 +290,11 @@ const WalletPage = () => {
             });
 
             if (verifyResponse.ok) {
-              const result = await verifyResponse.json();
-              
-              // Refresh wallet data and transactions
-              await fetchWalletData();
-              await fetchTransactionHistory();
+              // Add delay to prevent multiple rapid calls
+              setTimeout(() => {
+                fetchWalletData();
+                fetchTransactionHistory();
+              }, 1000);
               
               setAddMoneyAmount('');
               setShowAddMoney(false);
@@ -300,9 +311,9 @@ const WalletPage = () => {
           }
         },
         prefill: {
-          name: 'User Name', // Get from user profile
-          email: 'user@example.com', // Get from user profile
-          contact: '9999999999' // Get from user profile
+          name: 'User Name',
+          email: 'user@example.com',
+          contact: '9999999999'
         },
         notes: {
           purpose: 'wallet_recharge'
@@ -325,7 +336,39 @@ const WalletPage = () => {
       alert('Payment failed. Please try again.');
       setIsProcessing(false);
     }
-  };
+  }, [createRazorpayOrder, getAuthHeaders, fetchWalletData, fetchTransactionHistory]);
+
+  // Initialize wallet data on component mount
+  useEffect(() => {
+    let mounted = true;
+    
+    const initializeWallet = async () => {
+      if (!mounted) return;
+      
+      try {
+        // Load wallet data and transaction history
+        await Promise.all([
+          fetchWalletData(),
+          fetchTransactionHistory()
+        ]);
+        
+        // Load Razorpay script
+        const scriptLoaded = await loadRazorpayScript();
+        if (!scriptLoaded && mounted) {
+          console.error('Failed to load Razorpay script');
+        }
+      } catch (error) {
+        console.error('Error initializing wallet:', error);
+      }
+    };
+
+    initializeWallet();
+    
+    // Cleanup function
+    return () => {
+      mounted = false;
+    };
+  }, [fetchWalletData, fetchTransactionHistory, loadRazorpayScript]);
 
   const handleAddMoney = async () => {
     if (!addMoneyAmount || addMoneyAmount <= 0) {
@@ -398,9 +441,20 @@ const WalletPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-4 px-4">
       {/* Navigation */}
-      <Navbar title='My Wallet'/>
+      <div className="max-w-4xl mx-auto mb-4">
+        <div className="flex items-center mb-3">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
+            className="mr-4 p-2 hover:bg-white/50 rounded-full"
+          >
+            <ArrowLeft className="w-6 h-6" />
+          </Button>
+          <h1 className="text-2xl font-bold text-gray-900">My Wallet</h1>
+        </div>
+      </div>
       
-      <div className="max-w-4xl mx-auto space-y-6 mt-2">
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Wallet Balance Card */}
         <Card className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 text-white shadow-2xl border-0 overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent"></div>
