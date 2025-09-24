@@ -64,30 +64,31 @@ const BookingStep2 = () => {
 
   const [walletBalance, setWalletBalance] = useState(0);
   const [walletLoading, setWalletLoading] = useState(false);
+  const [isCalculating, setIsCalculating] = useState(false);
 
-  // Add these useEffect hooks with other useEffect declarations:
+  // Update Redux for additional fields - consolidated
   useEffect(() => {
     dispatch(updateField({ field: 'numberOfMonths', value: numberOfMonths }));
-  }, [numberOfMonths, dispatch]);
+  }, [numberOfMonths]);
 
   useEffect(() => {
     dispatch(updateField({ field: 'numberOfWeeks', value: numberOfWeeks }));
-  }, [numberOfWeeks, dispatch]);
+  }, [numberOfWeeks]);
 
-  // Add useEffects for receiver fields
   useEffect(() => {
     dispatch(updateField({ field: 'receiverName', value: receiverName }));
-  }, [receiverName, dispatch]);
+  }, [receiverName]);
 
   useEffect(() => {
     dispatch(updateField({ field: 'receiverPhone', value: receiverPhone }));
-  }, [receiverPhone, dispatch]);
+  }, [receiverPhone]);
 
-  // Fetch instructions when a category is selected
+  // Fetch instructions when a category is selected - with duplicate prevention
   const fetchInstructions = async (categoryName) => {
-    if (!categoryName) {
+    if (!categoryName || instructionsLoading) {
       return;
     }
+    
     setInstructionsLoading(true);
     try {
       const res = await axios.post(
@@ -109,8 +110,15 @@ const BookingStep2 = () => {
     }
   };
 
-  // Function to call API with current data including insurance
+  // Function to call API with current data including insurance - with duplicate prevention
   const callCalculationAPI = async (usageValue, weeksValue = numberOfWeeks, monthsValue = numberOfMonths) => {
+    // Prevent multiple simultaneous API calls
+    if (isCalculating || !usageValue || !bookingData) {
+      return;
+    }
+
+    setIsCalculating(true);
+    
     const fullData = {
       ...bookingData,
       selectedUsage: usageValue,
@@ -135,10 +143,12 @@ const BookingStep2 = () => {
       console.error('API error:', err);
       // Set loading to false even on error
       setLoading(false);
+    } finally {
+      setIsCalculating(false);
     }
   };
 
-  // Main initialization useEffect
+  // Main initialization useEffect - only run once
   useEffect(() => {
     const initializeComponent = async () => {
       try {
@@ -171,44 +181,49 @@ const BookingStep2 = () => {
       }
     };
 
-    if (bookingData) {
+    if (bookingData && !loading) {
       initializeComponent();
-    } else {
-      // If no booking data, just set loading to false
+    } else if (!bookingData) {
       setLoading(false);
     }
-  }, [bookingData?.subcategoryName]);
+  }, []);
 
-  // Update Redux when any field changes
+  // Update Redux when fields change - consolidated
   useEffect(() => {
     dispatch(updateField({ field: 'selectedUsage', value: selectedUsage }));
-  }, [selectedUsage, dispatch]);
+  }, [selectedUsage]);
 
   useEffect(() => {
     dispatch(updateField({ field: 'customUsage', value: customUsage }));
-  }, [customUsage, dispatch]);
+  }, [customUsage]);
 
   useEffect(() => {
     dispatch(updateField({ field: 'notes', value: notes }));
-  }, [notes, dispatch]);
+  }, [notes]);
 
   useEffect(() => {
     dispatch(updateField({ field: 'includeInsurance', value: includeInsurance }));
-  }, [includeInsurance, dispatch]);
+  }, [includeInsurance]);
 
-  // Handler functions for weeks and months changes
+  // Handler functions for weeks and months changes - debounced
   const handleNumberOfWeeksChange = (value) => {
     setNumberOfWeeks(value);
-    if (value && bookingData && (selectedUsage || customUsage)) {
-      callCalculationAPI(selectedUsage || customUsage, value, numberOfMonths);
-    }
+    // Debounce API call
+    setTimeout(() => {
+      if (value && bookingData && (selectedUsage || customUsage)) {
+        callCalculationAPI(selectedUsage || customUsage, value, numberOfMonths);
+      }
+    }, 300);
   };
 
   const handleNumberOfMonthsChange = (value) => {
     setNumberOfMonths(value);
-    if (value && bookingData && (selectedUsage || customUsage)) {
-      callCalculationAPI(selectedUsage || customUsage, numberOfWeeks, value);
-    }
+    // Debounce API call
+    setTimeout(() => {
+      if (value && bookingData && (selectedUsage || customUsage)) {
+        callCalculationAPI(selectedUsage || customUsage, numberOfWeeks, value);
+      }
+    }, 300);
   };
 
   // Trigger API when usage changes (selected or custom)
@@ -224,85 +239,68 @@ const BookingStep2 = () => {
     await callCalculationAPI(value);
   };
 
-  // Trigger API when customUsage changes
+  // Trigger API when customUsage changes - with debounce
   useEffect(() => {
+    if (!customUsage) return;
+    
     const delayDebounce = setTimeout(() => {
       if (customUsage && bookingData) {
         dispatch(setUsage({
           selectedUsage: '',
           customUsage: customUsage
         }));
-
         callCalculationAPI(customUsage);
       }
     }, 500);
     return () => clearTimeout(delayDebounce);
-  }, [customUsage, bookingData, dispatch]);
+  }, [customUsage]);
 
-  // Trigger API when insurance changes
+  // Trigger API when insurance changes - only if we have usage
   useEffect(() => {
-    if ((selectedUsage || customUsage) && bookingData) {
+    if ((selectedUsage || customUsage) && bookingData && !loading) {
       callCalculationAPI(selectedUsage || customUsage);
     }
   }, [includeInsurance]);
 
-  // Update selected category when total amount changes
-  useEffect(() => {
-    if (selectedCategory && totalAmount?.length > 0) {
-      const updated = totalAmount.find(
-        (item) => item.category === selectedCategory.category
-      );
-      if (updated) {
-        setSelectedCategoryLocal(updated);
-      }
-    }
-  }, [totalAmount]);
-
   // Update Redux when notes change
   useEffect(() => {
     dispatch(setNotes(notes));
-  }, [notes, dispatch]);
+  }, [notes]);
 
-  // Update Redux when selected category changes
+  // Update Redux when selected category changes - prevent duplicate calls
   useEffect(() => {
-    if (selectedCategory) {
+    if (selectedCategory && selectedCategory.category) {
       const serializableCategory = JSON.parse(JSON.stringify(selectedCategory));
       dispatch(setSelectedCategory(serializableCategory));
 
-      // Use the category name instead of ID
+      // Fetch instructions only once per category
       const categoryName = selectedCategory.category;
-
-      // Fetch instructions for the selected category
-      if (categoryName) {
+      if (categoryName && instructions.length === 0) {
         fetchInstructions(categoryName);
+      }
+    }
+  }, [selectedCategory?.category]);
+
+  // Set default category and update when total amount changes - consolidated
+  useEffect(() => {
+    if (totalAmount?.length > 0) {
+      if (!selectedCategory) {
+        // Set default category to "Prime"
+        const defaultCategory = totalAmount.find(item =>
+          item?.category?.toLowerCase() === 'prime'
+        );
+        if (defaultCategory) {
+          setSelectedCategoryLocal(defaultCategory);
+        }
+        setLoading(false);
       } else {
-        console.error("No category name found in selectedCategory:", selectedCategory);
-      }
-    }
-  }, [selectedCategory, dispatch]);
-
-  // Set default category to "Prime"
-  useEffect(() => {
-    if (!selectedCategory && totalAmount?.length > 0) {
-      const defaultCategory = totalAmount.find(item =>
-        item?.category?.toLowerCase() === 'prime'
-      );
-      if (defaultCategory) {
-        setSelectedCategoryLocal(defaultCategory);
-      }
-      // Set loading to false once we have total amount data
-      setLoading(false);
-    }
-  }, [totalAmount, selectedCategory]);
-
-  // Update selected category when total amount changes
-  useEffect(() => {
-    if (selectedCategory && totalAmount?.length > 0) {
-      const updated = totalAmount.find(
-        (item) => item?.category === selectedCategory?.category
-      );
-      if (updated) {
-        setSelectedCategoryLocal(updated);
+        // Update selected category with new data
+        const updated = totalAmount.find(
+          (item) => item?.category === selectedCategory?.category
+        );
+        if (updated) {
+          setSelectedCategoryLocal(updated);
+        }
       }
     }
   }, [totalAmount]);
