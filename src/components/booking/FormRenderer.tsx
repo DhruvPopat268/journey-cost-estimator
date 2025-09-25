@@ -8,6 +8,7 @@ interface FormRendererProps {
   customUsage: string;
   numberOfMonths?: string;
   numberOfWeeks?: string;
+  durationOptions?: string[];
   onUsageChange: (value: string) => void;
   onCustomUsageChange: (value: string) => void;
   onNumberOfMonthsChange?: (value: string) => void;
@@ -21,6 +22,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
   customUsage,
   numberOfMonths = '',
   numberOfWeeks = '',
+  durationOptions = [],
   onUsageChange,
   onCustomUsageChange,
   onNumberOfMonthsChange,
@@ -44,6 +46,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
     return (
       <HourlyForm
         selectedUsage={selectedUsage}
+        durationOptions={durationOptions}
         onUsageChange={onUsageChange}
       />
     );
@@ -75,6 +78,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
   return (
     <HourlyForm
       selectedUsage={selectedUsage}
+      durationOptions={durationOptions}
       onUsageChange={onUsageChange}
     />
   );

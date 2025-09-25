@@ -6,14 +6,29 @@ import { Clock } from 'lucide-react';
 
 interface HourlyFormProps {
   selectedUsage: string;
+  durationOptions?: string[];
   onUsageChange: (value: string) => void;
 }
 
 export const HourlyForm: React.FC<HourlyFormProps> = ({
   selectedUsage,
+  durationOptions = [],
   onUsageChange,
 }) => {
-  const usageOptions = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+  const usageOptions = durationOptions.length > 0 ? durationOptions : ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+  
+  const convertMinutesToHours = (minutes: string) => {
+    const mins = parseInt(minutes);
+    return (mins / 60).toString();
+  };
+  
+  const getDisplayText = (option: string) => {
+    if (durationOptions.length > 0) {
+      const hours = parseInt(option) / 60;
+      return hours === 1 ? '1 Hour' : `${hours} Hours`;
+    }
+    return `${option} Hr`;
+  };
 
   return (
     <Card className="bg-white shadow-lg">
@@ -32,8 +47,8 @@ export const HourlyForm: React.FC<HourlyFormProps> = ({
             </SelectTrigger>
             <SelectContent>
               {usageOptions.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option} Hr
+                <SelectItem key={option} value={durationOptions.length > 0 ? convertMinutesToHours(option) : option}>
+                  {getDisplayText(option)}
                 </SelectItem>
               ))}
             </SelectContent>

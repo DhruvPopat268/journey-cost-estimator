@@ -55,8 +55,31 @@ const Subcategory = () => {
     fetchData();
   }, [categoryId, navigate]);
 
-  const handleSubcategorySelect = (subcategoryId) => {
-    navigate(`/booking/${categoryId}/${subcategoryId}`);
+  const handleSubcategorySelect = async (subcategory) => {
+    // Check if it's outstation subcategory
+    if (subcategory.name.toLowerCase().includes('outstation')) {
+      try {
+        // Check if sub-subcategories exist for this subcategory
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/subsubcategories`);
+        const subSubcategories = res.data || [];
+        const filteredSubSubcategories = subSubcategories.filter(sub => sub.categoryId === categoryId);
+        
+        if (filteredSubSubcategories.length > 0) {
+          // Navigate to sub-subcategories page if they exist
+          navigate(`/subsubcategories/${categoryId}/${subcategory.id}`);
+        } else {
+          // Navigate directly to booking if no sub-subcategories
+          navigate(`/booking/${categoryId}/${subcategory.id}`);
+        }
+      } catch (error) {
+        console.error('Error checking sub-subcategories:', error);
+        // Fallback to direct booking navigation
+        navigate(`/booking/${categoryId}/${subcategory.id}`);
+      }
+    } else {
+      // For non-outstation subcategories, go directly to booking
+      navigate(`/booking/${categoryId}/${subcategory.id}`);
+    }
   };
 
   // 🔹 Back to Home ("/")
@@ -153,7 +176,7 @@ const Subcategory = () => {
         <Card
           key={subcategory.id}
           className="bg-white shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer border rounded-lg"
-          onClick={() => handleSubcategorySelect(subcategory.id)}
+          onClick={() => handleSubcategorySelect(subcategory)}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between">

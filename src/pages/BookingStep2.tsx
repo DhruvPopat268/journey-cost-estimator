@@ -23,18 +23,10 @@ const BookingStep2 = () => {
   const location = useLocation();
   const dispatch = useDispatch();
 
-  // Get data from Redux store first
   const bookingDataFromStore = useSelector(state => state.booking);
-  console.log("Booking data from Redux store:", bookingDataFromStore);
-  const categoryId = bookingDataFromStore?.categoryId;
-
-  // Use location state only if Redux store data is not available
   const bookingData = bookingDataFromStore && Object.keys(bookingDataFromStore).length > 0
     ? bookingDataFromStore
     : location.state;
-  console.log("Booking data from Redux store:", bookingDataFromStore);
-  console.log("Booking data from location state:", location.state);
-  console.log("Booking data used:", bookingData);
 
   const [selectedUsage, setSelectedUsage] = useState(bookingData?.selectedUsage || '');
   const [customUsage, setCustomUsage] = useState(bookingData?.customUsage || '');
@@ -43,7 +35,7 @@ const BookingStep2 = () => {
   const [includeInsurance, setIncludeInsurance] = useState(bookingData?.includeInsurance !== undefined ? bookingData.includeInsurance : true);
   const [loading, setLoading] = useState(true);
   const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
-  const [instructions, setInstructions] = useState(["hello"]);
+  const [instructions, setInstructions] = useState([]);
   const [totalAmount, setTotalAmountLocal] = useState(bookingData?.totalAmount || []);
   const [selectedCategory, setSelectedCategoryLocal] = useState(bookingData?.selectedCategory || null);
   const [showInstructions, setShowInstructions] = useState(false);
@@ -54,19 +46,16 @@ const BookingStep2 = () => {
   const [useReferral, setUseReferral] = useState(false);
   const [referralBalance, setReferralBalance] = useState(0);
 
-  // Add receiver fields state
   const [receiverName, setReceiverName] = useState(bookingData?.receiverName || '');
   const [receiverPhone, setReceiverPhone] = useState(bookingData?.receiverPhone || '');
-
-  // Set default values to 1 if not present in bookingData
   const [numberOfWeeks, setNumberOfWeeks] = useState(bookingData?.numberOfWeeks || '1');
   const [numberOfMonths, setNumberOfMonths] = useState(bookingData?.numberOfMonths || '1');
 
   const [walletBalance, setWalletBalance] = useState(0);
   const [walletLoading, setWalletLoading] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [durationOptions, setDurationOptions] = useState([]);
 
-  // Update Redux for additional fields - consolidated
   useEffect(() => {
     dispatch(updateField({ field: 'numberOfMonths', value: numberOfMonths }));
   }, [numberOfMonths]);
@@ -83,12 +72,9 @@ const BookingStep2 = () => {
     dispatch(updateField({ field: 'receiverPhone', value: receiverPhone }));
   }, [receiverPhone]);
 
-  // Fetch instructions when a category is selected - with duplicate prevention
   const fetchInstructions = async (categoryName) => {
-    if (!categoryName || instructionsLoading) {
-      return;
-    }
-    
+    if (!categoryName || instructionsLoading) return;
+
     setInstructionsLoading(true);
     try {
       const res = await axios.post(
@@ -99,8 +85,6 @@ const BookingStep2 = () => {
           selectedCategoryName: categoryName
         }
       );
-
-      // Extract just the instructions array from the response
       setInstructions(res.data.instructions || []);
     } catch (error) {
       console.error('Failed to fetch instructions', error);
@@ -110,70 +94,78 @@ const BookingStep2 = () => {
     }
   };
 
-  // Function to call API with current data including insurance - with duplicate prevention
   const callCalculationAPI = async (usageValue, weeksValue = numberOfWeeks, monthsValue = numberOfMonths) => {
-    // Prevent multiple simultaneous API calls
-    if (isCalculating || !usageValue || !bookingData) {
-      return;
-    }
+    if (isCalculating || !usageValue || !bookingData) return;
 
     setIsCalculating(true);
-    
-    const fullData = {
-      ...bookingData,
-      selectedUsage: usageValue,
-      includeInsurance: includeInsurance,
-      numberOfWeeks: weeksValue,
-      numberOfMonths: monthsValue
-    };
 
     try {
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/ride-costs/calculation`,
-        fullData
+        {
+          ...bookingData,
+          selectedUsage: usageValue,
+          includeInsurance: includeInsurance,
+          numberOfWeeks: weeksValue,
+          numberOfMonths: monthsValue
+        }
       );
 
-      const responseData = res.data;
+      const responseData = res.data.success ? res.data.result : res.data;
       setTotalAmountLocal(responseData);
       dispatch(setTotalAmount(responseData));
-
-      // Set loading to false after successful API call
       setLoading(false);
     } catch (err) {
       console.error('API error:', err);
-      // Set loading to false even on error
       setLoading(false);
     } finally {
       setIsCalculating(false);
     }
   };
 
-  // Main initialization useEffect - only run once
   useEffect(() => {
+    const fetchIncludedData = async () => {
+      if (bookingData?.subcategoryName?.toLowerCase().includes('hourly')) {
+        try {
+          const res = await axios.post(
+            `${import.meta.env.VITE_API_URL}/api/ride-costs/get-included-data`,
+            {
+              categoryId: bookingData.categoryId,
+              subcategoryId: bookingData.subcategoryId
+            }
+          );
+          if (res.data.success && res.data.data.includedMinutes) {
+            setDurationOptions(res.data.data.includedMinutes);
+          }
+        } catch (error) {
+          console.error('Failed to fetch included data:', error);
+        }
+      }
+    };
+
     const initializeComponent = async () => {
       try {
-        // Set default usage if needed and make API call
-        if (!selectedUsage && !customUsage && bookingData?.subcategoryName) {
-          const normalizedName = bookingData.subcategoryName.toLowerCase();
-          let defaultUsage = "";
+        await fetchIncludedData();
 
-          if (normalizedName.includes("one-way") || normalizedName.includes("oneway") || normalizedName.includes("one way")) {
-            defaultUsage = "10";
-          } else if (normalizedName.includes("hourly") || normalizedName.includes("hour")) {
-            defaultUsage = "1";
+        if (!selectedUsage && !customUsage) {
+          let defaultUsage = "1";
+          if (bookingData?.subcategoryName?.toLowerCase().includes('hourly') && durationOptions.length > 0) {
+            // For hourly with API data, find the option that equals 1 hour (60 minutes)
+            const oneHourOption = durationOptions.find(option => parseInt(option) === 60);
+            if (oneHourOption) {
+              defaultUsage = "1"; // Store as 1 hour
+            } else {
+              // If no 1-hour option, use the first available option converted to hours
+              defaultUsage = (parseInt(durationOptions[0]) / 60).toString();
+            }
           }
-
-          if (defaultUsage) {
-            setSelectedUsage(defaultUsage);
-            dispatch(setUsage({
-              selectedUsage: defaultUsage,
-              customUsage: ''
-            }));
-            await callCalculationAPI(defaultUsage);
-          }
-        } else if (bookingData && (selectedUsage || customUsage)) {
-          // If we already have usage, make the API call
+          setSelectedUsage(defaultUsage);
+          dispatch(setUsage({ selectedUsage: defaultUsage, customUsage: '' }));
+          await callCalculationAPI(defaultUsage);
+        } else if (selectedUsage || customUsage) {
           await callCalculationAPI(selectedUsage || customUsage);
+        } else {
+          setLoading(false);
         }
       } catch (error) {
         console.error('Error initializing component:', error);
@@ -181,14 +173,13 @@ const BookingStep2 = () => {
       }
     };
 
-    if (bookingData && !loading) {
+    if (bookingData) {
       initializeComponent();
-    } else if (!bookingData) {
+    } else {
       setLoading(false);
     }
   }, []);
 
-  // Update Redux when fields change - consolidated
   useEffect(() => {
     dispatch(updateField({ field: 'selectedUsage', value: selectedUsage }));
   }, [selectedUsage]);
@@ -205,10 +196,8 @@ const BookingStep2 = () => {
     dispatch(updateField({ field: 'includeInsurance', value: includeInsurance }));
   }, [includeInsurance]);
 
-  // Handler functions for weeks and months changes - debounced
   const handleNumberOfWeeksChange = (value) => {
     setNumberOfWeeks(value);
-    // Debounce API call
     setTimeout(() => {
       if (value && bookingData && (selectedUsage || customUsage)) {
         callCalculationAPI(selectedUsage || customUsage, value, numberOfMonths);
@@ -218,7 +207,6 @@ const BookingStep2 = () => {
 
   const handleNumberOfMonthsChange = (value) => {
     setNumberOfMonths(value);
-    // Debounce API call
     setTimeout(() => {
       if (value && bookingData && (selectedUsage || customUsage)) {
         callCalculationAPI(selectedUsage || customUsage, numberOfWeeks, value);
@@ -226,54 +214,40 @@ const BookingStep2 = () => {
     }, 300);
   };
 
-  // Trigger API when usage changes (selected or custom)
   const handleUsageChange = async (value) => {
     setSelectedUsage(value);
     setCustomUsage('');
-
-    dispatch(setUsage({
-      selectedUsage: value,
-      customUsage: ''
-    }));
-
+    dispatch(setUsage({ selectedUsage: value, customUsage: '' }));
     await callCalculationAPI(value);
   };
 
-  // Trigger API when customUsage changes - with debounce
   useEffect(() => {
     if (!customUsage) return;
-    
+
     const delayDebounce = setTimeout(() => {
       if (customUsage && bookingData) {
-        dispatch(setUsage({
-          selectedUsage: '',
-          customUsage: customUsage
-        }));
+        dispatch(setUsage({ selectedUsage: '', customUsage: customUsage }));
         callCalculationAPI(customUsage);
       }
     }, 500);
     return () => clearTimeout(delayDebounce);
   }, [customUsage]);
 
-  // Trigger API when insurance changes - only if we have usage
   useEffect(() => {
     if ((selectedUsage || customUsage) && bookingData && !loading) {
       callCalculationAPI(selectedUsage || customUsage);
     }
   }, [includeInsurance]);
 
-  // Update Redux when notes change
   useEffect(() => {
     dispatch(setNotes(notes));
   }, [notes]);
 
-  // Update Redux when selected category changes - prevent duplicate calls
   useEffect(() => {
     if (selectedCategory && selectedCategory.category) {
       const serializableCategory = JSON.parse(JSON.stringify(selectedCategory));
       dispatch(setSelectedCategory(serializableCategory));
 
-      // Fetch instructions only once per category
       const categoryName = selectedCategory.category;
       if (categoryName && instructions.length === 0) {
         fetchInstructions(categoryName);
@@ -281,23 +255,16 @@ const BookingStep2 = () => {
     }
   }, [selectedCategory?.category]);
 
-  // Set default category and update when total amount changes - consolidated
   useEffect(() => {
     if (totalAmount?.length > 0) {
       if (!selectedCategory) {
-        // Set default category to "Prime"
-        const defaultCategory = totalAmount.find(item =>
-          item?.category?.toLowerCase() === 'prime'
-        );
+        const defaultCategory = totalAmount.find(item => item?.category?.toLowerCase() === 'prime');
         if (defaultCategory) {
           setSelectedCategoryLocal(defaultCategory);
         }
         setLoading(false);
       } else {
-        // Update selected category with new data
-        const updated = totalAmount.find(
-          (item) => item?.category === selectedCategory?.category
-        );
+        const updated = totalAmount.find(item => item?.category === selectedCategory?.category);
         if (updated) {
           setSelectedCategoryLocal(updated);
         }
@@ -305,27 +272,19 @@ const BookingStep2 = () => {
     }
   }, [totalAmount]);
 
-  // Fetch rider data for referral balance
   useEffect(() => {
-    // Check if RiderToken exists in localStorage
     const token = localStorage.getItem("RiderToken");
-
-    if (!token) return; // Skip fetching rider data if not logged in
+    if (!token) return;
 
     const fetchRider = async () => {
       try {
         const res = await axios.post(
           `${import.meta.env.VITE_API_URL}/api/rider-auth/find-rider`,
           {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        )
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         if (res.data?.success && res.data.rider) {
-          const rider = res.data.rider;
-          setReferralBalance(rider.referralEarning?.currentBalance || 0);
+          setReferralBalance(res.data.rider.referralEarning?.currentBalance || 0);
         }
       } catch (err) {
         console.error("Error fetching rider:", err);
@@ -336,7 +295,7 @@ const BookingStep2 = () => {
     };
 
     fetchRider();
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
     const fetchWalletBalance = async () => {
@@ -363,13 +322,6 @@ const BookingStep2 = () => {
     fetchWalletBalance();
   }, [selectedPaymentMethod]);
 
-  // Function to check if it's a parcel service
-  const isParcelService = () => {
-    const normalizedCategory = bookingData?.categoryName?.replace(/[-\s]/g, '').toLowerCase() || '';
-    return normalizedCategory === 'parcel';
-  };
-
-  // Compute final payable dynamically
   const finalPayable = React.useMemo(() => {
     if (!selectedCategory) return 0;
     const baseTotal = selectedCategory.totalPayable || 0;
@@ -395,55 +347,25 @@ const BookingStep2 = () => {
     );
   }
 
-  const getUsageOptions = () => {
-    if (!bookingData.subcategoryName) return ['1', '2', '3', '4', '5'];
-
-    const normalizedName = bookingData.subcategoryName.toLowerCase();
-    if (normalizedName.includes('one-way') || normalizedName.includes('oneway') || normalizedName.includes('one way')) {
-      return ['10', '25', '50', '100'];
-    }
-    if (normalizedName.includes('hourly') || normalizedName.includes('hour')) {
-      return ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', "11", "12"];
-    }
-  };
-
-  const getUsageUnit = () => {
-    if (!bookingData.subcategoryName) return 'Unit';
-
-    const normalizedName = bookingData.subcategoryName.toLowerCase();
-    if (normalizedName.includes('one-way') || normalizedName.includes('oneway') || normalizedName.includes('one way')) {
-      return 'KM';
-    }
-    if (normalizedName.includes('hourly') || normalizedName.includes('hour')) {
-      return 'Hr';
-    }
-    return 'Unit';
-  };
-
-  // Handle category selection
   const handleCategorySelect = (item) => {
     setSelectedCategoryLocal(item);
   };
 
-  // Handle info button click
   const handleInfoClick = (e, item) => {
     e.stopPropagation();
     setSelectedCategoryLocal(item);
     setShowPriceBreakdown(true);
   };
 
-  // Updated function to check login first before showing terms
   const handleConfirmBooking = async () => {
     if (!selectedCategory || !selectedCategory.category) {
       alert("Please select a driver category to proceed.");
       return;
     }
 
-    // First check if user is logged in
     try {
       const token = localStorage.getItem("RiderToken");
       if (!token) {
-        // If no token, redirect to login with booking details
         const bookingDetails = {
           ...bookingData,
           selectedUsage: selectedUsage || customUsage,
@@ -454,23 +376,19 @@ const BookingStep2 = () => {
           totalPayable: finalPayable,
           notes: notes,
           includeInsurance: includeInsurance,
-          receiverName: isParcelService() ? receiverName : '',
-          receiverPhone: isParcelService() ? receiverPhone : ''
+          receiverName: receiverName,
+          receiverPhone: receiverPhone
         };
         navigate("/login", { state: bookingDetails });
         return;
       }
 
-      // Check if token is valid
       const res = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/rider-auth/auth/check`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (!res.data.loggedIn) {
-        // If token is invalid, redirect to login
         const bookingDetails = {
           ...bookingData,
           selectedUsage: selectedUsage || customUsage,
@@ -481,19 +399,16 @@ const BookingStep2 = () => {
           totalPayable: selectedCategory.totalPayable,
           notes: notes,
           includeInsurance: includeInsurance,
-          receiverName: isParcelService() ? receiverName : '',
-          receiverPhone: isParcelService() ? receiverPhone : ''
+          receiverName: receiverName,
+          receiverPhone: receiverPhone
         };
         navigate("/login", { state: bookingDetails });
         return;
       }
 
-      // If user is logged in, show terms modal
       setShowTermsModal(true);
-
     } catch (error) {
       console.error("Auth check failed:", error);
-      // If auth check fails, redirect to login
       const bookingDetails = {
         ...bookingData,
         selectedUsage: selectedUsage || customUsage,
@@ -509,13 +424,11 @@ const BookingStep2 = () => {
     }
   };
 
-  // Function to handle terms acceptance
   const handleTermsAccept = () => {
     setTermsAccepted(true);
     setShowTermsModal(false);
   };
 
-  // Function to handle final booking
   const handleFinalBooking = async () => {
     const bookingDetails = {
       ...bookingData,
@@ -528,15 +441,11 @@ const BookingStep2 = () => {
       notes: notes,
       includeInsurance: includeInsurance,
       paymentMethod: selectedPaymentMethod,
-      receiverName: isParcelService() ? receiverName : '',
-      receiverPhone: isParcelService() ? receiverPhone : ''
+      receiverName: receiverName,
+      receiverPhone: receiverPhone
     };
 
-    // Update Redux store
-    dispatch(setUsage({
-      selectedUsage: selectedUsage || '',
-      customUsage: customUsage || ''
-    }));
+    dispatch(setUsage({ selectedUsage: selectedUsage || '', customUsage: customUsage || '' }));
     const serializableCategory = JSON.parse(JSON.stringify(selectedCategory));
     dispatch(setSelectedCategory(serializableCategory));
     dispatch(setNotes(notes));
@@ -660,35 +569,22 @@ const BookingStep2 = () => {
         </div>
 
         <div className="space-y-6">
-          {/* Dynamic Subcategory Form - Based on category + subcategory */}
-          {(() => {
-            const normalizedSubcategory = bookingData.subcategoryName?.toLowerCase() || '';
-            const normalizedCategory = bookingData.categoryName?.toLowerCase() || '';
-
-            // Show usage forms for One-Way and Hourly, but not for Point-to-Point or Round-Trip
-            const showUsageForm = !normalizedSubcategory.includes('point-to-point') &&
-              !normalizedSubcategory.includes('Round-Trip') &&
-              !normalizedSubcategory.includes('roundtrip') &&
-              !normalizedCategory.includes('parcel');
-
-            return showUsageForm;
-          })() && (
-              <FormRenderer
-                subcategoryName={bookingData.subcategoryName}
-                categoryName={bookingData.categoryName}
-                selectedUsage={selectedUsage}
-                customUsage={customUsage}
-                numberOfMonths={numberOfMonths}
-                numberOfWeeks={numberOfWeeks}
-                onUsageChange={handleUsageChange}
-                onCustomUsageChange={(value) => {
-                  setCustomUsage(value);
-                  setSelectedUsage('');
-                }}
-                onNumberOfMonthsChange={handleNumberOfMonthsChange}
-                onNumberOfWeeksChange={handleNumberOfWeeksChange}
-              />
-            )}
+          <FormRenderer
+            subcategoryName={bookingData.subcategoryName}
+            categoryName={bookingData.categoryName}
+            selectedUsage={selectedUsage}
+            customUsage={customUsage}
+            numberOfMonths={numberOfMonths}
+            numberOfWeeks={numberOfWeeks}
+            durationOptions={bookingData?.subcategoryName?.toLowerCase().includes('hourly') ? durationOptions : []}
+            onUsageChange={handleUsageChange}
+            onCustomUsageChange={(value) => {
+              setCustomUsage(value);
+              setSelectedUsage('');
+            }}
+            onNumberOfMonthsChange={handleNumberOfMonthsChange}
+            onNumberOfWeeksChange={handleNumberOfWeeksChange}
+          />
 
           {/* Price Categories */}
           {totalAmount.map((item, index) => (
@@ -774,8 +670,7 @@ const BookingStep2 = () => {
             )}
           </div>
 
-          {/* Receiver Fields - Show only for parcel service */}
-          {isParcelService() && (
+          {bookingData?.categoryName?.toLowerCase().includes('parcel') && (
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="receiverName">Receiver Name</Label>
@@ -885,8 +780,8 @@ const BookingStep2 = () => {
               onClick={termsAccepted ? handleFinalBooking : handleConfirmBooking}
               disabled={selectedPaymentMethod === 'wallet' && walletBalance < finalPayable}
               className={`w-full py-3 text-lg font-semibold rounded-lg ${selectedPaymentMethod === 'wallet' && walletBalance < finalPayable
-                  ? 'bg-gray-400 hover:bg-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700'
+                ? 'bg-gray-400 hover:bg-gray-400 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700'
                 } text-white`}
             >
               {termsAccepted ?
@@ -969,21 +864,7 @@ const BookingStep2 = () => {
             </div>
 
             <div className="p-6 space-y-4">
-              {/* Insurance Section - Above Trip Summary */}
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold text-gray-800">Insurance Coverage</h4>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={includeInsurance}
-                      onChange={(e) => setIncludeInsurance(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
-                  </label>
-                </div>
-              </div>
+
 
               {/* Referral Earning Section */}
               {referralBalance > 0 && (
@@ -1005,46 +886,76 @@ const BookingStep2 = () => {
                 </div>
               )}
 
-              {/* Simplified Cost Breakdown */}
-              <div className="space-y-3">
-                <h4 className="font-semibold text-gray-800">Cost Details</h4>
+              {/* Fare Details */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-bold text-gray-900">Fare Details</h4>
 
-                <div className="flex justify-between text-sm font-medium">
-                  <span>Base fare:</span>
-                  <span>₹{selectedCategory.subtotal}</span>
-                </div>
-
-                <div className="flex justify-between text-sm font-medium">
-                  <span>Cancellation Charges:</span>
-                  <span>₹{selectedCategory.cancellationCharges}</span>
-                </div>
-
-                <div className="flex justify-between text-sm font-medium">
-                  <span>GST Charges:</span>
-                  <span className="font-medium">₹{selectedCategory.gstCharges}</span>
-                </div>
-
-                {selectedCategory.insuranceCharges > 0 && (
-                  <div className="flex justify-between text-sm font-medium">
-                    <span>Insurance Charges:</span>
-                    <span>₹{selectedCategory.insuranceCharges}</span>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium">Driver Category:</span>
+                    <span className="font-medium">{selectedCategory.category}</span>
                   </div>
-                )}
 
-                {useReferral && referralBalance > 0 && (
-                  <div className="flex justify-between text-sm font-medium ">
-                    <span>Referral Discount:</span>
-                    <span>-₹{Math.min(referralBalance, selectedCategory.totalPayable)}</span>
+                  <div className="flex justify-between text-sm">
+                    <span className=" font-medium">Package:</span>
+                    <span className="font-medium">{selectedUsage || customUsage} {bookingData?.subcategoryName?.toLowerCase().includes('hourly') ? 'Hours' : 'Unit'}</span>
                   </div>
-                )}
+                </div>
+
+                <Separator className="my-3" />
+
+                {/* Insurance Section - Above Trip Summary */}
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium">Insurance Coverage</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={includeInsurance}
+                      onChange={(e) => setIncludeInsurance(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                  </label>
+                </div>
+
+
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="font-medium">Base Fare:</span>
+                    <span className="font-medium">₹{selectedCategory.subtotal}</span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="font-medium">Taxes & Fees:</span>
+                    <span className="font-medium">₹{selectedCategory.gstCharges}</span>
+                  </div>
+
+                  {selectedCategory.insuranceCharges > 0 && (
+                    <div className="flex justify-between">
+                      <span className="font-medium">Secure Fee:</span>
+                      <span className="font-medium">₹{selectedCategory.insuranceCharges}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between">
+                    <span className="font-medium">Cancellation Fee:</span>
+                    <span className="font-medium">₹{selectedCategory.cancellationCharges}</span>
+                  </div>
+
+                  {useReferral && referralBalance > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span className="font-medium">Referral Discount:</span>
+                      <span className="font-medium">-₹{Math.min(referralBalance, selectedCategory.totalPayable)}</span>
+                    </div>
+                  )}
+                </div>
 
                 <Separator className="my-3" />
 
                 <div className="flex justify-between text-lg font-bold">
-                  <span>Total Amount:</span>
+                  <span>Estimated Total:</span>
                   <span className="text-green-600">
-                    ₹
-                    {Math.max(
+                    ₹{Math.max(
                       0,
                       selectedCategory.totalPayable -
                       (useReferral ? Math.min(referralBalance, selectedCategory.totalPayable) : 0)

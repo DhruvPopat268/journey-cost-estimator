@@ -19,6 +19,7 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from './store/store';
 import Category from './pages/Category';
 import Subcategory from './pages/Subcategory';
+import SubSubcategory from './pages/SubSubcategory';
 import WalletPage from './pages/Wallet';
 import ReferAndEarnPage from './pages/ReferAndEarnPage';
 
@@ -37,8 +38,9 @@ const AppWithSidebar = () => {
       <Routes>
         <Route path="/" element={<Category />} />
         <Route path="/subcategories/:categoryId" element={<Subcategory />} />
+        <Route path="/subsubcategories/:categoryId/:subcategoryId" element={<SubSubcategory />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/booking/:categoryId/:subcategoryId" element={<Booking />} />
+        <Route path="/booking/:categoryId/:subcategoryId?/:subSubcategoryId?" element={<Booking />} />
         <Route path="/booking-step2" element={<BookingStep2 />} />
         <Route path="/confirm-payment" element={<ConfirmPayment />} />
         <Route path="/wallet" element={<WalletPage />} />
