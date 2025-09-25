@@ -610,7 +610,7 @@ const BookingStep2 = () => {
               </div>
               <div className="flex items-center gap-3">
                 <div className="text-right">
-                  <p className="text-lg font-bold text-gray-800">₹{item.totalPayable.toFixed(2)}</p>
+                  <p className="text-lg font-bold text-gray-800">₹{(item.totalPayable || 0).toFixed(2)}</p>
                 </div>
 
                 {/* Info button - only show when category is selected */}
@@ -735,17 +735,17 @@ const BookingStep2 = () => {
                           <div className="space-y-1">
                             <div className="flex justify-between">
                               <span className="text-gray-600">Current Balance:</span>
-                              <span className="font-medium text-green-600">₹{walletBalance.toFixed(2)}</span>
+                              <span className="font-medium text-green-600">₹{(walletBalance || 0).toFixed(2)}</span>
                             </div>
                             {walletBalance < finalPayable ? (
                               <div className="text-red-600">
                                 <div className="flex justify-between">
                                   <span>Required:</span>
-                                  <span>₹{finalPayable.toFixed(2)}</span>
+                                  <span>₹{(finalPayable || 0).toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span>Need to add:</span>
-                                  <span className="font-medium">₹{(finalPayable - walletBalance).toFixed(2)}</span>
+                                  <span className="font-medium">₹{((finalPayable || 0) - (walletBalance || 0)).toFixed(2)}</span>
                                 </div>
                                 <Button
                                   onClick={() => navigate("/wallet")}
@@ -760,7 +760,7 @@ const BookingStep2 = () => {
                               <div className="text-green-600">
                                 <div className="flex justify-between">
                                   <span>After payment:</span>
-                                  <span className="font-medium">₹{(walletBalance - finalPayable).toFixed(2)}</span>
+                                  <span className="font-medium">₹{((walletBalance || 0) - (finalPayable || 0)).toFixed(2)}</span>
                                 </div>
                               </div>
                             )}
@@ -787,9 +787,9 @@ const BookingStep2 = () => {
               {termsAccepted ?
                 (selectedPaymentMethod === 'wallet' && walletBalance < finalPayable ?
                   'Insufficient Wallet Balance' :
-                  `Confirm Booking ₹${finalPayable.toFixed(2)}`
+                  `Confirm Booking ₹${(finalPayable || 0).toFixed(2)}`
                 ) :
-                `Book Ride ₹${finalPayable.toFixed(2)}`
+                `Book Ride ₹${(finalPayable || 0).toFixed(2)}`
               }
             </Button>
           )}
@@ -922,30 +922,30 @@ const BookingStep2 = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="font-medium">Base Fare:</span>
-                    <span className="font-medium">₹{selectedCategory.subtotal}</span>
+                    <span className="font-medium">₹{selectedCategory.subtotal || 0}</span>
                   </div>
 
                   <div className="flex justify-between">
                     <span className="font-medium">Taxes & Fees:</span>
-                    <span className="font-medium">₹{selectedCategory.gstCharges}</span>
+                    <span className="font-medium">₹{selectedCategory.gstCharges || 0}</span>
                   </div>
 
                   {selectedCategory.insuranceCharges > 0 && (
                     <div className="flex justify-between">
                       <span className="font-medium">Secure Fee:</span>
-                      <span className="font-medium">₹{selectedCategory.insuranceCharges}</span>
+                      <span className="font-medium">₹{selectedCategory.insuranceCharges || 0}</span>
                     </div>
                   )}
 
                   <div className="flex justify-between">
                     <span className="font-medium">Cancellation Fee:</span>
-                    <span className="font-medium">₹{selectedCategory.cancellationCharges}</span>
+                    <span className="font-medium">₹{selectedCategory.cancellationCharges || 0}</span>
                   </div>
 
                   {useReferral && referralBalance > 0 && (
                     <div className="flex justify-between text-green-600">
                       <span className="font-medium">Referral Discount:</span>
-                      <span className="font-medium">-₹{Math.min(referralBalance, selectedCategory.totalPayable)}</span>
+                      <span className="font-medium">-₹{Math.min(referralBalance || 0, selectedCategory.totalPayable || 0)}</span>
                     </div>
                   )}
                 </div>
@@ -957,8 +957,8 @@ const BookingStep2 = () => {
                   <span className="text-green-600">
                     ₹{Math.max(
                       0,
-                      selectedCategory.totalPayable -
-                      (useReferral ? Math.min(referralBalance, selectedCategory.totalPayable) : 0)
+                      (selectedCategory.totalPayable || 0) -
+                      (useReferral ? Math.min(referralBalance || 0, selectedCategory.totalPayable || 0) : 0)
                     )}
                   </span>
                 </div>
