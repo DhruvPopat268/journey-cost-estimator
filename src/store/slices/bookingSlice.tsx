@@ -9,6 +9,8 @@ const initialState = {
   toLocation: '',
   fromLocationData: null,
   toLocationData: null,
+  selectedCity: '',
+  selectedCityName: '',
   carType: '',
   transmissionType: '',
   selectedDate: '',
@@ -43,6 +45,8 @@ export const bookingSlice = createSlice({
         toLocation,
         fromLocationData,
         toLocationData,
+        selectedCity,
+        selectedCityName,
         carType,
         transmissionType,
         selectedDate,
@@ -57,6 +61,8 @@ export const bookingSlice = createSlice({
       state.toLocation = toLocation
       state.fromLocationData = fromLocationData
       state.toLocationData = toLocationData
+      state.selectedCity = selectedCity
+      state.selectedCityName = selectedCityName
       state.carType = carType
       state.transmissionType = transmissionType
       state.selectedDate = selectedDate

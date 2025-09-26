@@ -28,9 +28,9 @@ const Booking = () => {
   const [categoryName, setCategoryName] = useState(bookingData.categoryName || '');
   const [subcategoryName, setSubcategoryName] = useState(bookingData.subcategoryName || '');
   const [cities, setCities] = useState([]);
-  const [selectedCity, setSelectedCity] = useState('');
-  const [selectedCityName, setSelectedCityName] = useState('');
-  const [citySearch, setCitySearch] = useState('');
+  const [selectedCity, setSelectedCity] = useState(bookingData.selectedCity || '');
+  const [selectedCityName, setSelectedCityName] = useState(bookingData.selectedCityName || '');
+  const [citySearch, setCitySearch] = useState(bookingData.selectedCityName || '');
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [loading, setLoading] = useState(true);
   const [citiesLoading, setCitiesLoading] = useState(true);
@@ -149,6 +149,14 @@ const Booking = () => {
     dispatch(updateField({ field: 'toLocationData', value: toLocationData }));
   }, [toLocationData]);
 
+  useEffect(() => {
+    dispatch(updateField({ field: 'selectedCity', value: selectedCity }));
+  }, [selectedCity]);
+
+  useEffect(() => {
+    dispatch(updateField({ field: 'selectedCityName', value: selectedCityName }));
+  }, [selectedCityName]);
+
 
 
   const transmissionOptions = ['Manual', 'Automatic'];
@@ -159,6 +167,8 @@ const Booking = () => {
       subcategoryId,
       categoryName,
       subcategoryName,
+      selectedCity,
+      selectedCityName,
       fromLocation,
       toLocation,
       fromLocationData,
