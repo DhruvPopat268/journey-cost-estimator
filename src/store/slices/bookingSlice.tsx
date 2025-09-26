@@ -7,6 +7,8 @@ const initialState = {
   subcategoryName: '',
   fromLocation: '',
   toLocation: '',
+  fromLocationData: null,
+  toLocationData: null,
   carType: '',
   transmissionType: '',
   selectedDate: '',
@@ -39,6 +41,8 @@ export const bookingSlice = createSlice({
         subcategoryName,
         fromLocation,
         toLocation,
+        fromLocationData,
+        toLocationData,
         carType,
         transmissionType,
         selectedDate,
@@ -51,6 +55,8 @@ export const bookingSlice = createSlice({
       state.subcategoryName = subcategoryName
       state.fromLocation = fromLocation
       state.toLocation = toLocation
+      state.fromLocationData = fromLocationData
+      state.toLocationData = toLocationData
       state.carType = carType
       state.transmissionType = transmissionType
       state.selectedDate = selectedDate

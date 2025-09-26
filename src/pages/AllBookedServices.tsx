@@ -141,7 +141,7 @@ const AllBookedServices = ({ onBack }) => {
               <div key={ride._id} className="bg-white rounded-lg shadow-sm p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-medium text-sm">
-                    {formatDestination(ride.fromLocation, ride.toLocation)}
+                    {formatDestination(ride.fromLocation?.address, ride.toLocation?.address)}
                   </h3>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ride.status)}`}>
                     {ride.status}

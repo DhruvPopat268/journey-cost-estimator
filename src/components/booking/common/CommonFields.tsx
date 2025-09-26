@@ -3,10 +3,22 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { LocationInput } from './LocationInput';
+
+interface LocationData {
+  address: string;
+  place_id: string;
+  lat: number;
+  lng: number;
+  address_components: any[];
+}
 
 interface CommonFieldsProps {
   fromLocation: string;
   toLocation: string;
+  fromLocationData?: LocationData;
+  toLocationData?: LocationData;
+  selectedCityName?: string;
   selectedDate: string;
   selectedTime: string;
   startTime?: string;
@@ -23,11 +35,15 @@ interface CommonFieldsProps {
   showReceiverFields?: boolean;
   dateLabel?: string;
   onFieldChange: (field: string, value: string) => void;
+  onLocationChange?: (field: 'fromLocation' | 'toLocation', locationData: LocationData) => void;
 }
 
 export const CommonFields: React.FC<CommonFieldsProps> = ({
   fromLocation,
   toLocation,
+  fromLocationData,
+  toLocationData,
+  selectedCityName,
   selectedDate,
   selectedTime,
   startTime = '',
@@ -44,6 +60,7 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
   showReceiverFields = false,
   dateLabel = 'Date',
   onFieldChange,
+  onLocationChange,
 }) => {
   return (
     <Card className="bg-white shadow-lg">
@@ -54,13 +71,17 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
           <div>
             <Label htmlFor="from">From</Label>
             <div className="relative">
-              <div className="absolute left-3 top-3 w-3 h-3 bg-green-500 rounded-full"></div>
-              <Input
+              <div className="absolute left-3 top-3 w-3 h-3 bg-green-500 rounded-full z-10"></div>
+              <LocationInput
                 id="from"
                 placeholder="Enter pickup location"
                 value={fromLocation}
-                onChange={(e) => onFieldChange('fromLocation', e.target.value)}
+                onChange={(locationData) => {
+                  onFieldChange('fromLocation', locationData.address);
+                  onLocationChange?.('fromLocation', locationData);
+                }}
                 className="pl-10"
+                selectedCityName={selectedCityName}
               />
             </div>
           </div>
@@ -69,13 +90,17 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
             <div>
               <Label htmlFor="to">To</Label>
               <div className="relative">
-                <div className="absolute left-3 top-3 w-3 h-3 bg-red-500 rounded-full"></div>
-                <Input
+                <div className="absolute left-3 top-3 w-3 h-3 bg-red-500 rounded-full z-10"></div>
+                <LocationInput
                   id="to"
                   placeholder="Enter destination"
                   value={toLocation}
-                  onChange={(e) => onFieldChange('toLocation', e.target.value)}
+                  onChange={(locationData) => {
+                    onFieldChange('toLocation', locationData.address);
+                    onLocationChange?.('toLocation', locationData);
+                  }}
                   className="pl-10"
+                  selectedCityName={selectedCityName}
                 />
               </div>
             </div>

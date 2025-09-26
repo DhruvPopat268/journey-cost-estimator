@@ -179,7 +179,7 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
                       <div className="w-3 h-3 bg-green-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
                       <div>
                         <div className="font-medium text-sm">From</div>
-                        <div className="text-gray-600 text-sm">{booking.fromLocation}</div>
+                        <div className="text-gray-600 text-sm">{booking.fromLocation?.address}</div>
                       </div>
                     </div>
 
