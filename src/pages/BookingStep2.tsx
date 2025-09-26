@@ -926,6 +926,11 @@ const BookingStep2 = () => {
                   </div>
 
                   <div className="flex justify-between">
+                    <span className="font-medium">Discount:</span>
+                    <span className="font-medium">-{selectedCategory.discountApplied || 0} km</span>
+                  </div>
+
+                  <div className="flex justify-between">
                     <span className="font-medium">Taxes & Fees:</span>
                     <span className="font-medium">₹{selectedCategory.gstCharges || 0}</span>
                   </div>
@@ -937,10 +942,10 @@ const BookingStep2 = () => {
                     </div>
                   )}
 
-                  <div className="flex justify-between">
+                  {/* <div className="flex justify-between">
                     <span className="font-medium">Cancellation Fee:</span>
                     <span className="font-medium">₹{selectedCategory.cancellationCharges || 0}</span>
-                  </div>
+                  </div> */}
 
                   {useReferral && referralBalance > 0 && (
                     <div className="flex justify-between text-green-600">
@@ -966,13 +971,13 @@ const BookingStep2 = () => {
 
               {/* Instructions Section with Horizontal Scroll */}
               {instructions && instructions.length > 0 ? (
-                <div className="space-y-3 pt-4">
-                  <h4 className="font-semibold text-gray-800">Important Instructions</h4>
-                  <div className="space-y-2">
+                <div className="pt-4">
+                  <h4 className="font-semibold text-gray-800 mb-2">Important Instructions</h4>
+                  <div className="flex space-x-3 overflow-x-auto pb-2">
                     {instructions.map((instruction, index) => (
                       <div
                         key={index}
-                        className="bg-blue-50 border border-blue-200 rounded-lg p-3"
+                        className="flex-shrink-0 min-w-[250px] bg-blue-50 border border-blue-200 rounded-lg p-3"
                       >
                         <p className="text-sm text-gray-700 leading-relaxed">
                           {instruction}
@@ -996,12 +1001,6 @@ const BookingStep2 = () => {
                 </div>
               )}
 
-              {/* No instructions message */}
-              {!instructionsLoading && instructions.length === 0 && (
-                <div className="text-center py-4 text-gray-500">
-                  No special instructions for this category.
-                </div>
-              )}
 
 
               {/* Modal Actions */}
