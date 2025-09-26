@@ -927,7 +927,7 @@ const BookingStep2 = () => {
 
                   <div className="flex justify-between">
                     <span className="font-medium">Discount:</span>
-                    <span className="font-medium">-{selectedCategory.discountApplied || 0} km</span>
+                    <span className="font-medium">-{selectedCategory.discountApplied || 0}</span>
                   </div>
 
                   <div className="flex justify-between">
