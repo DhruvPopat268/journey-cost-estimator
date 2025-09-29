@@ -48,16 +48,6 @@ export const OneWayForm: React.FC<OneWayFormProps> = ({
             </Select>
           </div>
 
-          <div className="flex-1">
-            <Label htmlFor="custom">Custom KM</Label>
-            <Input
-              id="custom"
-              placeholder="Custom km"
-              value={customUsage}
-              onChange={(e) => onCustomUsageChange(e.target.value)}
-              type="number"
-            />
-          </div>
         </div>
       </CardContent>
     </Card>
