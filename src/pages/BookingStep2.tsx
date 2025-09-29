@@ -94,8 +94,9 @@ const BookingStep2 = () => {
     }
   };
 
-  const callCalculationAPI = async (usageValue, weeksValue = numberOfWeeks, monthsValue = numberOfMonths) => {
-    if (isCalculating || !usageValue || !bookingData) return;
+  const callCalculationAPI = async (defaultUsage, weeksValue = numberOfWeeks, monthsValue = numberOfMonths) => {
+    // Prevent multiple simultaneous calls
+    if (isCalculating || !defaultUsage || !bookingData || !bookingData.categoryId) return;
 
     setIsCalculating(true);
 
@@ -104,7 +105,7 @@ const BookingStep2 = () => {
         `${import.meta.env.VITE_API_URL}/api/ride-costs/calculation`,
         {
           ...bookingData,
-          selectedUsage: usageValue,
+          selectedUsage: defaultUsage,
           includeInsurance: includeInsurance,
           numberOfWeeks: weeksValue,
           numberOfMonths: monthsValue
@@ -123,77 +124,84 @@ const BookingStep2 = () => {
     }
   };
 
+  // Single useEffect to handle initial data loading and setup
   useEffect(() => {
-    const fetchIncludedData = async () => {
-      if (bookingData?.subcategoryName?.toLowerCase().includes('hourly')) {
-        try {
-          const res = await axios.post(
-            `${import.meta.env.VITE_API_URL}/api/ride-costs/get-included-data`,
-            {
-              categoryId: bookingData.categoryId,
-              subcategoryId: bookingData.subcategoryId
-            }
-          );
-          if (res.data.success && res.data.data.includedMinutes) {
-            setDurationOptions(res.data.data.includedMinutes);
-          }
-        } catch (error) {
-          console.error('Failed to fetch included data:', error);
-        }
+    const initializeData = async () => {
+      if (!bookingData) {
+        setLoading(false);
+        return;
       }
-    };
 
-    const initializeComponent = async () => {
       try {
-        await fetchIncludedData();
+        const res = await axios.post(
+          `${import.meta.env.VITE_API_URL}/api/ride-costs/get-included-data`,
+          {
+            categoryId: bookingData.categoryId,
+            subcategoryId: bookingData.subcategoryId
+          }
+        );
 
-        if (!selectedUsage && !customUsage) {
-          let defaultUsage = "1";
-          if (bookingData?.subcategoryName?.toLowerCase().includes('hourly') && durationOptions.length > 0) {
-            // For hourly with API data, find the option that equals 1 hour (60 minutes)
-            const oneHourOption = durationOptions.find(option => parseInt(option) === 60);
-            if (oneHourOption) {
-              defaultUsage = "1"; // Store as 1 hour
-            } else {
-              // If no 1-hour option, use the first available option converted to hours
-              defaultUsage = (parseInt(durationOptions[0]) / 60).toString();
+        if (res.data.success && res.data.data) {
+          const isHourly = bookingData?.subcategoryName?.toLowerCase().includes('hourly');
+          const options = isHourly ? res.data.data.includedMinutes : res.data.data.includedKm;
+
+          console.log("options (raw)", options);
+
+          if (options && options.length > 0) {
+            // ✅ Sort numerically & remove duplicates
+            const sortedOptions = [...new Set(
+              options.map(opt => parseInt(opt, 10))
+            )]
+              .sort((a, b) => a - b)
+              .map(opt => opt.toString());
+
+            console.log("options (sorted)", sortedOptions);
+            console.log("for default usage", sortedOptions[0])
+
+            setDurationOptions(sortedOptions);
+
+            // Set default usage
+            if (!selectedUsage && !customUsage) {
+              const defaultUsage = isHourly
+                ? (parseInt(sortedOptions[0]) / 60).toString()
+                : sortedOptions[0].toString();
+
+              setSelectedUsage(defaultUsage);
+              dispatch(setUsage({ selectedUsage: defaultUsage, customUsage: '' }));
+              await callCalculationAPI(defaultUsage);
+              return;
             }
           }
-          setSelectedUsage(defaultUsage);
-          dispatch(setUsage({ selectedUsage: defaultUsage, customUsage: '' }));
-          await callCalculationAPI(defaultUsage);
-        } else if (selectedUsage || customUsage) {
-          await callCalculationAPI(selectedUsage || customUsage);
-        } else {
-          setLoading(false);
         }
       } catch (error) {
-        console.error('Error initializing component:', error);
-        setLoading(false);
+        console.error('Failed to fetch included data:', error);
       }
+
     };
 
-    if (bookingData) {
-      initializeComponent();
-    } else {
-      setLoading(false);
-    }
-  }, []);
+    initializeData();
+  }, [bookingData?.categoryId, bookingData?.subcategoryId]);
+  // Only depend on IDs to avoid loops
 
+  // Consolidated dispatch updates to avoid multiple re-renders
   useEffect(() => {
     dispatch(updateField({ field: 'selectedUsage', value: selectedUsage }));
-  }, [selectedUsage]);
+  }, [selectedUsage, dispatch]);
 
   useEffect(() => {
     dispatch(updateField({ field: 'customUsage', value: customUsage }));
-  }, [customUsage]);
+  }, [customUsage, dispatch]);
 
   useEffect(() => {
     dispatch(updateField({ field: 'notes', value: notes }));
-  }, [notes]);
+  }, [notes, dispatch]);
 
   useEffect(() => {
     dispatch(updateField({ field: 'includeInsurance', value: includeInsurance }));
+    // Only recalculate if we have usage data and booking data
+    if ((selectedUsage || customUsage) && bookingData && !isCalculating) {
+      callCalculationAPI(selectedUsage || customUsage);
+    }
   }, [includeInsurance]);
 
   const handleNumberOfWeeksChange = (value) => {
@@ -215,33 +223,26 @@ const BookingStep2 = () => {
   };
 
   const handleUsageChange = async (value) => {
+    if (isCalculating) return; // Prevent changes during calculation
+
     setSelectedUsage(value);
     setCustomUsage('');
     dispatch(setUsage({ selectedUsage: value, customUsage: '' }));
     await callCalculationAPI(value);
   };
 
+  // Debounced custom usage handling
   useEffect(() => {
     if (!customUsage) return;
 
     const delayDebounce = setTimeout(() => {
-      if (customUsage && bookingData) {
+      if (customUsage && bookingData && !isCalculating) {
         dispatch(setUsage({ selectedUsage: '', customUsage: customUsage }));
         callCalculationAPI(customUsage);
       }
     }, 500);
     return () => clearTimeout(delayDebounce);
   }, [customUsage]);
-
-  useEffect(() => {
-    if ((selectedUsage || customUsage) && bookingData && !loading) {
-      callCalculationAPI(selectedUsage || customUsage);
-    }
-  }, [includeInsurance]);
-
-  useEffect(() => {
-    dispatch(setNotes(notes));
-  }, [notes]);
 
   useEffect(() => {
     if (selectedCategory && selectedCategory.category) {
@@ -576,7 +577,7 @@ const BookingStep2 = () => {
             customUsage={customUsage}
             numberOfMonths={numberOfMonths}
             numberOfWeeks={numberOfWeeks}
-            durationOptions={bookingData?.subcategoryName?.toLowerCase().includes('hourly') ? durationOptions : []}
+            durationOptions={durationOptions}
             onUsageChange={handleUsageChange}
             onCustomUsageChange={(value) => {
               setCustomUsage(value);

@@ -38,6 +38,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
         customUsage={customUsage}
         onUsageChange={onUsageChange}
         onCustomUsageChange={onCustomUsageChange}
+        durationOptions={durationOptions}
       />
     );
   }

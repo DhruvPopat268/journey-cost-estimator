@@ -10,6 +10,7 @@ interface OneWayFormProps {
   customUsage: string;
   onUsageChange: (value: string) => void;
   onCustomUsageChange: (value: string) => void;
+  durationOptions?: string[];
 }
 
 export const OneWayForm: React.FC<OneWayFormProps> = ({
@@ -17,8 +18,9 @@ export const OneWayForm: React.FC<OneWayFormProps> = ({
   customUsage,
   onUsageChange,
   onCustomUsageChange,
+  durationOptions = ['10', '25', '50', '100'],
 }) => {
-  const usageOptions = ['10', '25', '50', '100'];
+  const usageOptions = durationOptions;
 
   return (
     <Card className="bg-white shadow-lg">
