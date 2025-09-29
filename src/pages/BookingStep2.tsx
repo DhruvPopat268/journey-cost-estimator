@@ -82,6 +82,7 @@ const BookingStep2 = () => {
         {
           categoryId: bookingData.categoryId,
           subCategoryId: bookingData.subcategoryId,
+          ...(bookingData.subSubcategoryId && { subSubCategoryId: bookingData.subSubcategoryId }),
           selectedCategoryName: categoryName
         }
       );
@@ -108,7 +109,8 @@ const BookingStep2 = () => {
           selectedUsage: defaultUsage,
           includeInsurance: includeInsurance,
           numberOfWeeks: weeksValue,
-          numberOfMonths: monthsValue
+          numberOfMonths: monthsValue,
+          ...(bookingData.subSubcategoryId && { subSubcategoryId: bookingData.subSubcategoryId })
         }
       );
 
@@ -137,12 +139,13 @@ const BookingStep2 = () => {
           `${import.meta.env.VITE_API_URL}/api/ride-costs/get-included-data`,
           {
             categoryId: bookingData.categoryId,
-            subcategoryId: bookingData.subcategoryId
+            subcategoryId: bookingData.subcategoryId,
+            ...(bookingData.subSubcategoryId && { subSubcategoryId: bookingData.subSubcategoryId })
           }
         );
 
         if (res.data.success && res.data.data) {
-          const isHourly = bookingData?.subcategoryName?.toLowerCase().includes('hourly');
+          const isHourly = bookingData?.subcategoryName?.toLowerCase().includes('hourly') || bookingData?.subSubcategoryName?.toLowerCase().includes('roundtrip');
           const options = isHourly ? res.data.data.includedMinutes : res.data.data.includedKm;
 
           console.log("options (raw)", options);
@@ -550,28 +553,34 @@ const BookingStep2 = () => {
         <div className="flex items-center mb-3">
           <Button
             variant="ghost"
-            onClick={() => navigate(`/booking/${bookingData.categoryId}/${bookingData.subcategoryId}`, {
-              state: {
-                fromLocation: bookingData.fromLocation,
-                toLocation: bookingData.toLocation,
-                carType: bookingData.carType,
-                transmissionType: bookingData.transmissionType,
-                selectedDate: bookingData.selectedDate,
-                selectedTime: bookingData.selectedTime,
-              }
-            })}
+            onClick={() => {
+              const backUrl = bookingData.subSubcategoryId
+                ? `/booking/${bookingData.categoryId}/${bookingData.subcategoryId}/${bookingData.subSubcategoryId}`
+                : `/booking/${bookingData.categoryId}/${bookingData.subcategoryId}`;
+              navigate(backUrl, {
+                state: {
+                  fromLocation: bookingData.fromLocation,
+                  toLocation: bookingData.toLocation,
+                  carType: bookingData.carType,
+                  transmissionType: bookingData.transmissionType,
+                  selectedDate: bookingData.selectedDate,
+                  selectedTime: bookingData.selectedTime,
+                }
+              });
+            }}
             className="mr-4 p-2 hover:bg-white/50 rounded-full"
           >
             <ArrowLeft className="w-6 h-6" />
           </Button>
           <h1 className="text-2xl font-bold text-gray-900">
-            {bookingData.subcategoryName} Booking - Step 2
+            {bookingData.subcategoryName}{bookingData.subSubcategoryName ? ` - ${bookingData.subSubcategoryName}` : ''} Booking - Step 2
           </h1>
         </div>
 
         <div className="space-y-6">
           <FormRenderer
             subcategoryName={bookingData.subcategoryName}
+            subSubcategoryName={bookingData.subSubcategoryName}
             categoryName={bookingData.categoryName}
             selectedUsage={selectedUsage}
             customUsage={customUsage}
@@ -899,7 +908,13 @@ const BookingStep2 = () => {
 
                   <div className="flex justify-between text-sm">
                     <span className=" font-medium">Package:</span>
-                    <span className="font-medium">{selectedUsage || customUsage} {bookingData?.subcategoryName?.toLowerCase().includes('hourly') ? 'Hours' : 'Unit'}</span>
+                    <span className="font-medium">
+                      {selectedUsage || customUsage}{" "}
+                      {bookingData?.subcategoryName?.toLowerCase().includes("hourly") ||
+                        bookingData?.subSubcategoryName?.toLowerCase().includes("roundtrip")
+                        ? "Hours"
+                        : "Km"}
+                    </span>
                   </div>
                 </div>
 

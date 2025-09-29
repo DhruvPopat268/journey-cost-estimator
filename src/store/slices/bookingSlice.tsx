@@ -4,7 +4,9 @@ const initialState = {
   // Step 1 data
   categoryId: '',
   subcategoryId: '',
+  subSubcategoryId: '',
   subcategoryName: '',
+  subSubcategoryName: '',
   fromLocation: '',
   toLocation: '',
   fromLocationData: null,
@@ -40,7 +42,9 @@ export const bookingSlice = createSlice({
       const {
         categoryId,
         subcategoryId,
+        subSubcategoryId,
         subcategoryName,
+        subSubcategoryName,
         fromLocation,
         toLocation,
         fromLocationData,
@@ -56,7 +60,9 @@ export const bookingSlice = createSlice({
       
       state.categoryId = categoryId
       state.subcategoryId = subcategoryId
+      state.subSubcategoryId = subSubcategoryId
       state.subcategoryName = subcategoryName
+      state.subSubcategoryName = subSubcategoryName
       state.fromLocation = fromLocation
       state.toLocation = toLocation
       state.fromLocationData = fromLocationData

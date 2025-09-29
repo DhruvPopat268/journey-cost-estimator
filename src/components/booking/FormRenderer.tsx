@@ -3,6 +3,7 @@ import { OneWayForm, HourlyForm, MonthlyForm, WeeklyForm } from './subcategory-f
 
 interface FormRendererProps {
   subcategoryName: string;
+  subSubcategoryName?: string;
   categoryName?: string;
   selectedUsage: string;
   customUsage: string;
@@ -17,6 +18,7 @@ interface FormRendererProps {
 
 export const FormRenderer: React.FC<FormRendererProps> = ({
   subcategoryName,
+  subSubcategoryName = '',
   categoryName = '',
   selectedUsage,
   customUsage,
@@ -29,9 +31,11 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
   onNumberOfWeeksChange,
 }) => {
   const normalizedSubcategory = subcategoryName.toLowerCase();
+  const normalizedSubSubcategory = subSubcategoryName.toLowerCase();
   const normalizedCategory = categoryName.toLowerCase();
 
-  if (normalizedSubcategory.includes('one-way') || normalizedSubcategory.includes('oneway') || normalizedSubcategory.includes('one way')) {
+  if (normalizedSubcategory.includes('one-way') || normalizedSubcategory.includes('oneway') || normalizedSubcategory.includes('one way') || 
+      normalizedSubSubcategory.includes('one-way') || normalizedSubSubcategory.includes('oneway') || normalizedSubSubcategory.includes('one way')) {
     return (
       <OneWayForm
         selectedUsage={selectedUsage}

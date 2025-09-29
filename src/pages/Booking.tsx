@@ -9,7 +9,7 @@ import { setBookingStep1, updateField } from '../store/slices/bookingSlice';
 
 const Booking = () => {
   const navigate = useNavigate();
-  const { categoryId, subcategoryId } = useParams();
+  const { categoryId, subcategoryId, subSubcategoryId } = useParams();
   const dispatch = useDispatch();
 
   const bookingData = useSelector(state => state.booking);
@@ -27,6 +27,7 @@ const Booking = () => {
   const [vehicleCategories, setVehicleCategories] = useState([]);
   const [categoryName, setCategoryName] = useState(bookingData.categoryName || '');
   const [subcategoryName, setSubcategoryName] = useState(bookingData.subcategoryName || '');
+  const [subSubcategoryName, setSubSubcategoryName] = useState(bookingData.subSubcategoryName || '');
   const [cities, setCities] = useState([]);
   const [selectedCity, setSelectedCity] = useState(bookingData.selectedCity || '');
   const [selectedCityName, setSelectedCityName] = useState(bookingData.selectedCityName || '');
@@ -80,14 +81,27 @@ const Booking = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [subcategoryRes, vehicleRes] = await Promise.all([
+        const requests = [
           axios.get(`${import.meta.env.VITE_API_URL}/api/subcategories/${subcategoryId}`),
           axios.get(`${import.meta.env.VITE_API_URL}/api/vehiclecategories`)
-        ]);
+        ];
+        
+        // Add sub-subcategory request if subSubcategoryId exists
+        if (subSubcategoryId) {
+          requests.push(axios.get(`${import.meta.env.VITE_API_URL}/api/subsubcategories/${subSubcategoryId}`));
+        }
+        
+        const responses = await Promise.all(requests);
+        const [subcategoryRes, vehicleRes, subSubcategoryRes] = responses;
 
         setSubcategoryName(subcategoryRes.data.name);
         setCategoryName(subcategoryRes.data?.categoryId?.name || '');
         setVehicleCategories(vehicleRes.data?.data || []);
+        
+        // Set sub-subcategory name if available
+        if (subSubcategoryRes) {
+          setSubSubcategoryName(subSubcategoryRes.data.name);
+        }
 
         if (!carType && vehicleRes.data?.data?.length > 0) {
           setCarType(vehicleRes.data.data[0].vehicleName.toLowerCase());
@@ -106,8 +120,11 @@ const Booking = () => {
       fetchData();
       dispatch(updateField({ field: 'categoryId', value: categoryId }));
       dispatch(updateField({ field: 'subcategoryId', value: subcategoryId }));
+      if (subSubcategoryId) {
+        dispatch(updateField({ field: 'subSubcategoryId', value: subSubcategoryId }));
+      }
     }
-  }, [categoryId, subcategoryId, selectedCity]);
+  }, [categoryId, subcategoryId, subSubcategoryId, selectedCity]);
 
   useEffect(() => {
     dispatch(updateField({ field: 'fromLocation', value: fromLocation }));
@@ -165,8 +182,10 @@ const Booking = () => {
     const bookingData = {
       categoryId,
       subcategoryId,
+      subSubcategoryId,
       categoryName,
       subcategoryName,
+      subSubcategoryName,
       selectedCity,
       selectedCityName,
       fromLocation,
@@ -209,7 +228,7 @@ const Booking = () => {
             <ArrowLeft className="w-6 h-6" />
           </Button>
           <h1 className="text-2xl font-bold text-gray-900">
-            {categoryName} - {subcategoryName} Booking - Step 1
+            {categoryName} - {subcategoryName}{subSubcategoryName ? ` - ${subSubcategoryName}` : ''} Booking - Step 1
           </h1>
         </div>
 

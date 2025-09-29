@@ -1,7 +1,9 @@
 export interface BookingData {
   categoryId: string;
   subcategoryId: string;
+  subSubcategoryId?: string;
   subcategoryName: string;
+  subSubcategoryName?: string;
   fromLocation: string;
   toLocation: string;
   carType: string;
