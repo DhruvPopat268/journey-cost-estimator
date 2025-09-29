@@ -69,7 +69,7 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
         {/* Location Fields */}
         <div className="space-y-4">
           <div>
-            <Label htmlFor="from">From</Label>
+            <Label htmlFor="from">Pickup Location</Label>
             <div className="relative">
               <div className="absolute left-3 top-3 w-3 h-3 bg-green-500 rounded-full z-10"></div>
               <LocationInput
@@ -88,7 +88,7 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
 
           {showToLocation && (
             <div>
-              <Label htmlFor="to">To</Label>
+              <Label htmlFor="to">Drop Location</Label>
               <div className="relative">
                 <div className="absolute left-3 top-3 w-3 h-3 bg-red-500 rounded-full z-10"></div>
                 <LocationInput

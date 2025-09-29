@@ -969,22 +969,20 @@ const BookingStep2 = () => {
                 </div>
               </div>
 
-              {/* Instructions Section with Horizontal Scroll */}
+              {/* Instructions Section without Horizontal Scroll */}
               {instructions && instructions.length > 0 ? (
                 <div className="pt-4">
                   <h4 className="font-semibold text-gray-800 mb-2">Important Instructions</h4>
-                  <div className="flex space-x-3 overflow-x-auto pb-2">
+                  <ul className="space-y-2 list-decimal list-inside">
                     {instructions.map((instruction, index) => (
-                      <div
+                      <li
                         key={index}
-                        className="flex-shrink-0 min-w-[250px] bg-blue-50 border border-blue-200 rounded-lg p-3"
+                        className="  text-sm text-gray-700 leading-relaxed"
                       >
-                        <p className="text-sm text-gray-700 leading-relaxed">
-                          {instruction}
-                        </p>
-                      </div>
+                        {instruction}
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </div>
               ) : (
                 !instructionsLoading && (
@@ -993,6 +991,7 @@ const BookingStep2 = () => {
                   </div>
                 )
               )}
+
 
               {/* Loading state */}
               {instructionsLoading && (
