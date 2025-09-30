@@ -18,8 +18,8 @@ interface FormRendererProps {
 
 export const FormRenderer: React.FC<FormRendererProps> = ({
   subcategoryName,
-  subSubcategoryName = '',
   categoryName = '',
+  subSubcategoryName = '',
   selectedUsage,
   customUsage,
   numberOfMonths = '',
@@ -31,11 +31,11 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
   onNumberOfWeeksChange,
 }) => {
   const normalizedSubcategory = subcategoryName.toLowerCase();
-  const normalizedSubSubcategory = subSubcategoryName.toLowerCase();
   const normalizedCategory = categoryName.toLowerCase();
+  const normalizedSubSubcategory = subSubcategoryName.toLowerCase();
+  console.log('Rendering Form for:', { subcategoryName, categoryName, subSubcategoryName });
 
-  if (normalizedSubcategory.includes('one-way') || normalizedSubcategory.includes('oneway') || normalizedSubcategory.includes('one way') || 
-      normalizedSubSubcategory.includes('one-way') || normalizedSubSubcategory.includes('oneway') || normalizedSubSubcategory.includes('one way')) {
+  if (normalizedSubcategory.includes('one-way') || normalizedSubcategory.includes('oneway') || normalizedSubcategory.includes('one way')) {
     return (
       <OneWayForm
         selectedUsage={selectedUsage}
@@ -63,7 +63,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
         selectedUsage={selectedUsage}
         numberOfWeeks={numberOfWeeks}
         onUsageChange={onUsageChange}
-        onNumberOfWeeksChange={onNumberOfWeeksChange || (() => {})}
+        onNumberOfWeeksChange={onNumberOfWeeksChange || (() => { })}
       />
     );
   }
@@ -74,9 +74,31 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
         selectedUsage={selectedUsage}
         numberOfMonths={numberOfMonths}
         onUsageChange={onUsageChange}
-        onNumberOfMonthsChange={onNumberOfMonthsChange || (() => {})}
+        onNumberOfMonthsChange={onNumberOfMonthsChange || (() => { })}
       />
     );
+  }
+
+  if (normalizedSubSubcategory.includes('one-way') || normalizedSubSubcategory.includes('oneway') || normalizedSubSubcategory.includes('one way')) {
+    return (
+      <OneWayForm
+        selectedUsage={selectedUsage}
+        customUsage={customUsage}
+        onUsageChange={onUsageChange}
+        onCustomUsageChange={onCustomUsageChange}
+        durationOptions={durationOptions}
+      />
+    )
+  }
+
+  if (normalizedSubSubcategory.includes('roundtrip') || normalizedSubSubcategory.includes('round-trip') || normalizedSubSubcategory.includes('round trip')) {
+    return (
+      <HourlyForm
+        selectedUsage={selectedUsage}
+        durationOptions={durationOptions}
+        onUsageChange={onUsageChange}
+      />
+    )
   }
 
   // Default fallback

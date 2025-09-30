@@ -303,8 +303,8 @@ const Booking = () => {
                     transmissionType={transmissionType}
                     vehicleCategories={vehicleCategories}
                     transmissionOptions={transmissionOptions}
-                    showToLocation={!subcategoryName.toLowerCase().includes('hourly') && !subSubcategoryName.toLowerCase().includes('roundtrip') && !subSubcategoryName.toLowerCase().includes('round-trip') && !subSubcategoryName.toLowerCase().includes('round trip')}
-                    showTimeDuration={!subcategoryName.toLowerCase().includes('hourly')}
+                    showToLocation={!subcategoryName.toLowerCase().includes('hourly')}
+                    showTimeDuration={subcategoryName?.toLowerCase().includes('monthly') || subcategoryName?.toLowerCase().includes('weekly')}
                     showVehicleFields={true}
                     showReceiverFields={false}
                     dateLabel="Date"

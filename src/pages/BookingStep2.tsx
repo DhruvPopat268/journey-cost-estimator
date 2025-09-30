@@ -15,8 +15,10 @@ import {
   setTotalAmount,
   setSelectedCategory,
   setNotes,
-  updateField
+  updateField,
+  clearStep2Data
 } from '../store/slices/bookingSlice';
+import { ConfirmationDialog } from '../components/ui/confirmation-dialog'
 
 const BookingStep2 = () => {
   const navigate = useNavigate();
@@ -45,6 +47,7 @@ const BookingStep2 = () => {
   const [instructionsLoading, setInstructionsLoading] = useState(false);
   const [useReferral, setUseReferral] = useState(false);
   const [referralBalance, setReferralBalance] = useState(0);
+  const [showBackConfirmation, setShowBackConfirmation] = useState(false);
 
   const [receiverName, setReceiverName] = useState(bookingData?.receiverName || '');
   const [receiverPhone, setReceiverPhone] = useState(bookingData?.receiverPhone || '');
@@ -171,7 +174,11 @@ const BookingStep2 = () => {
 
               setSelectedUsage(defaultUsage);
               dispatch(setUsage({ selectedUsage: defaultUsage, customUsage: '' }));
-              await callCalculationAPI(defaultUsage);
+              
+              // Wait for next tick to ensure state is updated
+              setTimeout(() => {
+                callCalculationAPI(defaultUsage);
+              }, 0);
               return;
             }
           }
@@ -334,6 +341,27 @@ const BookingStep2 = () => {
     }
     return baseTotal;
   }, [selectedCategory, useReferral, referralBalance]);
+
+  const handleBackClick = () => {
+    setShowBackConfirmation(true);
+  };
+
+  const handleConfirmBack = () => {
+    dispatch(clearStep2Data());
+    const backUrl = bookingData.subSubcategoryId
+      ? `/booking/${bookingData.categoryId}/${bookingData.subcategoryId}/${bookingData.subSubcategoryId}`
+      : `/booking/${bookingData.categoryId}/${bookingData.subcategoryId}`;
+    navigate(backUrl, {
+      state: {
+        fromLocation: bookingData.fromLocation,
+        toLocation: bookingData.toLocation,
+        carType: bookingData.carType,
+        transmissionType: bookingData.transmissionType,
+        selectedDate: bookingData.selectedDate,
+        selectedTime: bookingData.selectedTime,
+      }
+    });
+  };
 
   if (!bookingData) {
     navigate('/');
@@ -553,21 +581,7 @@ const BookingStep2 = () => {
         <div className="flex items-center mb-3">
           <Button
             variant="ghost"
-            onClick={() => {
-              const backUrl = bookingData.subSubcategoryId
-                ? `/booking/${bookingData.categoryId}/${bookingData.subcategoryId}/${bookingData.subSubcategoryId}`
-                : `/booking/${bookingData.categoryId}/${bookingData.subcategoryId}`;
-              navigate(backUrl, {
-                state: {
-                  fromLocation: bookingData.fromLocation,
-                  toLocation: bookingData.toLocation,
-                  carType: bookingData.carType,
-                  transmissionType: bookingData.transmissionType,
-                  selectedDate: bookingData.selectedDate,
-                  selectedTime: bookingData.selectedTime,
-                }
-              });
-            }}
+            onClick={handleBackClick}
             className="mr-4 p-2 hover:bg-white/50 rounded-full"
           >
             <ArrowLeft className="w-6 h-6" />
@@ -908,13 +922,7 @@ const BookingStep2 = () => {
 
                   <div className="flex justify-between text-sm">
                     <span className=" font-medium">Package:</span>
-                    <span className="font-medium">
-                      {selectedUsage || customUsage}{" "}
-                      {bookingData?.subcategoryName?.toLowerCase().includes("hourly") ||
-                        bookingData?.subSubcategoryName?.toLowerCase().includes("roundtrip")
-                        ? "Hours"
-                        : "Km"}
-                    </span>
+                    <span className="font-medium">{selectedUsage || customUsage} {bookingData?.subcategoryName?.toLowerCase().includes('hourly') ? 'Hours' : 'Unit'}</span>
                   </div>
                 </div>
 
@@ -1041,6 +1049,17 @@ const BookingStep2 = () => {
           </div>
         </div>
       )}
+
+      {/* Back Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showBackConfirmation}
+        onClose={() => setShowBackConfirmation(false)}
+        onConfirm={handleConfirmBack}
+        title="Discard Changes?"
+        description="Going back will clear all your selections on this page. Are you sure you want to continue?"
+        confirmText="Yes, Go Back"
+        cancelText="Stay Here"
+      />
     </div>
   );
 };

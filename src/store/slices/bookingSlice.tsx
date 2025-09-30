@@ -118,6 +118,16 @@ export const bookingSlice = createSlice({
       return initialState
     },
     
+    // Clear Step 2 data only
+    clearStep2Data: (state) => {
+      state.selectedUsage = ''
+      state.customUsage = ''
+      state.selectedCategory = null
+      state.totalAmount = []
+      state.notes = ''
+      state.currentStep = 1
+    },
+    
     // Update individual fields
     updateField: (state, action) => {
       const { field, value } = action.payload
@@ -137,6 +147,7 @@ export const {
   setInstructions,
   setCurrentStep,
   resetBooking,
+  clearStep2Data,
   updateField
 } = bookingSlice.actions
 
