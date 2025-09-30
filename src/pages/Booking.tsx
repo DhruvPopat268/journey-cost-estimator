@@ -5,7 +5,8 @@ import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { CommonFields } from '../components/booking/common/CommonFields';
-import { setBookingStep1, updateField } from '../store/slices/bookingSlice';
+import { setBookingStep1, updateField, purgeStore } from '../store/slices/bookingSlice';
+import { ConfirmationDialog } from '../components/ui/confirmation-dialog';
 
 const Booking = () => {
   const navigate = useNavigate();
@@ -36,6 +37,7 @@ const Booking = () => {
   const [loading, setLoading] = useState(true);
   const [citiesLoading, setCitiesLoading] = useState(true);
   const cityDropdownRef = useRef(null);
+  const [showBackConfirmation, setShowBackConfirmation] = useState(false);
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -178,6 +180,15 @@ const Booking = () => {
 
   const transmissionOptions = ['Manual', 'Automatic'];
 
+  const handleBackClick = () => {
+    setShowBackConfirmation(true);
+  };
+
+  const handleConfirmBack = () => {
+    dispatch(purgeStore());
+    navigate('/');
+  };
+
   const handleNextPage = () => {
     const bookingData = {
       categoryId,
@@ -224,7 +235,7 @@ const Booking = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-4 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center mb-6">
-          <Button variant="ghost" onClick={() => navigate('/')} className="mr-4 p-2 hover:bg-white/50 rounded-full">
+          <Button variant="ghost" onClick={handleBackClick} className="mr-4 p-2 hover:bg-white/50 rounded-full">
             <ArrowLeft className="w-6 h-6" />
           </Button>
           <h1 className="text-2xl font-bold text-gray-900">
@@ -305,7 +316,7 @@ const Booking = () => {
                     transmissionOptions={transmissionOptions}
                     showToLocation={!subcategoryName.toLowerCase().includes('hourly')}
                     showTimeDuration={subcategoryName?.toLowerCase().includes('monthly') || subcategoryName?.toLowerCase().includes('weekly')}
-                    showVehicleFields={true}
+                    showVehicleFields={categoryName.toLowerCase() !== 'cab'}
                     showReceiverFields={false}
                     dateLabel="Date"
                     onFieldChange={(field, value) => {
@@ -341,6 +352,17 @@ const Booking = () => {
           )}
         </div>
       </div>
+      
+      {/* Back Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showBackConfirmation}
+        onClose={() => setShowBackConfirmation(false)}
+        onConfirm={handleConfirmBack}
+        title="Clear All Data?"
+        description="Going back will clear all your booking data. Are you sure you want to continue?"
+        confirmText="Yes, Clear All"
+        cancelText="Stay Here"
+      />
     </div>
   );
 };

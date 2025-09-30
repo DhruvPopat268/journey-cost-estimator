@@ -51,21 +51,14 @@ const BookingStep2 = () => {
 
   const [receiverName, setReceiverName] = useState(bookingData?.receiverName || '');
   const [receiverPhone, setReceiverPhone] = useState(bookingData?.receiverPhone || '');
-  const [numberOfWeeks, setNumberOfWeeks] = useState(bookingData?.numberOfWeeks || '1');
-  const [numberOfMonths, setNumberOfMonths] = useState(bookingData?.numberOfMonths || '1');
+  const [durationType, setDurationType] = useState(bookingData?.durationType || 'Day');
+  const [durationValue, setDurationValue] = useState(bookingData?.durationValue || (bookingData?.subcategoryName?.toLowerCase().includes('monthly') ? '22' : '1'));
 
   const [walletBalance, setWalletBalance] = useState(0);
   const [walletLoading, setWalletLoading] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   const [durationOptions, setDurationOptions] = useState([]);
-
-  useEffect(() => {
-    dispatch(updateField({ field: 'numberOfMonths', value: numberOfMonths }));
-  }, [numberOfMonths]);
-
-  useEffect(() => {
-    dispatch(updateField({ field: 'numberOfWeeks', value: numberOfWeeks }));
-  }, [numberOfWeeks]);
+  const [durationError, setDurationError] = useState('');
 
   useEffect(() => {
     dispatch(updateField({ field: 'receiverName', value: receiverName }));
@@ -74,6 +67,14 @@ const BookingStep2 = () => {
   useEffect(() => {
     dispatch(updateField({ field: 'receiverPhone', value: receiverPhone }));
   }, [receiverPhone]);
+
+  useEffect(() => {
+    dispatch(updateField({ field: 'durationType', value: durationType }));
+  }, [durationType]);
+
+  useEffect(() => {
+    dispatch(updateField({ field: 'durationValue', value: durationValue }));
+  }, [durationValue]);
 
   const fetchInstructions = async (categoryName) => {
     if (!categoryName || instructionsLoading) return;
@@ -98,11 +99,16 @@ const BookingStep2 = () => {
     }
   };
 
-  const callCalculationAPI = async (defaultUsage, weeksValue = numberOfWeeks, monthsValue = numberOfMonths) => {
+  const callCalculationAPI = async (defaultUsage, currentDurationType = durationType, currentDurationValue = durationValue) => {
     // Prevent multiple simultaneous calls
     if (isCalculating || !defaultUsage || !bookingData || !bookingData.categoryId) return;
 
     setIsCalculating(true);
+
+    // Ensure default values are used if current values are empty
+    const finalDurationType = currentDurationType || 'Day';
+    const isMonthly = bookingData?.subcategoryName?.toLowerCase().includes('monthly');
+    const finalDurationValue = currentDurationValue || (isMonthly ? '22' : '1');
 
     try {
       const res = await axios.post(
@@ -111,8 +117,8 @@ const BookingStep2 = () => {
           ...bookingData,
           selectedUsage: defaultUsage,
           includeInsurance: includeInsurance,
-          numberOfWeeks: weeksValue,
-          numberOfMonths: monthsValue,
+          durationType: finalDurationType,
+          durationValue: finalDurationValue,
           ...(bookingData.subSubcategoryId && { subSubcategoryId: bookingData.subSubcategoryId })
         }
       );
@@ -148,7 +154,7 @@ const BookingStep2 = () => {
         );
 
         if (res.data.success && res.data.data) {
-          const isHourly = bookingData?.subcategoryName?.toLowerCase().includes('hourly') || bookingData?.subSubcategoryName?.toLowerCase().includes('roundtrip');
+          const isHourly = bookingData?.subcategoryName?.toLowerCase().includes('hourly') || bookingData?.subcategoryName?.toLowerCase().includes('weekly') || bookingData?.subcategoryName?.toLowerCase().includes('monthly') || bookingData?.subSubcategoryName?.toLowerCase().includes('roundtrip');
           const options = isHourly ? res.data.data.includedMinutes : res.data.data.includedKm;
 
           console.log("options (raw)", options);
@@ -214,22 +220,32 @@ const BookingStep2 = () => {
     }
   }, [includeInsurance]);
 
-  const handleNumberOfWeeksChange = (value) => {
-    setNumberOfWeeks(value);
-    setTimeout(() => {
-      if (value && bookingData && (selectedUsage || customUsage)) {
-        callCalculationAPI(selectedUsage || customUsage, value, numberOfMonths);
-      }
-    }, 300);
+  const handleDurationTypeChange = (type) => {
+    setDurationType(type);
+    // Recalculate immediately with new type and current value
+    if (durationValue && bookingData && (selectedUsage || customUsage)) {
+      callCalculationAPI(selectedUsage || customUsage, type, durationValue);
+    }
   };
 
-  const handleNumberOfMonthsChange = (value) => {
-    setNumberOfMonths(value);
-    setTimeout(() => {
-      if (value && bookingData && (selectedUsage || customUsage)) {
-        callCalculationAPI(selectedUsage || customUsage, numberOfWeeks, value);
-      }
-    }, 300);
+  const handleDurationValueChange = (value) => {
+    const numValue = parseInt(value);
+    const isMonthly = bookingData?.subcategoryName?.toLowerCase().includes('monthly');
+    
+    // Validation for monthly Day type only
+    const hasError = isMonthly && durationType === 'Day' && value && (numValue < 22 || numValue > 26);
+    
+    if (hasError) {
+      setDurationError('For monthly bookings with Day type, duration must be between 22-26 days');
+    } else {
+      setDurationError('');
+    }
+    
+    setDurationValue(value);
+    // Only recalculate if there's no validation error
+    if (value && bookingData && (selectedUsage || customUsage) && !hasError) {
+      callCalculationAPI(selectedUsage || customUsage, durationType, value);
+    }
   };
 
   const handleUsageChange = async (value) => {
@@ -598,16 +614,17 @@ const BookingStep2 = () => {
             categoryName={bookingData.categoryName}
             selectedUsage={selectedUsage}
             customUsage={customUsage}
-            numberOfMonths={numberOfMonths}
-            numberOfWeeks={numberOfWeeks}
+            durationType={durationType}
+            durationValue={durationValue}
             durationOptions={durationOptions}
+            durationError={durationError}
             onUsageChange={handleUsageChange}
             onCustomUsageChange={(value) => {
               setCustomUsage(value);
               setSelectedUsage('');
             }}
-            onNumberOfMonthsChange={handleNumberOfMonthsChange}
-            onNumberOfWeeksChange={handleNumberOfWeeksChange}
+            onDurationTypeChange={handleDurationTypeChange}
+            onDurationValueChange={handleDurationValueChange}
           />
 
           {/* Price Categories */}
@@ -922,7 +939,7 @@ const BookingStep2 = () => {
 
                   <div className="flex justify-between text-sm">
                     <span className=" font-medium">Package:</span>
-                    <span className="font-medium">{selectedUsage || customUsage} {bookingData?.subcategoryName?.toLowerCase().includes('hourly') ? 'Hours' : 'Unit'}</span>
+                    <span className="font-medium">{selectedUsage} {bookingData?.subcategoryName?.toLowerCase().includes('hourly') || bookingData?.subcategoryName?.toLowerCase().includes('weekly') || bookingData?.subcategoryName?.toLowerCase().includes('monthly') || bookingData?.subSubcategoryName?.toLowerCase().includes('roundtrip')  ? 'Hours' : 'Unit'}</span>
                   </div>
                 </div>
 

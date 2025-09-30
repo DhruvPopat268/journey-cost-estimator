@@ -25,6 +25,8 @@ const initialState = {
   selectedCategory: null,
   totalAmount: [],
   notes: '',
+  durationType: 'Day',
+  durationValue: '1',
   
   // UI state
   currentStep: 1,
@@ -118,6 +120,11 @@ export const bookingSlice = createSlice({
       return initialState
     },
     
+    // Purge entire store
+    purgeStore: () => {
+      return initialState
+    },
+    
     // Clear Step 2 data only
     clearStep2Data: (state) => {
       state.selectedUsage = ''
@@ -125,6 +132,8 @@ export const bookingSlice = createSlice({
       state.selectedCategory = null
       state.totalAmount = []
       state.notes = ''
+      state.durationType = 'Day'
+      state.durationValue = state.subcategoryName?.toLowerCase().includes('monthly') ? '22' : '1'
       state.currentStep = 1
     },
     
@@ -148,7 +157,8 @@ export const {
   setCurrentStep,
   resetBooking,
   clearStep2Data,
-  updateField
+  updateField,
+  purgeStore
 } = bookingSlice.actions
 
 export default bookingSlice.reducer

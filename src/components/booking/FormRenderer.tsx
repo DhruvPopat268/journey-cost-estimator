@@ -7,13 +7,16 @@ interface FormRendererProps {
   categoryName?: string;
   selectedUsage: string;
   customUsage: string;
-  numberOfMonths?: string;
-  numberOfWeeks?: string;
+  durationType?: string;
+  durationValue?: string;
   durationOptions?: string[];
+  durationError?: string;
   onUsageChange: (value: string) => void;
   onCustomUsageChange: (value: string) => void;
   onNumberOfMonthsChange?: (value: string) => void;
   onNumberOfWeeksChange?: (value: string) => void;
+  onDurationTypeChange?: (value: string) => void;
+  onDurationValueChange?: (value: string) => void;
 }
 
 export const FormRenderer: React.FC<FormRendererProps> = ({
@@ -22,13 +25,16 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
   subSubcategoryName = '',
   selectedUsage,
   customUsage,
-  numberOfMonths = '',
-  numberOfWeeks = '',
+  durationType = 'Week',
+  durationValue = '1',
   durationOptions = [],
+  durationError = '',
   onUsageChange,
   onCustomUsageChange,
   onNumberOfMonthsChange,
   onNumberOfWeeksChange,
+  onDurationTypeChange,
+  onDurationValueChange,
 }) => {
   const normalizedSubcategory = subcategoryName.toLowerCase();
   const normalizedCategory = categoryName.toLowerCase();
@@ -61,9 +67,12 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
     return (
       <WeeklyForm
         selectedUsage={selectedUsage}
-        numberOfWeeks={numberOfWeeks}
+        durationType={durationType}
+        durationValue={durationValue}
+        durationOptions={durationOptions}
         onUsageChange={onUsageChange}
-        onNumberOfWeeksChange={onNumberOfWeeksChange || (() => { })}
+        onDurationTypeChange={onDurationTypeChange || (() => { })}
+        onDurationValueChange={onDurationValueChange || (() => { })}
       />
     );
   }
@@ -72,9 +81,13 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
     return (
       <MonthlyForm
         selectedUsage={selectedUsage}
-        numberOfMonths={numberOfMonths}
+        durationType={durationType}
+        durationValue={durationValue}
+        durationOptions={durationOptions}
+        durationError={durationError}
         onUsageChange={onUsageChange}
-        onNumberOfMonthsChange={onNumberOfMonthsChange || (() => { })}
+        onDurationTypeChange={onDurationTypeChange || (() => { })}
+        onDurationValueChange={onDurationValueChange || (() => { })}
       />
     );
   }
