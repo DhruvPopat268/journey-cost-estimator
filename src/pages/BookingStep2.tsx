@@ -939,7 +939,7 @@ const BookingStep2 = () => {
 
                   <div className="flex justify-between text-sm">
                     <span className=" font-medium">Package:</span>
-                    <span className="font-medium">{selectedUsage} {bookingData?.subcategoryName?.toLowerCase().includes('hourly') || bookingData?.subcategoryName?.toLowerCase().includes('weekly') || bookingData?.subcategoryName?.toLowerCase().includes('monthly') || bookingData?.subSubcategoryName?.toLowerCase().includes('roundtrip')  ? 'Hours' : 'Unit'}</span>
+                    <span className="font-medium">{selectedUsage} {bookingData?.subcategoryName?.toLowerCase().includes('hourly') || bookingData?.subcategoryName?.toLowerCase().includes('weekly') || bookingData?.subcategoryName?.toLowerCase().includes('monthly') || bookingData?.subSubcategoryName?.toLowerCase().includes('roundtrip')  ? 'Hours' : 'Km'}</span>
                   </div>
                 </div>
 
