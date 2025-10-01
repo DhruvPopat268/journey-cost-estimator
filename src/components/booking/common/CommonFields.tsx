@@ -132,15 +132,6 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
                   className="pr-2"
                 />
               </div>
-              <div>
-                <Label htmlFor="endTime">End Time</Label>
-                <Input
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => onFieldChange('endTime', e.target.value)}
-                  className="pr-2"
-                />
-              </div>
             </div>
           </div>
         ) : (
