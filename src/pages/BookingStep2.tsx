@@ -741,7 +741,7 @@ const BookingStep2 = () => {
                 <CardTitle className="text-lg font-semibold">Select Dates</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-4 gap-2">
                   {displayDates.map((dateObj) => {
                     const isSelected = selectedDates.includes(dateObj.dateStr);
 
@@ -784,7 +784,7 @@ const BookingStep2 = () => {
                           }
                         }}
                         className={`
-                relative p-3 rounded-lg border-2 cursor-pointer transition-all text-center
+                relative p-2 rounded-lg border-2 cursor-pointer transition-all text-center
                 ${isSelected
                             ? 'border-blue-500 bg-blue-50'
                             : 'border-gray-300 bg-white hover:border-blue-300'
@@ -792,16 +792,16 @@ const BookingStep2 = () => {
               `}
                       >
                         {/* Checkbox indicator */}
-                        <div className="absolute top-2 left-2">
+                        <div className="absolute top-1 left-1">
                           <div className={`
-                  w-5 h-5 rounded border-2 flex items-center justify-center
+                  w-4 h-4 rounded border-2 flex items-center justify-center
                   ${isSelected
                               ? 'bg-blue-500 border-blue-500'
                               : 'bg-white border-gray-400'
                             }
                 `}>
                             {isSelected && (
-                              <svg className="w-3 h-3 text-white" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" viewBox="0 0 24 24" stroke="currentColor">
+                              <svg className="w-2 h-2 text-white" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" viewBox="0 0 24 24" stroke="currentColor">
                                 <path d="M5 13l4 4L19 7"></path>
                               </svg>
                             )}
@@ -809,11 +809,11 @@ const BookingStep2 = () => {
                         </div>
 
                         {/* Date text */}
-                        <div className="mt-2">
+                        <div className="mt-1">
                           <div className="text-xs text-gray-600 font-medium">
                             {dateObj.displayDate.split(',')[0]}
                           </div>
-                          <div className="text-sm font-semibold text-gray-800">
+                          <div className="text-xs font-semibold text-gray-800">
                             {dateObj.displayDate.split(',')[1]}
                           </div>
                         </div>
