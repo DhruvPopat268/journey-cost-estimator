@@ -90,7 +90,7 @@ const BookingStep2 = () => {
         // Generate default dates if no selectedDates
         const isWeekly = bookingData?.subcategoryName?.toLowerCase().includes('weekly');
         const maxDays = isWeekly ? Math.min(parseInt(durationValue), 14) : parseInt(durationValue);
-        
+
         for (let i = 0; i < maxDays; i++) {
           const date = new Date();
           date.setDate(date.getDate() + i + 1);
@@ -738,60 +738,88 @@ const BookingStep2 = () => {
           {(bookingData?.subcategoryName?.toLowerCase().includes('weekly') || bookingData?.subcategoryName?.toLowerCase().includes('monthly')) && (
             <Card className="bg-white shadow-lg">
               <CardHeader>
-                <CardTitle>Select Dates</CardTitle>
+                <CardTitle className="text-lg font-semibold">Select Dates</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-5 gap-2 max-h-60 overflow-y-auto">
-                    {displayDates.map((dateObj) => {
-                      const isSelected = selectedDates.includes(dateObj.dateStr);
+                <div className="grid grid-cols-3 gap-3">
+                  {displayDates.map((dateObj) => {
+                    const isSelected = selectedDates.includes(dateObj.dateStr);
 
-                      return (
-                        <label key={dateObj.dateStr} className="flex items-center space-x-2 p-2 border rounded cursor-pointer hover:bg-gray-50">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedDates([...selectedDates, dateObj.dateStr]);
-                              } else {
-                                // Remove the date
-                                const newSelected = selectedDates.filter(d => d !== dateObj.dateStr);
+                    return (
+                      <div
+                        key={dateObj.dateStr}
+                        onClick={() => {
+                          if (isSelected) {
+                            // Remove the date
+                            const newSelected = selectedDates.filter(d => d !== dateObj.dateStr);
 
-                                // Find the latest date in selectedDates to determine next date
-                                const allDates = [...selectedDates].sort();
-                                const latestDate = new Date(allDates[allDates.length - 1]);
-                                
-                                // Generate next date (day after the latest selected date)
-                                const nextDate = new Date(latestDate);
-                                nextDate.setDate(nextDate.getDate() + 1);
-                                const nextDateStr = nextDate.toISOString().split('T')[0];
-                                const nextDisplayDate = nextDate.toLocaleDateString('en-US', {
-                                  weekday: 'short',
-                                  month: 'short',
-                                  day: 'numeric'
-                                });
+                            // Find the max index in displayDates
+                            const maxIndex = Math.max(...displayDates.map(d => d.index));
 
-                                // Add new date to display if not already there
-                                const dateExists = displayDates.some(d => d.dateStr === nextDateStr);
-                                if (!dateExists) {
-                                  setDisplayDates([...displayDates, {
-                                    dateStr: nextDateStr,
-                                    displayDate: nextDisplayDate,
-                                    index: displayDates.length
-                                  }]);
-                                }
+                            // Generate next date
+                            const nextDate = new Date();
+                            nextDate.setDate(nextDate.getDate() + maxIndex + 2);
+                            const nextDateStr = nextDate.toISOString().split('T')[0];
+                            const nextDisplayDate = nextDate.toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric'
+                            });
 
-                                setSelectedDates([...newSelected, nextDateStr]);
-                              }
-                            }}
-                            className="text-blue-600 cursor-pointer"
-                          />
-                          <span className="text-sm">{dateObj.displayDate}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
+                            // Add new date to display
+                            const dateExists = displayDates.some(d => d.dateStr === nextDateStr);
+                            if (!dateExists) {
+                              setDisplayDates([...displayDates, {
+                                dateStr: nextDateStr,
+                                displayDate: nextDisplayDate,
+                                index: maxIndex + 1
+                              }]);
+                            }
+
+                            // Add the new date to selected dates
+                            setSelectedDates([...newSelected, nextDateStr]);
+                          } else {
+                            // Select the date
+                            setSelectedDates([...selectedDates, dateObj.dateStr]);
+                          }
+                        }}
+                        className={`
+                relative p-3 rounded-lg border-2 cursor-pointer transition-all text-center
+                ${isSelected
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-300 bg-white hover:border-blue-300'
+                          }
+              `}
+                      >
+                        {/* Checkbox indicator */}
+                        <div className="absolute top-2 left-2">
+                          <div className={`
+                  w-5 h-5 rounded border-2 flex items-center justify-center
+                  ${isSelected
+                              ? 'bg-blue-500 border-blue-500'
+                              : 'bg-white border-gray-400'
+                            }
+                `}>
+                            {isSelected && (
+                              <svg className="w-3 h-3 text-white" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M5 13l4 4L19 7"></path>
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Date text */}
+                        <div className="mt-2">
+                          <div className="text-xs text-gray-600 font-medium">
+                            {dateObj.displayDate.split(',')[0]}
+                          </div>
+                          <div className="text-sm font-semibold text-gray-800">
+                            {dateObj.displayDate.split(',')[1]}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
