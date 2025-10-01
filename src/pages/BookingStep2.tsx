@@ -59,6 +59,62 @@ const BookingStep2 = () => {
   const [isCalculating, setIsCalculating] = useState(false);
   const [durationOptions, setDurationOptions] = useState([]);
   const [durationError, setDurationError] = useState('');
+  const [selectedDates, setSelectedDates] = useState(bookingData?.selectedDates || []);
+
+  // Add this state to store display dates
+  const [displayDates, setDisplayDates] = useState([]);
+
+  // Initialize displayDates when durationValue changes
+  useEffect(() => {
+    if (durationValue && (bookingData?.subcategoryName?.toLowerCase().includes('weekly') ||
+      bookingData?.subcategoryName?.toLowerCase().includes('monthly'))) {
+      const dates = [];
+      const initialSelected = selectedDates.length > 0 ? selectedDates : [];
+
+      // If we have selectedDates from Redux, use them to generate displayDates
+      if (selectedDates.length > 0) {
+        selectedDates.forEach((dateStr, index) => {
+          const date = new Date(dateStr);
+          const displayDate = date.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
+          });
+          dates.push({
+            dateStr,
+            displayDate,
+            index
+          });
+        });
+      } else {
+        // Generate default dates if no selectedDates
+        const isWeekly = bookingData?.subcategoryName?.toLowerCase().includes('weekly');
+        const maxDays = isWeekly ? Math.min(parseInt(durationValue), 14) : parseInt(durationValue);
+        
+        for (let i = 0; i < maxDays; i++) {
+          const date = new Date();
+          date.setDate(date.getDate() + i + 1);
+          const dateStr = date.toISOString().split('T')[0];
+          const displayDate = date.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
+          });
+
+          dates.push({
+            dateStr,
+            displayDate,
+            index: i
+          });
+
+          initialSelected.push(dateStr);
+        }
+        setSelectedDates(initialSelected);
+      }
+
+      setDisplayDates(dates);
+    }
+  }, [durationValue, bookingData?.subcategoryName, selectedDates.length]);
 
   useEffect(() => {
     dispatch(updateField({ field: 'receiverName', value: receiverName }));
@@ -75,6 +131,32 @@ const BookingStep2 = () => {
   useEffect(() => {
     dispatch(updateField({ field: 'durationValue', value: durationValue }));
   }, [durationValue]);
+
+  useEffect(() => {
+    dispatch(updateField({ field: 'selectedDates', value: selectedDates }));
+  }, [selectedDates, dispatch]);
+
+  // Initialize selected dates for weekly/monthly on component load
+  useEffect(() => {
+    const isWeeklyOrMonthly = bookingData?.subcategoryName?.toLowerCase().includes('weekly') || bookingData?.subcategoryName?.toLowerCase().includes('monthly');
+    if (isWeeklyOrMonthly && durationValue) {
+      // If we have selectedDates from Redux, use them
+      if (bookingData?.selectedDates && bookingData.selectedDates.length > 0) {
+        setSelectedDates(bookingData.selectedDates);
+      } else if (selectedDates.length === 0) {
+        // Only generate new dates if we don't have any
+        const numValue = parseInt(durationValue);
+        const isWeekly = bookingData?.subcategoryName?.toLowerCase().includes('weekly');
+        const maxDays = isWeekly ? Math.min(numValue || 1, 14) : (numValue || 1);
+        const allDates = Array.from({ length: maxDays }, (_, i) => {
+          const date = new Date();
+          date.setDate(date.getDate() + i + 1);
+          return date.toISOString().split('T')[0];
+        });
+        setSelectedDates(allDates);
+      }
+    }
+  }, [bookingData?.subcategoryName, bookingData?.selectedDates, durationValue]);
 
   const fetchInstructions = async (categoryName) => {
     if (!categoryName || instructionsLoading) return;
@@ -180,7 +262,7 @@ const BookingStep2 = () => {
 
               setSelectedUsage(defaultUsage);
               dispatch(setUsage({ selectedUsage: defaultUsage, customUsage: '' }));
-              
+
               // Wait for next tick to ensure state is updated
               setTimeout(() => {
                 callCalculationAPI(defaultUsage);
@@ -231,18 +313,38 @@ const BookingStep2 = () => {
   const handleDurationValueChange = (value) => {
     const numValue = parseInt(value);
     const isMonthly = bookingData?.subcategoryName?.toLowerCase().includes('monthly');
-    
-    // Validation for monthly Day type only
-    const hasError = isMonthly && durationType === 'Day' && value && (numValue < 22 || numValue > 26);
-    
-    if (hasError) {
+    const isWeekly = bookingData?.subcategoryName?.toLowerCase().includes('weekly');
+    const isWeeklyOrMonthly = isWeekly || isMonthly;
+
+    // Validation for monthly Day type
+    const monthlyError = isMonthly && durationType === 'Day' && value && (numValue < 22 || numValue > 26);
+    // Validation for weekly bookings
+    const weeklyError = isWeekly && value && numValue > 14;
+
+    if (monthlyError) {
       setDurationError('For monthly bookings with Day type, duration must be between 22-26 days');
+    } else if (weeklyError) {
+      setDurationError('In weekly you can only select max 14 days, for more use monthly');
     } else {
       setDurationError('');
     }
-    
+
     setDurationValue(value);
+
+    // Auto-select all dates for weekly/monthly when duration value changes
+    if (isWeeklyOrMonthly && value) {
+      // For weekly bookings, limit to max 14 days even if duration value is higher
+      const maxDays = isWeekly ? Math.min(numValue || 1, 14) : (numValue || 1);
+      const allDates = Array.from({ length: maxDays }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() + i + 1);
+        return date.toISOString().split('T')[0];
+      });
+      setSelectedDates(allDates);
+    }
+
     // Only recalculate if there's no validation error
+    const hasError = monthlyError || weeklyError;
     if (value && bookingData && (selectedUsage || customUsage) && !hasError) {
       callCalculationAPI(selectedUsage || customUsage, durationType, value);
     }
@@ -425,7 +527,8 @@ const BookingStep2 = () => {
           notes: notes,
           includeInsurance: includeInsurance,
           receiverName: receiverName,
-          receiverPhone: receiverPhone
+          receiverPhone: receiverPhone,
+          selectedDates: selectedDates
         };
         navigate("/login", { state: bookingDetails });
         return;
@@ -448,7 +551,8 @@ const BookingStep2 = () => {
           notes: notes,
           includeInsurance: includeInsurance,
           receiverName: receiverName,
-          receiverPhone: receiverPhone
+          receiverPhone: receiverPhone,
+          selectedDates: selectedDates
         };
         navigate("/login", { state: bookingDetails });
         return;
@@ -466,7 +570,8 @@ const BookingStep2 = () => {
         gstCharges: selectedCategory.gstCharges,
         totalPayable: selectedCategory.totalPayable,
         notes: notes,
-        includeInsurance: includeInsurance
+        includeInsurance: includeInsurance,
+        selectedDates: selectedDates
       };
       navigate("/login", { state: bookingDetails });
     }
@@ -490,13 +595,15 @@ const BookingStep2 = () => {
       includeInsurance: includeInsurance,
       paymentMethod: selectedPaymentMethod,
       receiverName: receiverName,
-      receiverPhone: receiverPhone
+      receiverPhone: receiverPhone,
+      selectedDates: selectedDates
     };
 
     dispatch(setUsage({ selectedUsage: selectedUsage || '', customUsage: customUsage || '' }));
     const serializableCategory = JSON.parse(JSON.stringify(selectedCategory));
     dispatch(setSelectedCategory(serializableCategory));
     dispatch(setNotes(notes));
+    dispatch(updateField({ field: 'selectedDates', value: selectedDates }));
     dispatch(setTotalAmount(totalAmount));
 
     if (selectedPaymentMethod === 'cash') {
@@ -626,6 +733,69 @@ const BookingStep2 = () => {
             onDurationTypeChange={handleDurationTypeChange}
             onDurationValueChange={handleDurationValueChange}
           />
+
+          {/* Date Selection for Weekly/Monthly */}
+          {(bookingData?.subcategoryName?.toLowerCase().includes('weekly') || bookingData?.subcategoryName?.toLowerCase().includes('monthly')) && (
+            <Card className="bg-white shadow-lg">
+              <CardHeader>
+                <CardTitle>Select Dates</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-5 gap-2 max-h-60 overflow-y-auto">
+                    {displayDates.map((dateObj) => {
+                      const isSelected = selectedDates.includes(dateObj.dateStr);
+
+                      return (
+                        <label key={dateObj.dateStr} className="flex items-center space-x-2 p-2 border rounded cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedDates([...selectedDates, dateObj.dateStr]);
+                              } else {
+                                // Remove the date
+                                const newSelected = selectedDates.filter(d => d !== dateObj.dateStr);
+
+                                // Find the latest date in selectedDates to determine next date
+                                const allDates = [...selectedDates].sort();
+                                const latestDate = new Date(allDates[allDates.length - 1]);
+                                
+                                // Generate next date (day after the latest selected date)
+                                const nextDate = new Date(latestDate);
+                                nextDate.setDate(nextDate.getDate() + 1);
+                                const nextDateStr = nextDate.toISOString().split('T')[0];
+                                const nextDisplayDate = nextDate.toLocaleDateString('en-US', {
+                                  weekday: 'short',
+                                  month: 'short',
+                                  day: 'numeric'
+                                });
+
+                                // Add new date to display if not already there
+                                const dateExists = displayDates.some(d => d.dateStr === nextDateStr);
+                                if (!dateExists) {
+                                  setDisplayDates([...displayDates, {
+                                    dateStr: nextDateStr,
+                                    displayDate: nextDisplayDate,
+                                    index: displayDates.length
+                                  }]);
+                                }
+
+                                setSelectedDates([...newSelected, nextDateStr]);
+                              }
+                            }}
+                            className="text-blue-600 cursor-pointer"
+                          />
+                          <span className="text-sm">{dateObj.displayDate}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Price Categories */}
           {totalAmount.map((item, index) => (
@@ -939,7 +1109,7 @@ const BookingStep2 = () => {
 
                   <div className="flex justify-between text-sm">
                     <span className=" font-medium">Package:</span>
-                    <span className="font-medium">{selectedUsage} {bookingData?.subcategoryName?.toLowerCase().includes('hourly') || bookingData?.subcategoryName?.toLowerCase().includes('weekly') || bookingData?.subcategoryName?.toLowerCase().includes('monthly') || bookingData?.subSubcategoryName?.toLowerCase().includes('roundtrip')  ? 'Hours' : 'Km'}</span>
+                    <span className="font-medium">{selectedUsage} {bookingData?.subcategoryName?.toLowerCase().includes('hourly') || bookingData?.subcategoryName?.toLowerCase().includes('weekly') || bookingData?.subcategoryName?.toLowerCase().includes('monthly') || bookingData?.subSubcategoryName?.toLowerCase().includes('roundtrip') ? 'Hours' : 'Km'}</span>
                   </div>
                 </div>
 

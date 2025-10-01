@@ -27,6 +27,7 @@ const initialState = {
   notes: '',
   durationType: 'Day',
   durationValue: '1',
+  selectedDates: [],
   
   // UI state
   currentStep: 1,
@@ -97,6 +98,10 @@ export const bookingSlice = createSlice({
       state.notes = action.payload
     },
     
+    setSelectedDates: (state, action) => {
+      state.selectedDates = action.payload
+    },
+    
     // Data loading actions
     setVehicleCategories: (state, action) => {
       state.vehicleCategories = action.payload
@@ -134,6 +139,7 @@ export const bookingSlice = createSlice({
       state.notes = ''
       state.durationType = 'Day'
       state.durationValue = state.subcategoryName?.toLowerCase().includes('monthly') ? '22' : '1'
+      state.selectedDates = []
       state.currentStep = 1
     },
     
@@ -151,6 +157,7 @@ export const {
   setTotalAmount,
   setSelectedCategory,
   setNotes,
+  setSelectedDates,
   setVehicleCategories,
   setPriceCategories,
   setInstructions,

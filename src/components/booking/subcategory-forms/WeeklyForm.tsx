@@ -10,6 +10,7 @@ interface WeeklyFormProps {
   durationType?: string;
   durationValue?: string;
   durationOptions?: string[];
+  durationError?: string;
   onUsageChange: (value: string) => void;
   onDurationTypeChange?: (value: string) => void;
   onDurationValueChange?: (value: string) => void;
@@ -20,6 +21,7 @@ export const WeeklyForm: React.FC<WeeklyFormProps> = ({
   durationType = 'Day',
   durationValue = '1',
   durationOptions = [],
+  durationError = '',
   onUsageChange,
   onDurationTypeChange,
   onDurationValueChange,
@@ -65,36 +67,24 @@ export const WeeklyForm: React.FC<WeeklyFormProps> = ({
             </Select>
           </div>
           <div className="flex-1">
-            <Label htmlFor="duration-input">Days / Weeks</Label>
-            <div className="flex gap-2">
-              <Input
-                id="duration-input"
-                type="number"
-                min="1"
-                placeholder="Enter value"
-                value={durationValue}
-                onChange={(e) => {
-                  const newValue = e.target.value;
-                  if (onDurationValueChange) {
-                    onDurationValueChange(newValue);
-                  }
-                }}
-                className="flex-1"
-              />
-              <Select value={durationType} onValueChange={(value) => {
-                if (onDurationTypeChange) {
-                  onDurationTypeChange(value);
+            <Label htmlFor="duration-input">No Of Days</Label>
+            <Input
+              id="duration-input"
+              type="number"
+              min="1"
+              placeholder="Enter days"
+              value={durationValue}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                if (onDurationValueChange) {
+                  onDurationValueChange(newValue);
                 }
-              }}>
-                <SelectTrigger className="w-20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Day">Day</SelectItem>
-                  <SelectItem value="Week">Week</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              }}
+              className={durationError ? 'border-red-500' : ''}
+            />
+            {durationError && (
+              <p className="text-red-500 text-sm mt-1">{durationError}</p>
+            )}
           </div>
         </div>
       </CardContent>

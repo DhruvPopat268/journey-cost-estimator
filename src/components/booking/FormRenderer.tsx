@@ -39,7 +39,6 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
   const normalizedSubcategory = subcategoryName.toLowerCase();
   const normalizedCategory = categoryName.toLowerCase();
   const normalizedSubSubcategory = subSubcategoryName.toLowerCase();
-  console.log('Rendering Form for:', { subcategoryName, categoryName, subSubcategoryName });
 
   if (normalizedSubcategory.includes('one-way') || normalizedSubcategory.includes('oneway') || normalizedSubcategory.includes('one way')) {
     return (
@@ -70,6 +69,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
         durationType={durationType}
         durationValue={durationValue}
         durationOptions={durationOptions}
+        durationError={durationError}
         onUsageChange={onUsageChange}
         onDurationTypeChange={onDurationTypeChange || (() => { })}
         onDurationValueChange={onDurationValueChange || (() => { })}
