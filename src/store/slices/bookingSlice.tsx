@@ -24,6 +24,7 @@ const initialState = {
   selectedUsage: '',
   customUsage: '',
   selectedCategory: null,
+  selectedCarCategory: null,
   totalAmount: [],
   notes: '',
   durationType: 'Day',
@@ -138,6 +139,7 @@ export const bookingSlice = createSlice({
       state.selectedUsage = ''
       state.customUsage = ''
       state.selectedCategory = null
+      state.selectedCarCategory = null
       state.totalAmount = []
       state.notes = ''
       state.durationType = 'Day'

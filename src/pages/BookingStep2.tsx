@@ -60,6 +60,8 @@ const BookingStep2 = () => {
   const [durationOptions, setDurationOptions] = useState([]);
   const [durationError, setDurationError] = useState('');
   const [selectedDates, setSelectedDates] = useState(bookingData?.selectedDates || []);
+  const [carCategories, setCarCategories] = useState([]);
+  const [selectedCarCategory, setSelectedCarCategory] = useState(null);
 
   // Add this state to store display dates
   const [displayDates, setDisplayDates] = useState([]);
@@ -181,9 +183,24 @@ const BookingStep2 = () => {
     }
   };
 
-  const callCalculationAPI = async (defaultUsage, currentDurationType = durationType, currentDurationValue = durationValue) => {
+  const fetchCarCategories = async () => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/car-categories`);
+      const activeCategories = res.data.filter(category => category.status === true);
+      setCarCategories(activeCategories);
+    } catch (error) {
+      console.error('Failed to fetch car categories:', error);
+      setCarCategories([]);
+    }
+  };
+
+  const callCalculationAPI = async (defaultUsage, currentDurationType = durationType, currentDurationValue = durationValue, carCategory = null) => {
     // Prevent multiple simultaneous calls
     if (isCalculating || !defaultUsage || !bookingData || !bookingData.categoryId) return;
+
+    const categoryName = bookingData?.categoryName?.toLowerCase();
+    // Only call calculation API if categoryName is 'driver' or 'cab'
+    if (categoryName !== 'driver' && categoryName !== 'cab') return;
 
     setIsCalculating(true);
 
@@ -192,16 +209,22 @@ const BookingStep2 = () => {
     const isMonthly = bookingData?.subcategoryName?.toLowerCase().includes('monthly');
     const finalDurationValue = currentDurationValue || (isMonthly ? '22' : '1');
 
+    // Determine API endpoint based on category
+    const apiEndpoint = categoryName === 'driver'
+      ? '/api/DriverRideCosts/calculation'
+      : '/api/CabRideCosts/calculation';
+
     try {
       const res = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/ride-costs/calculation`,
+        `${import.meta.env.VITE_API_URL}${apiEndpoint}`,
         {
           ...bookingData,
           selectedUsage: defaultUsage,
           includeInsurance: includeInsurance,
           durationType: finalDurationType,
           durationValue: finalDurationValue,
-          ...(bookingData.subSubcategoryId && { subSubcategoryId: bookingData.subSubcategoryId })
+          ...(bookingData.subSubcategoryId && { subSubcategoryId: bookingData.subSubcategoryId }),
+          ...(categoryName === 'cab' && (carCategory || selectedCarCategory) && { carCategoryId: (carCategory || selectedCarCategory)._id })
         }
       );
 
@@ -225,9 +248,36 @@ const BookingStep2 = () => {
         return;
       }
 
+      const categoryName = bookingData?.categoryName?.toLowerCase();
+      // Only call get-included-data API if categoryName is 'driver' or 'cab'
+      if (categoryName !== 'driver' && categoryName !== 'cab') {
+        setLoading(false);
+        return;
+      }
+
+      // Fetch car categories and set default for cab bookings
+      let defaultCarCategory = null;
+      if (categoryName === 'cab') {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/car-categories`);
+        const activeCategories = res.data.filter(category => category.status === true);
+        setCarCategories(activeCategories);
+        
+        // Find and set Classic as default
+        const classicCategory = activeCategories.find(cat => cat.name.toLowerCase() === 'classic');
+        if (classicCategory) {
+          setSelectedCarCategory(classicCategory);
+          defaultCarCategory = classicCategory;
+        }
+      }
+
+      // Determine API endpoint based on category
+      const apiEndpoint = categoryName === 'driver'
+        ? '/api/DriverRideCosts/get-included-data'
+        : '/api/CabRideCosts/get-included-data';
+
       try {
         const res = await axios.post(
-          `${import.meta.env.VITE_API_URL}/api/ride-costs/get-included-data`,
+          `${import.meta.env.VITE_API_URL}${apiEndpoint}`,
           {
             categoryId: bookingData.categoryId,
             subcategoryId: bookingData.subcategoryId,
@@ -265,7 +315,7 @@ const BookingStep2 = () => {
 
               // Wait for next tick to ensure state is updated
               setTimeout(() => {
-                callCalculationAPI(defaultUsage);
+                callCalculationAPI(defaultUsage, durationType, durationValue, defaultCarCategory);
               }, 0);
               return;
             }
@@ -281,10 +331,34 @@ const BookingStep2 = () => {
   }, [bookingData?.categoryId, bookingData?.subcategoryId]);
   // Only depend on IDs to avoid loops
 
+  // Set default car category to Classic when car categories are loaded
+  useEffect(() => {
+    if (bookingData?.categoryName?.toLowerCase() === 'cab' && carCategories.length > 0 && !selectedCarCategory) {
+      const classicCategory = carCategories.find(cat => cat.name.toLowerCase() === 'classic');
+      if (classicCategory) {
+        setSelectedCarCategory(classicCategory);
+      }
+    }
+  }, [carCategories]);
+
+  // Store selected car category in Redux
+  useEffect(() => {
+    if (selectedCarCategory) {
+      dispatch(updateField({ field: 'selectedCarCategory', value: selectedCarCategory }));
+    }
+  }, [selectedCarCategory, dispatch]);
+
   // Consolidated dispatch updates to avoid multiple re-renders
   useEffect(() => {
     dispatch(updateField({ field: 'selectedUsage', value: selectedUsage }));
   }, [selectedUsage, dispatch]);
+
+  // Trigger calculation API when car category changes for cab bookings
+  useEffect(() => {
+    if (selectedCarCategory && bookingData?.categoryName?.toLowerCase() === 'cab' && (selectedUsage || customUsage) && !isCalculating) {
+      callCalculationAPI(selectedUsage || customUsage);
+    }
+  }, [selectedCarCategory]);
 
   useEffect(() => {
     dispatch(updateField({ field: 'customUsage', value: customUsage }));
@@ -387,7 +461,16 @@ const BookingStep2 = () => {
   useEffect(() => {
     if (totalAmount?.length > 0) {
       if (!selectedCategory) {
-        const defaultCategory = totalAmount.find(item => item?.category?.toLowerCase() === 'prime');
+        const isParcel = bookingData?.categoryName?.toLowerCase().includes('parcel');
+        const isCab = bookingData?.categoryName?.toLowerCase() === 'cab';
+        const defaultCategoryName = isParcel ? 'classic' : isCab ? 'classic' : 'prime';
+        let defaultCategory = totalAmount.find(item => item?.category?.toLowerCase() === defaultCategoryName.toLowerCase());
+        
+        // Fallback to first available category if default not found
+        if (!defaultCategory && totalAmount.length > 0) {
+          defaultCategory = totalAmount[0];
+        }
+        
         if (defaultCategory) {
           setSelectedCategoryLocal(defaultCategory);
         }
@@ -820,6 +903,41 @@ const BookingStep2 = () => {
                       </div>
                     );
                   })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Car Categories for Cab */}
+          {bookingData?.categoryName?.toLowerCase() === 'cab' && carCategories.length > 0 && (
+            <Card className="bg-white shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Select Car Category</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  {carCategories
+                    // ✅ Put Classic first, then keep the rest as they are
+                    .sort((a, b) => {
+                      if (a.name.toLowerCase() === "classic") return -1;
+                      if (b.name.toLowerCase() === "classic") return 1;
+                      return a.name.localeCompare(b.name);
+                    })
+                    .map((category) => (
+                      <button
+                        key={category._id}
+                        type="button"
+                        onClick={() => setSelectedCarCategory(category)}
+                        className={`p-4 rounded-lg transition-all duration-200 text-left
+                ${selectedCarCategory?._id === category._id
+                            ? "border-2 border-blue-700 bg-blue-50 shadow-md"
+                            : "border border-gray-200 bg-white hover:shadow-md hover:border-blue-300"}
+              `}
+                      >
+                        <h3 className="font-semibold text-gray-800">{category.name}</h3>
+                        <p className="text-sm text-gray-500 mt-1">{category.description}</p>
+                      </button>
+                    ))}
                 </div>
               </CardContent>
             </Card>
