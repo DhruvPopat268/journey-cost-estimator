@@ -110,53 +110,26 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
         {/* <hr className="border-gray-200" /> */}
 
         {/* Schedule Fields */}
-        {showTimeDuration ? (
-          // Layout for Time Duration (Driver/Cab Weekly/Monthly)
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="selectedDate">{dateLabel}</Label>
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => onFieldChange('selectedDate', e.target.value)}
-                className="pr-2"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="startTime">Start Time</Label>
-                <Input
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => onFieldChange('startTime', e.target.value)}
-                  className="pr-2"
-                />
-              </div>
-            </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="selectedDate">{dateLabel}</Label>
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => onFieldChange('selectedDate', e.target.value)}
+              className="pr-2"
+            />
           </div>
-        ) : (
-          // Layout for Regular Services
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="selectedDate">{dateLabel}</Label>
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => onFieldChange('selectedDate', e.target.value)}
-                className="pr-2"
-              />
-            </div>
-            <div>
-              <Label htmlFor="selectedTime">Time</Label>
-              <Input
-                type="time"
-                value={selectedTime}
-                onChange={(e) => onFieldChange('selectedTime', e.target.value)}
-                className="pr-2"
-              />
-            </div>
+          <div>
+            <Label htmlFor="selectedTime">Time</Label>
+            <Input
+              type="time"
+              value={selectedTime}
+              onChange={(e) => onFieldChange('selectedTime', e.target.value)}
+              className="pr-2"
+            />
           </div>
-        )}
+        </div>
 
         {/* <hr className="border-gray-200" /> */}
 

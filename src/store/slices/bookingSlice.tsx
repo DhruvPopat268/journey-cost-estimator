@@ -3,6 +3,7 @@ import { createSlice } from '@reduxjs/toolkit'
 const initialState = {
   // Step 1 data
   categoryId: '',
+  categoryName: '',
   subcategoryId: '',
   subSubcategoryId: '',
   subcategoryName: '',
@@ -44,6 +45,7 @@ export const bookingSlice = createSlice({
     setBookingStep1: (state, action) => {
       const {
         categoryId,
+        categoryName,
         subcategoryId,
         subSubcategoryId,
         subcategoryName,
@@ -62,6 +64,7 @@ export const bookingSlice = createSlice({
       } = action.payload
       
       state.categoryId = categoryId
+      state.categoryName = categoryName
       state.subcategoryId = subcategoryId
       state.subSubcategoryId = subSubcategoryId
       state.subcategoryName = subcategoryName
