@@ -54,7 +54,6 @@ const BookingStep2 = () => {
   const [durationType, setDurationType] = useState(bookingData?.durationType || 'Day');
   const getInitialDurationValue = () => {
    
-    
     // If we have a stored value and it's valid for weekly (>= 3), use it
     if (bookingData?.durationValue) {
       const storedValue = parseInt(bookingData.durationValue);
@@ -975,46 +974,57 @@ const BookingStep2 = () => {
           )}
 
           {/* Price Categories */}
-          {totalAmount.map((item, index) => (
-            <button
-              key={index}
-              type="button"
-              onClick={() => handleCategorySelect(item)}
-              className={`w-full text-left rounded-xl p-4 shadow-sm mb-4 flex items-center justify-between transition-all duration-200
-              ${selectedCategory?.category === item.category ? 'border-2 border-blue-700 bg-blue-50 shadow-md' : 'border border-gray-200 bg-white hover:shadow-md hover:border-gray-300'}
-            `}
-            >
-              <div className="flex items-center gap-4">
-                <div className="text-2xl">
-                  {getIcon(item.category)}
+          {isCalculating && bookingData?.categoryName?.toLowerCase() === 'cab' ? (
+            <Card className="bg-white shadow-lg">
+              <CardContent className="p-8">
+                <div className="flex flex-col items-center justify-center space-y-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <p className="text-gray-600 text-center">Calculating prices for selected car category...</p>
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800">{item.category}</h3>
-                  <p className="text-sm text-gray-500">
-                    {item.category === "Classic" && "Qualified, Verified, Trained & Tested"}
-                    {item.category === "Prime" && "Highly-Rated Veterans"}
-                  </p>
+              </CardContent>
+            </Card>
+          ) : (
+            totalAmount.map((item, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => handleCategorySelect(item)}
+                className={`w-full text-left rounded-xl p-4 shadow-sm mb-4 flex items-center justify-between transition-all duration-200
+                ${selectedCategory?.category === item.category ? 'border-2 border-blue-700 bg-blue-50 shadow-md' : 'border border-gray-200 bg-white hover:shadow-md hover:border-gray-300'}
+              `}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="text-2xl">
+                    {getIcon(item.category)}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">{item.category}</h3>
+                    <p className="text-sm text-gray-500">
+                      {item.category === "Classic" && "Qualified, Verified, Trained & Tested"}
+                      {item.category === "Prime" && "Highly-Rated Veterans"}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <p className="text-lg font-bold text-gray-800">₹{(item.totalPayable || 0).toFixed(2)}</p>
-                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-gray-800">₹{(item.totalPayable || 0).toFixed(2)}</p>
+                  </div>
 
-                {/* Info button - only show when category is selected */}
-                {selectedCategory?.category === item.category && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => handleInfoClick(e, item)}
-                    className="p-1 h-8 w-8 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600"
-                  >
-                    <Info className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            </button>
-          ))}
+                  {/* Info button - only show when category is selected */}
+                  {selectedCategory?.category === item.category && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => handleInfoClick(e, item)}
+                      className="p-1 h-8 w-8 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600"
+                    >
+                      <Info className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              </button>
+            ))
+          )}
 
           {/* Instructions section with cancel button */}
           <div>
