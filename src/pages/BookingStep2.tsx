@@ -53,24 +53,24 @@ const BookingStep2 = () => {
   const [receiverPhone, setReceiverPhone] = useState(bookingData?.receiverPhone || '');
   const [durationType, setDurationType] = useState(bookingData?.durationType || 'Day');
   const getInitialDurationValue = () => {
-   
+
     // If we have a stored value and it's valid for weekly (>= 3), use it
     if (bookingData?.durationValue) {
       const storedValue = parseInt(bookingData.durationValue);
       const isWeekly = bookingData?.subcategoryName?.toLowerCase().includes('weekly');
-      
+
       if (isWeekly && storedValue < 3) {
         return '3'; // Override invalid stored value
       }
       return bookingData.durationValue;
     }
-    
+
     // Set defaults based on subcategory
     if (bookingData?.subcategoryName?.toLowerCase().includes('monthly')) return '20';
     if (bookingData?.subcategoryName?.toLowerCase().includes('weekly')) return '3';
     return '1';
   };
-  
+
   const [durationValue, setDurationValue] = useState(getInitialDurationValue());
 
   const [walletBalance, setWalletBalance] = useState(0);
@@ -387,6 +387,13 @@ const BookingStep2 = () => {
     }
   }, [selectedCarCategory]);
 
+  // Reset selected price category when car category changes
+  useEffect(() => {
+    if (selectedCarCategory && bookingData?.categoryName?.toLowerCase() === 'cab' && totalAmount?.length > 0) {
+      setSelectedCategoryLocal(null);
+    }
+  }, [selectedCarCategory?.name]);
+
   useEffect(() => {
     dispatch(updateField({ field: 'customUsage', value: customUsage }));
   }, [customUsage, dispatch]);
@@ -490,10 +497,26 @@ const BookingStep2 = () => {
 
   useEffect(() => {
     if (totalAmount?.length > 0) {
-      if (!selectedCategory) {
+      const isCab = bookingData?.categoryName?.toLowerCase() === 'cab';
+
+      // For cab bookings, always select the first category when totalAmount changes
+      if (isCab) {
+        const firstCategory = totalAmount[0];
+        if (firstCategory) {
+          setSelectedCategoryLocal(firstCategory);
+        }
+        setLoading(false);
+      } else if (!selectedCategory) {
+        // For non-cab bookings, use the existing logic only if no category is selected
         const isParcel = bookingData?.categoryName?.toLowerCase().includes('parcel');
-        const isCab = bookingData?.categoryName?.toLowerCase() === 'cab';
-        const defaultCategoryName = isParcel ? 'classic' : isCab ? 'classic' : 'prime';
+
+        let defaultCategoryName;
+        if (isParcel) {
+          defaultCategoryName = 'classic';
+        } else {
+          defaultCategoryName = 'prime';
+        }
+
         let defaultCategory = totalAmount.find(item => item?.category?.toLowerCase() === defaultCategoryName.toLowerCase());
 
         // Fallback to first available category if default not found
@@ -512,7 +535,7 @@ const BookingStep2 = () => {
         }
       }
     }
-  }, [totalAmount]);
+  }, [totalAmount, selectedCarCategory]);
 
   useEffect(() => {
     const token = localStorage.getItem("RiderToken");
@@ -1422,7 +1445,7 @@ const BookingStep2 = () => {
                   className={`flex-1 ${durationError
                     ? 'bg-gray-400 hover:bg-gray-400 cursor-not-allowed'
                     : 'bg-blue-600 hover:bg-blue-700'
-                  } text-white`}
+                    } text-white`}
                 >
                   {durationError ? 'Fix Duration Error' : 'Confirm & Pay'}
                 </Button>
