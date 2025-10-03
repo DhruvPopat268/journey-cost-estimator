@@ -176,8 +176,6 @@ const Booking = () => {
     dispatch(updateField({ field: 'selectedCityName', value: selectedCityName }));
   }, [selectedCityName]);
 
-
-
   const transmissionOptions = ['Manual', 'Automatic'];
 
   const handleBackClick = () => {
@@ -306,6 +304,7 @@ const Booking = () => {
                     fromLocationData={fromLocationData}
                     toLocationData={toLocationData}
                     selectedCityName={selectedCityName}
+                    subcategoryName={subcategoryName}
                     selectedDate={selectedDate}
                     selectedTime={selectedTime}
                     startTime={startTime}

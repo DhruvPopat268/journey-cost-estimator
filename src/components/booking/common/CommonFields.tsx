@@ -19,6 +19,7 @@ interface CommonFieldsProps {
   fromLocationData?: LocationData;
   toLocationData?: LocationData;
   selectedCityName?: string;
+  subcategoryName?: string;
   selectedDate: string;
   selectedTime: string;
   startTime?: string;
@@ -44,6 +45,7 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
   fromLocationData,
   toLocationData,
   selectedCityName,
+  subcategoryName,
   selectedDate,
   selectedTime,
   startTime = '',
@@ -62,6 +64,8 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
   onFieldChange,
   onLocationChange,
 }) => {
+  const isOutstation = subcategoryName?.toLowerCase() === 'outstation';
+  console.log('isOutstation:', isOutstation);
   return (
     <Card className="bg-white shadow-lg">
       <CardHeader />
@@ -100,7 +104,7 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
                     onLocationChange?.('toLocation', locationData);
                   }}
                   className="pl-10"
-                  selectedCityName={selectedCityName}
+                  selectedCityName={isOutstation ? undefined : selectedCityName}
                 />
               </div>
             </div>
