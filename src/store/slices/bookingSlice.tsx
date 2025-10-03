@@ -143,7 +143,7 @@ export const bookingSlice = createSlice({
       state.totalAmount = []
       state.notes = ''
       state.durationType = 'Day'
-      state.durationValue = state.subcategoryName?.toLowerCase().includes('monthly') ? '22' : '1'
+      state.durationValue = state.subcategoryName?.toLowerCase().includes('monthly') ? '20' : '1'
       state.selectedDates = []
       state.currentStep = 1
     },

@@ -52,7 +52,27 @@ const BookingStep2 = () => {
   const [receiverName, setReceiverName] = useState(bookingData?.receiverName || '');
   const [receiverPhone, setReceiverPhone] = useState(bookingData?.receiverPhone || '');
   const [durationType, setDurationType] = useState(bookingData?.durationType || 'Day');
-  const [durationValue, setDurationValue] = useState(bookingData?.durationValue || (bookingData?.subcategoryName?.toLowerCase().includes('monthly') ? '22' : '1'));
+  const getInitialDurationValue = () => {
+   
+    
+    // If we have a stored value and it's valid for weekly (>= 3), use it
+    if (bookingData?.durationValue) {
+      const storedValue = parseInt(bookingData.durationValue);
+      const isWeekly = bookingData?.subcategoryName?.toLowerCase().includes('weekly');
+      
+      if (isWeekly && storedValue < 3) {
+        return '3'; // Override invalid stored value
+      }
+      return bookingData.durationValue;
+    }
+    
+    // Set defaults based on subcategory
+    if (bookingData?.subcategoryName?.toLowerCase().includes('monthly')) return '20';
+    if (bookingData?.subcategoryName?.toLowerCase().includes('weekly')) return '3';
+    return '1';
+  };
+  
+  const [durationValue, setDurationValue] = useState(getInitialDurationValue());
 
   const [walletBalance, setWalletBalance] = useState(0);
   const [walletLoading, setWalletLoading] = useState(false);
@@ -90,8 +110,7 @@ const BookingStep2 = () => {
         });
       } else {
         // Generate default dates if no selectedDates
-        const isWeekly = bookingData?.subcategoryName?.toLowerCase().includes('weekly');
-        const maxDays = isWeekly ? Math.min(parseInt(durationValue), 14) : parseInt(durationValue);
+        const maxDays = parseInt(durationValue);
 
         for (let i = 0; i < maxDays; i++) {
           const date = new Date();
@@ -134,6 +153,15 @@ const BookingStep2 = () => {
     dispatch(updateField({ field: 'durationValue', value: durationValue }));
   }, [durationValue]);
 
+  // Ensure Redux store has correct default for weekly bookings
+  useEffect(() => {
+    const isWeekly = bookingData?.subcategoryName?.toLowerCase().includes('weekly');
+    if (isWeekly && (!bookingData?.durationValue || parseInt(bookingData.durationValue) < 3)) {
+      console.log('Updating Redux store with default weekly value: 3');
+      setDurationValue('3');
+    }
+  }, [bookingData?.subcategoryName]);
+
   useEffect(() => {
     dispatch(updateField({ field: 'selectedDates', value: selectedDates }));
   }, [selectedDates, dispatch]);
@@ -148,8 +176,7 @@ const BookingStep2 = () => {
       } else if (selectedDates.length === 0) {
         // Only generate new dates if we don't have any
         const numValue = parseInt(durationValue);
-        const isWeekly = bookingData?.subcategoryName?.toLowerCase().includes('weekly');
-        const maxDays = isWeekly ? Math.min(numValue || 1, 14) : (numValue || 1);
+        const maxDays = numValue || 1;
         const allDates = Array.from({ length: maxDays }, (_, i) => {
           const date = new Date();
           date.setDate(date.getDate() + i + 1);
@@ -207,7 +234,8 @@ const BookingStep2 = () => {
     // Ensure default values are used if current values are empty
     const finalDurationType = currentDurationType || 'Day';
     const isMonthly = bookingData?.subcategoryName?.toLowerCase().includes('monthly');
-    const finalDurationValue = currentDurationValue || (isMonthly ? '22' : '1');
+    const isWeekly = bookingData?.subcategoryName?.toLowerCase().includes('weekly');
+    const finalDurationValue = currentDurationValue || (isMonthly ? '20' : isWeekly ? '3' : '1');
 
     // Determine API endpoint based on category
     const apiEndpoint = categoryName === 'driver'
@@ -261,7 +289,7 @@ const BookingStep2 = () => {
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/car-categories`);
         const activeCategories = res.data.filter(category => category.status === true);
         setCarCategories(activeCategories);
-        
+
         // Find and set Classic as default
         const classicCategory = activeCategories.find(cat => cat.name.toLowerCase() === 'classic');
         if (classicCategory) {
@@ -391,14 +419,18 @@ const BookingStep2 = () => {
     const isWeeklyOrMonthly = isWeekly || isMonthly;
 
     // Validation for monthly Day type
-    const monthlyError = isMonthly && durationType === 'Day' && value && (numValue < 22 || numValue > 26);
+    const monthlyError = isMonthly && durationType === 'Day' && value && (numValue < 20 || numValue > 26);
     // Validation for weekly bookings
-    const weeklyError = isWeekly && value && numValue > 14;
+    const weeklyError = isWeekly && value && (numValue < 3 || numValue > 14);
 
     if (monthlyError) {
-      setDurationError('For monthly bookings with Day type, duration must be between 22-26 days');
+      setDurationError('For monthly bookings with Day type, duration must be between 20-26 days');
     } else if (weeklyError) {
-      setDurationError('In weekly you can only select max 14 days, for more use monthly');
+      if (numValue < 3) {
+        setDurationError('Minimum 3 days booking allowed for weekly service');
+      } else {
+        setDurationError('In weekly you can only select max 14 days, for more use monthly');
+      }
     } else {
       setDurationError('');
     }
@@ -407,8 +439,7 @@ const BookingStep2 = () => {
 
     // Auto-select all dates for weekly/monthly when duration value changes
     if (isWeeklyOrMonthly && value) {
-      // For weekly bookings, limit to max 14 days even if duration value is higher
-      const maxDays = isWeekly ? Math.min(numValue || 1, 14) : (numValue || 1);
+      const maxDays = numValue || 1;
       const allDates = Array.from({ length: maxDays }, (_, i) => {
         const date = new Date();
         date.setDate(date.getDate() + i + 1);
@@ -465,12 +496,12 @@ const BookingStep2 = () => {
         const isCab = bookingData?.categoryName?.toLowerCase() === 'cab';
         const defaultCategoryName = isParcel ? 'classic' : isCab ? 'classic' : 'prime';
         let defaultCategory = totalAmount.find(item => item?.category?.toLowerCase() === defaultCategoryName.toLowerCase());
-        
+
         // Fallback to first available category if default not found
         if (!defaultCategory && totalAmount.length > 0) {
           defaultCategory = totalAmount[0];
         }
-        
+
         if (defaultCategory) {
           setSelectedCategoryLocal(defaultCategory);
         }
@@ -1135,8 +1166,8 @@ const BookingStep2 = () => {
           {selectedCategory?.category && (
             <Button
               onClick={termsAccepted ? handleFinalBooking : handleConfirmBooking}
-              disabled={selectedPaymentMethod === 'wallet' && walletBalance < finalPayable}
-              className={`w-full py-3 text-lg font-semibold rounded-lg ${selectedPaymentMethod === 'wallet' && walletBalance < finalPayable
+              disabled={(selectedPaymentMethod === 'wallet' && walletBalance < finalPayable) || durationError}
+              className={`w-full py-3 text-lg font-semibold rounded-lg ${(selectedPaymentMethod === 'wallet' && walletBalance < finalPayable) || durationError
                 ? 'bg-gray-400 hover:bg-gray-400 cursor-not-allowed'
                 : 'bg-blue-600 hover:bg-blue-700'
                 } text-white`}
@@ -1144,9 +1175,13 @@ const BookingStep2 = () => {
               {termsAccepted ?
                 (selectedPaymentMethod === 'wallet' && walletBalance < finalPayable ?
                   'Insufficient Wallet Balance' :
-                  `Confirm Booking ₹${(finalPayable || 0).toFixed(2)}`
+                  durationError ?
+                    'Fix Duration Error' :
+                    `Confirm Booking ₹${(finalPayable || 0).toFixed(2)}`
                 ) :
-                `Book Ride ₹${(finalPayable || 0).toFixed(2)}`
+                durationError ?
+                  'Fix No Of Days Error' :
+                  `Book Ride ₹${(finalPayable || 0).toFixed(2)}`
               }
             </Button>
           )}
@@ -1373,9 +1408,13 @@ const BookingStep2 = () => {
                     setShowPriceBreakdown(false);
                     handleConfirmBooking();
                   }}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={durationError}
+                  className={`flex-1 ${durationError
+                    ? 'bg-gray-400 hover:bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                  } text-white`}
                 >
-                  Confirm & Pay
+                  {durationError ? 'Fix Duration Error' : 'Confirm & Pay'}
                 </Button>
               </div>
             </div>

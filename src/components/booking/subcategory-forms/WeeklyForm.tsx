@@ -19,7 +19,7 @@ interface WeeklyFormProps {
 export const WeeklyForm: React.FC<WeeklyFormProps> = ({
   selectedUsage,
   durationType = 'Day',
-  durationValue = '1',
+  durationValue = '3',
   durationOptions = [],
   durationError = '',
   onUsageChange,
@@ -71,8 +71,8 @@ export const WeeklyForm: React.FC<WeeklyFormProps> = ({
             <Input
               id="duration-input"
               type="number"
-              min="1"
-              placeholder="Enter days"
+              min="3"
+              placeholder="Enter days (min 3)"
               value={durationValue}
               onChange={(e) => {
                 const newValue = e.target.value;

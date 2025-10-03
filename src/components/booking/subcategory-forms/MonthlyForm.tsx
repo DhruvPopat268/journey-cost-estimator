@@ -19,7 +19,7 @@ interface MonthlyFormProps {
 export const MonthlyForm: React.FC<MonthlyFormProps> = ({
   selectedUsage,
   durationType = 'Day',
-  durationValue = '22',
+  durationValue = '20',
   durationOptions = [],
   durationError = '',
   onUsageChange,
@@ -71,8 +71,8 @@ export const MonthlyForm: React.FC<MonthlyFormProps> = ({
             <Input
               id="duration-input"
               type="number"
-              min="1"
-              placeholder="Enter days"
+              min="20"
+              placeholder="Enter days (min 20)"
               value={durationValue}
               onChange={(e) => {
                 const newValue = e.target.value;

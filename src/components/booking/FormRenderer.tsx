@@ -26,7 +26,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
   selectedUsage,
   customUsage,
   durationType = 'Week',
-  durationValue = '1',
+  durationValue,
   durationOptions = [],
   durationError = '',
   onUsageChange,
@@ -39,6 +39,16 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
   const normalizedSubcategory = subcategoryName.toLowerCase();
   const normalizedCategory = categoryName.toLowerCase();
   const normalizedSubSubcategory = subSubcategoryName.toLowerCase();
+  
+  // Set appropriate default based on subcategory
+  const getDefaultDurationValue = () => {
+    if (durationValue) return durationValue;
+    if (normalizedSubcategory.includes('monthly')) return '20';
+    if (normalizedSubcategory.includes('weekly')) return '3';
+    return '1';
+  };
+  
+  const finalDurationValue = getDefaultDurationValue();
 
   if (normalizedSubcategory.includes('one-way') || normalizedSubcategory.includes('oneway') || normalizedSubcategory.includes('one way')) {
     return (
@@ -67,7 +77,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
       <WeeklyForm
         selectedUsage={selectedUsage}
         durationType={durationType}
-        durationValue={durationValue}
+        durationValue={finalDurationValue}
         durationOptions={durationOptions}
         durationError={durationError}
         onUsageChange={onUsageChange}
@@ -82,7 +92,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
       <MonthlyForm
         selectedUsage={selectedUsage}
         durationType={durationType}
-        durationValue={durationValue}
+        durationValue={finalDurationValue}
         durationOptions={durationOptions}
         durationError={durationError}
         onUsageChange={onUsageChange}
