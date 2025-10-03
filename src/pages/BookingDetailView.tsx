@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { ArrowLeft, Phone, Clock, MapPin, Calendar, CreditCard, User, Car, Navigation, X } from "lucide-react";
-import { useParams } from "react-router-dom"; // Import useParams
-import { useNavigate } from "react-router-dom"; // Import useNavigate
-
-
+import { useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 interface Driver {
     name: string;
@@ -17,10 +15,10 @@ interface Booking {
     _id: string;
     subcategoryName?: string;
     carType?: string;
-    transmissionType?: string;   // ✅ update to match API
+    transmissionType?: string;
     status: string;
-    fromLocation: string;
-    toLocation?: string;
+    fromLocation: any;
+    toLocation?: any;
     totalPayable: number;
     paymentType?: string;
     driver?: Driver;
@@ -33,8 +31,8 @@ interface Booking {
     notes?: string;
     selectedCategory?: string;
     categoryId?: string;
+    rideInfo?: any;
 }
-
 
 interface BookingDetailViewProps {
     onBack: () => void;
@@ -46,7 +44,6 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
     const [error, setError] = useState<string | null>(null);
 
     const navigate = useNavigate();
-    // Extract bookingId from URL parameters
     const { id: bookingId } = useParams<{ id: string }>();
 
     useEffect(() => {
@@ -65,10 +62,9 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                 throw new Error("No authentication token found");
             }
 
-            // Use POST and send bookingId in body
             const response = await axios.post(
                 `${import.meta.env.VITE_API_URL}/api/rides/booking/id`,
-                { bookingId }, // body data
+                { bookingId },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -98,7 +94,7 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
 
             const response = await axios.post(
                 `${import.meta.env.VITE_API_URL}/api/rides/booking/cancel`,
-                { bookingId }, // send in body
+                { bookingId },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -108,7 +104,7 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
 
             if (response.status === 200) {
                 alert('Booking cancelled successfully');
-                onBack(); // Go back to list view
+                onBack();
             }
         } catch (error: any) {
             console.error("Error cancelling booking:", error);
@@ -123,7 +119,6 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric',
-
             });
         } catch (error) {
             return dateString;
@@ -197,13 +192,13 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                             <h3 className="font-semibold text-lg">
                                 {booking.rideInfo?.subcategoryName}
                             </h3>
-
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${booking.status === 'BOOKED' ? 'bg-blue-100 text-blue-800' :
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            booking.status === 'BOOKED' ? 'bg-blue-100 text-blue-800' :
                             booking.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
-                                booking.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                                    'bg-gray-100 text-gray-800'
-                            }`}>
+                            booking.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                        }`}>
                             {booking.status}
                         </span>
                     </div>
@@ -219,7 +214,7 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                         )}
                     </div>
 
-                    {/* ✅ Ride Charges Breakdown */}
+                    {/* Ride Charges Breakdown */}
                     <div className="mb-5 pb-4 border-b">
                         <h4 className="font-semibold text-gray-800 mb-3 text-sm">Ride Charges Breakdown</h4>
                         <div className="space-y-2 text-sm">
@@ -254,12 +249,6 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
 
                     {/* Location Details */}
                     <div className="mb-5">
-                        ...
-                    </div>
-
-
-                    {/* Location Details */}
-                    <div className="mb-5">
                         <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
                             <MapPin size={16} className="mr-2" />
                             Location Details
@@ -269,17 +258,17 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                             <div className="flex items-start">
                                 <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                 <div className="text-sm">
-                                    <div className="font-medium text-gray-600">From</div>
-                                    <div className="text-gray-800">{booking.fromLocation}</div>
+                                    <div className="font-medium text-gray-600">Pickup Location</div>
+                                    <div className="text-gray-800">{booking.rideInfo?.fromLocation?.address || booking.fromLocation}</div>
                                 </div>
                             </div>
 
-                            {booking.toLocation && (
+                            {(booking.rideInfo?.toLocation || booking.toLocation) && (
                                 <div className="flex items-start">
                                     <div className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                     <div className="text-sm">
-                                        <div className="font-medium text-gray-600">To</div>
-                                        <div className="text-gray-800">{booking.toLocation}</div>
+                                        <div className="font-medium text-gray-600">Drop Location</div>
+                                        <div className="text-gray-800">{booking.rideInfo?.toLocation?.address || booking.toLocation}</div>
                                     </div>
                                 </div>
                             )}
@@ -316,7 +305,6 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                             </div>
                         </div>
 
-
                         {booking.rideInfo?.selectedDate && (
                             <div>
                                 <div className="text-xs text-gray-500">Service Date</div>
@@ -340,18 +328,18 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                     </div>
 
                     {/* Additional Service Details */}
-                    {(booking.includeInsurance !== undefined) && (
+                    {(booking.rideInfo?.includeInsurance !== undefined) && (
                         <div className="mb-4 text-sm">
                             <span className="text-gray-600">Insurance: </span>
-                            <span className="font-medium">{booking.includeInsurance ? 'Included' : 'Not Included'}</span>
+                            <span className="font-medium">{booking.rideInfo?.includeInsurance ? 'Included' : 'Not Included'}</span>
                         </div>
                     )}
 
                     {/* Notes */}
-                    {booking.notes && (
+                    {booking.rideInfo?.notes && (
                         <div className="pt-3 border-t">
                             <h4 className="font-semibold text-gray-800 mb-2 text-sm">Special Notes</h4>
-                            <p className="text-gray-600 text-sm">{booking.notes}</p>
+                            <p className="text-gray-600 text-sm">{booking.rideInfo?.notes}</p>
                         </div>
                     )}
                 </div>
