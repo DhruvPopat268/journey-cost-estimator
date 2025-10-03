@@ -193,12 +193,11 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                                 {booking.rideInfo?.subcategoryName}
                             </h3>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                            booking.status === 'BOOKED' ? 'bg-blue-100 text-blue-800' :
-                            booking.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
-                            booking.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${booking.status === 'BOOKED' ? 'bg-blue-100 text-blue-800' :
+                                booking.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
+                                    booking.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                                        'bg-gray-100 text-gray-800'
+                            }`}>
                             {booking.status}
                         </span>
                     </div>
@@ -223,10 +222,17 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                                 <span className="font-medium">₹{booking.rideInfo?.subtotal || 0}</span>
                             </div>
 
-                            <div className="flex justify-between">
+                            {/* <div className="flex justify-between">
                                 <span className="text-gray-600">Cancellation Charges</span>
                                 <span className="font-medium">₹{booking.rideInfo?.cancellationCharges || 0}</span>
-                            </div>
+                            </div> */}
+
+                            {booking.rideInfo?.discount && (
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Discount</span>
+                                    <span className="font-medium">-₹{booking.rideInfo?.discount || 0}</span>
+                                </div>
+                            )}
 
                             {booking.rideInfo?.includeInsurance && (
                                 <div className="flex justify-between">
