@@ -174,14 +174,25 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-4 mb-4">
-                    {/* From */}
+                    {/* Pickup Location */}
                     <div className="flex items-start">
                       <div className="w-3 h-3 bg-green-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
                       <div>
-                        <div className="font-medium text-sm">From</div>
+                        <div className="font-medium text-sm">Pickup Location</div>
                         <div className="text-gray-600 text-sm">{booking.fromLocation?.address}</div>
                       </div>
                     </div>
+
+                    {/* Drop Location */}
+                    {booking.toLocation && (
+                      <div className="flex items-start">
+                        <div className="w-3 h-3 bg-red-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                        <div>
+                          <div className="font-medium text-sm">Drop Location</div>
+                          <div className="text-gray-600 text-sm">{booking.toLocation?.address}</div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Usage */}
                     {booking.selectedUsage && (
