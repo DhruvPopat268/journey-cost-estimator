@@ -176,6 +176,67 @@ const Booking = () => {
     dispatch(updateField({ field: 'selectedCityName', value: selectedCityName }));
   }, [selectedCityName]);
 
+  // Parcel fields state
+  const [riderData, setRiderData] = useState(null);
+  const [senderType, setSenderType] = useState('myself');
+  const [senderName, setSenderName] = useState('');
+  const [senderMobile, setSenderMobile] = useState('');
+  const [receiverType, setReceiverType] = useState('other');
+  const [receiverName, setReceiverName] = useState('');
+  const [receiverMobile, setReceiverMobile] = useState('');
+
+  useEffect(() => {
+    const fetchRider = async () => {
+      const token = localStorage.getItem("RiderToken");
+      if (!token) return;
+
+      try {
+        const res = await axios.post(
+          `${import.meta.env.VITE_API_URL}/api/rider-auth/find-rider`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (res.data?.success && res.data.rider) {
+          setRiderData(res.data.rider);
+          // Auto-fill sender if 'myself' is selected
+          if (senderType === 'myself') {
+            setSenderName(res.data.rider.name);
+            setSenderMobile(res.data.rider.mobile);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching rider:", err);
+        if (err.response?.status === 401) {
+          localStorage.removeItem("RiderToken");
+        }
+      }
+    };
+
+    fetchRider();
+  }, []);
+
+  // Handle sender type change
+  useEffect(() => {
+    if (senderType === 'myself' && riderData) {
+      setSenderName(riderData.name);
+      setSenderMobile(riderData.mobile);
+    } else if (senderType === 'other') {
+      setSenderName('');
+      setSenderMobile('');
+    }
+  }, [senderType, riderData]);
+
+  // Handle receiver type change
+  useEffect(() => {
+    if (receiverType === 'myself' && riderData) {
+      setReceiverName(riderData.name);
+      setReceiverMobile(riderData.mobile);
+    } else if (receiverType === 'other') {
+      setReceiverName('');
+      setReceiverMobile('');
+    }
+  }, [receiverType, riderData]);
+
   const transmissionOptions = ['Manual', 'Automatic'];
 
   const handleBackClick = () => {
@@ -206,7 +267,13 @@ const Booking = () => {
       selectedDate,
       selectedTime,
       startTime,
-      endTime
+      endTime,
+      senderType,
+      senderName,
+      senderMobile,
+      receiverType,
+      receiverName,
+      receiverMobile
     };
 
     dispatch(setBookingStep1(bookingData));
@@ -315,8 +382,14 @@ const Booking = () => {
                     transmissionOptions={transmissionOptions}
                     showToLocation={!subcategoryName.toLowerCase().includes('hourly')}
                     showTimeDuration={subcategoryName?.toLowerCase().includes('monthly') || subcategoryName?.toLowerCase().includes('weekly')}
-                    showVehicleFields={categoryName.toLowerCase() !== 'cab'}
-                    showReceiverFields={false}
+                    showVehicleFields={categoryName.toLowerCase() !== 'cab' && categoryName.toLowerCase() !== 'parcel'}
+                    showReceiverFields={categoryName.toLowerCase() === 'parcel'}
+                    senderType={senderType}
+                    senderName={senderName}
+                    senderMobile={senderMobile}
+                    receiverType={receiverType}
+                    receiverName={receiverName}
+                    receiverMobile={receiverMobile}
                     dateLabel="Date"
                     onFieldChange={(field, value) => {
                       switch (field) {
@@ -328,6 +401,12 @@ const Booking = () => {
                         case 'endTime': setEndTime(value); break;
                         case 'carType': setCarType(value); break;
                         case 'transmissionType': setTransmissionType(value); break;
+                        case 'senderType': setSenderType(value); break;
+                        case 'senderName': setSenderName(value); break;
+                        case 'senderMobile': setSenderMobile(value); break;
+                        case 'receiverType': setReceiverType(value); break;
+                        case 'receiverName': setReceiverName(value); break;
+                        case 'receiverPhone': setReceiverMobile(value); break;
                       }
                     }}
                     onLocationChange={(field, locationData) => {

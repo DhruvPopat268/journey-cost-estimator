@@ -37,9 +37,10 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
   onDurationValueChange,
 }) => {
   const normalizedSubcategory = subcategoryName.toLowerCase();
+  console.log('Rendering form for subcategory:', normalizedSubcategory);
   const normalizedCategory = categoryName.toLowerCase();
   const normalizedSubSubcategory = subSubcategoryName.toLowerCase();
-  
+
   // Set appropriate default based on subcategory
   const getDefaultDurationValue = () => {
     if (durationValue) return durationValue;
@@ -47,7 +48,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
     if (normalizedSubcategory.includes('weekly')) return '3';
     return '1';
   };
-  
+
   const finalDurationValue = getDefaultDurationValue();
 
   if (normalizedSubcategory.includes('one-way') || normalizedSubcategory.includes('oneway') || normalizedSubcategory.includes('one way')) {
@@ -120,6 +121,18 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
         selectedUsage={selectedUsage}
         durationOptions={durationOptions}
         onUsageChange={onUsageChange}
+      />
+    )
+  }
+
+  if (normalizedSubcategory.includes('In-City') || normalizedSubcategory.includes('in-city') || normalizedSubcategory.includes('Out-Station') || normalizedSubcategory.includes('out-station')) {
+    return (
+      <OneWayForm
+        selectedUsage={selectedUsage}
+        customUsage={customUsage}
+        onUsageChange={onUsageChange}
+        onCustomUsageChange={onCustomUsageChange}
+        durationOptions={durationOptions}
       />
     )
   }

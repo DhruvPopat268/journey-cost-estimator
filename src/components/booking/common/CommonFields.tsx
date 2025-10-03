@@ -28,6 +28,11 @@ interface CommonFieldsProps {
   transmissionType: string;
   receiverName?: string;
   receiverPhone?: string;
+  senderType?: string;
+  senderName?: string;
+  senderMobile?: string;
+  receiverType?: string;
+  receiverMobile?: string;
   vehicleCategories: any[];
   transmissionOptions: string[];
   showToLocation: boolean;
@@ -54,6 +59,11 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
   transmissionType,
   receiverName = '',
   receiverPhone = '',
+  senderType = 'myself',
+  senderName = '',
+  senderMobile = '',
+  receiverType = 'other',
+  receiverMobile = '',
   vehicleCategories,
   transmissionOptions,
   showToLocation,
@@ -64,7 +74,7 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
   onFieldChange,
   onLocationChange,
 }) => {
-  const isOutstation = subcategoryName?.toLowerCase() === 'outstation';
+  const isOutstation = subcategoryName?.toLowerCase() === 'outstation' || subcategoryName?.toLowerCase() === 'out-station';
   console.log('isOutstation:', isOutstation);
   return (
     <Card className="bg-white shadow-lg">
@@ -171,27 +181,115 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
           </div>
         )}
 
-        {/* Receiver Fields - Show only if showReceiverFields is true */}
+        {/* Parcel Fields - Show only if showReceiverFields is true */}
         {showReceiverFields && (
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="receiverName">Receiver Name</Label>
-              <Input
-                id="receiverName"
-                placeholder="Enter receiver name"
-                value={receiverName}
-                onChange={(e) => onFieldChange('receiverName', e.target.value)}
-              />
+          <div className="space-y-6">
+            {/* Sender Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-800">Sender Details</h3>
+              <div className="flex space-x-6">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="senderMyself"
+                    name="senderType"
+                    value="myself"
+                    checked={senderType === 'myself'}
+                    onChange={(e) => onFieldChange('senderType', e.target.value)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  />
+                  <Label htmlFor="senderMyself" className="cursor-pointer">Myself</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="senderOther"
+                    name="senderType"
+                    value="other"
+                    checked={senderType === 'other'}
+                    onChange={(e) => onFieldChange('senderType', e.target.value)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  />
+                  <Label htmlFor="senderOther" className="cursor-pointer">Other</Label>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="senderName">Sender Name</Label>
+                  <Input
+                    id="senderName"
+                    placeholder="Enter sender name"
+                    value={senderName}
+                    onChange={(e) => onFieldChange('senderName', e.target.value)}
+                    disabled={senderType === 'myself'}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="senderMobile">Sender Mobile</Label>
+                  <Input
+                    id="senderMobile"
+                    placeholder="Enter sender mobile"
+                    value={senderMobile}
+                    onChange={(e) => onFieldChange('senderMobile', e.target.value)}
+                    type="tel"
+                    disabled={senderType === 'myself'}
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <Label htmlFor="receiverPhone">Receiver's Phone No</Label>
-              <Input
-                id="receiverPhone"
-                placeholder="Enter receiver phone number"
-                value={receiverPhone}
-                onChange={(e) => onFieldChange('receiverPhone', e.target.value)}
-                type="tel"
-              />
+
+            {/* Receiver Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-800">Receiver Details</h3>
+              <div className="flex space-x-6">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="receiverMyself"
+                    name="receiverType"
+                    value="myself"
+                    checked={receiverType === 'myself'}
+                    onChange={(e) => onFieldChange('receiverType', e.target.value)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  />
+                  <Label htmlFor="receiverMyself" className="cursor-pointer">Myself</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="receiverOther"
+                    name="receiverType"
+                    value="other"
+                    checked={receiverType === 'other'}
+                    onChange={(e) => onFieldChange('receiverType', e.target.value)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  />
+                  <Label htmlFor="receiverOther" className="cursor-pointer">Other</Label>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="receiverName">Receiver Name</Label>
+                  <Input
+                    id="receiverName"
+                    placeholder="Enter receiver name"
+                    value={receiverName}
+                    onChange={(e) => onFieldChange('receiverName', e.target.value)}
+                    disabled={receiverType === 'myself'}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="receiverPhone">Receiver Mobile</Label>
+                  <Input
+                    id="receiverPhone"
+                    placeholder="Enter receiver mobile"
+                    value={receiverMobile}
+                    onChange={(e) => onFieldChange('receiverPhone', e.target.value)}
+                    type="tel"
+                    disabled={receiverType === 'myself'}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         )}

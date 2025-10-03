@@ -29,6 +29,7 @@ const BookingStep2 = () => {
   const bookingData = bookingDataFromStore && Object.keys(bookingDataFromStore).length > 0
     ? bookingDataFromStore
     : location.state;
+    console.log("booking data",bookingData)
 
   const [selectedUsage, setSelectedUsage] = useState(bookingData?.selectedUsage || '');
   const [customUsage, setCustomUsage] = useState(bookingData?.customUsage || '');
@@ -81,6 +82,8 @@ const BookingStep2 = () => {
   const [selectedDates, setSelectedDates] = useState(bookingData?.selectedDates || []);
   const [carCategories, setCarCategories] = useState([]);
   const [selectedCarCategory, setSelectedCarCategory] = useState(null);
+  const [parcelCategories, setParcelCategories] = useState([]);
+  const [selectedParcelCategory, setSelectedParcelCategory] = useState(null);
 
   // Add this state to store display dates
   const [displayDates, setDisplayDates] = useState([]);
@@ -220,13 +223,23 @@ const BookingStep2 = () => {
     }
   };
 
-  const callCalculationAPI = async (defaultUsage, currentDurationType = durationType, currentDurationValue = durationValue, carCategory = null) => {
+  const fetchParcelCategories = async () => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/parcel-categories`);
+      setParcelCategories(res.data);
+    } catch (error) {
+      console.error('Failed to fetch parcel categories:', error);
+      setParcelCategories([]);
+    }
+  };
+
+  const callCalculationAPI = async (defaultUsage, currentDurationType = durationType, currentDurationValue = durationValue, carCategory = null, parcelCategory = null) => {
     // Prevent multiple simultaneous calls
     if (isCalculating || !defaultUsage || !bookingData || !bookingData.categoryId) return;
 
     const categoryName = bookingData?.categoryName?.toLowerCase();
-    // Only call calculation API if categoryName is 'driver' or 'cab'
-    if (categoryName !== 'driver' && categoryName !== 'cab') return;
+    // Only call calculation API if categoryName is 'driver', 'cab', or 'parcel'
+    if (categoryName !== 'driver' && categoryName !== 'cab' && categoryName !== 'parcel') return;
 
     setIsCalculating(true);
 
@@ -237,9 +250,14 @@ const BookingStep2 = () => {
     const finalDurationValue = currentDurationValue || (isMonthly ? '20' : isWeekly ? '3' : '1');
 
     // Determine API endpoint based on category
-    const apiEndpoint = categoryName === 'driver'
-      ? '/api/DriverRideCosts/calculation'
-      : '/api/CabRideCosts/calculation';
+    let apiEndpoint;
+    if (categoryName === 'driver') {
+      apiEndpoint = '/api/DriverRideCosts/calculation';
+    } else if (categoryName === 'cab') {
+      apiEndpoint = '/api/CabRideCosts/calculation';
+    } else if (categoryName === 'parcel') {
+      apiEndpoint = '/api/ParcelRideCosts/calculation';
+    }
 
     try {
       const res = await axios.post(
@@ -251,7 +269,8 @@ const BookingStep2 = () => {
           durationType: finalDurationType,
           durationValue: finalDurationValue,
           ...(bookingData.subSubcategoryId && { subSubcategoryId: bookingData.subSubcategoryId }),
-          ...(categoryName === 'cab' && (carCategory || selectedCarCategory) && { carCategoryId: (carCategory || selectedCarCategory)._id })
+          ...(categoryName === 'cab' && (carCategory || selectedCarCategory) && { carCategoryId: (carCategory || selectedCarCategory)._id }),
+          ...(categoryName === 'parcel' && (parcelCategory || selectedParcelCategory) && { parcelCategoryId: (parcelCategory || selectedParcelCategory)._id })
         }
       );
 
@@ -276,8 +295,8 @@ const BookingStep2 = () => {
       }
 
       const categoryName = bookingData?.categoryName?.toLowerCase();
-      // Only call get-included-data API if categoryName is 'driver' or 'cab'
-      if (categoryName !== 'driver' && categoryName !== 'cab') {
+      // Only call get-included-data API if categoryName is 'driver', 'cab', or 'parcel'
+      if (categoryName !== 'driver' && categoryName !== 'cab' && categoryName !== 'parcel') {
         setLoading(false);
         return;
       }
@@ -297,10 +316,29 @@ const BookingStep2 = () => {
         }
       }
 
+      // Fetch parcel categories and set default for parcel bookings
+      let defaultParcelCategory = null;
+      if (categoryName === 'parcel') {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/parcel-categories`);
+        setParcelCategories(res.data);
+
+        // Find and set Classic as default
+        const classicCategory = res.data.find(cat => cat.categoryName.toLowerCase() === 'classic');
+        if (classicCategory) {
+          setSelectedParcelCategory(classicCategory);
+          defaultParcelCategory = classicCategory;
+        }
+      }
+
       // Determine API endpoint based on category
-      const apiEndpoint = categoryName === 'driver'
-        ? '/api/DriverRideCosts/get-included-data'
-        : '/api/CabRideCosts/get-included-data';
+      let apiEndpoint;
+      if (categoryName === 'driver') {
+        apiEndpoint = '/api/DriverRideCosts/get-included-data';
+      } else if (categoryName === 'cab') {
+        apiEndpoint = '/api/CabRideCosts/get-included-data';
+      } else if (categoryName === 'parcel') {
+        apiEndpoint = '/api/ParcelRideCosts/get-included-data';
+      }
 
       try {
         const res = await axios.post(
@@ -342,7 +380,7 @@ const BookingStep2 = () => {
 
               // Wait for next tick to ensure state is updated
               setTimeout(() => {
-                callCalculationAPI(defaultUsage, durationType, durationValue, defaultCarCategory);
+                callCalculationAPI(defaultUsage, durationType, durationValue, defaultCarCategory, defaultParcelCategory);
               }, 0);
               return;
             }
@@ -375,6 +413,13 @@ const BookingStep2 = () => {
     }
   }, [selectedCarCategory, dispatch]);
 
+  // Store selected parcel category in Redux
+  useEffect(() => {
+    if (selectedParcelCategory) {
+      dispatch(updateField({ field: 'selectedParcelCategory', value: selectedParcelCategory }));
+    }
+  }, [selectedParcelCategory, dispatch]);
+
   // Consolidated dispatch updates to avoid multiple re-renders
   useEffect(() => {
     dispatch(updateField({ field: 'selectedUsage', value: selectedUsage }));
@@ -386,6 +431,13 @@ const BookingStep2 = () => {
       callCalculationAPI(selectedUsage || customUsage);
     }
   }, [selectedCarCategory]);
+
+  // Trigger calculation API when parcel category changes for parcel bookings
+  useEffect(() => {
+    if (selectedParcelCategory && bookingData?.categoryName?.toLowerCase() === 'parcel' && (selectedUsage || customUsage) && !isCalculating) {
+      callCalculationAPI(selectedUsage || customUsage, durationType, durationValue, null, selectedParcelCategory);
+    }
+  }, [selectedParcelCategory]);
 
   // Reset selected price category when car category changes
   useEffect(() => {
@@ -797,7 +849,15 @@ const BookingStep2 = () => {
           ...bookingDetails,
           paymentType: selectedPaymentMethod,
           referralEarning: useReferral ? true : false,
-          referralBalance: useReferral ? referralBalance : 0
+          referralBalance: useReferral ? referralBalance : 0,
+          senderDetails: {
+            name: bookingData.senderName || bookingData.fromLocation?.senderName || '',
+            phone: bookingData.senderPhone || bookingData.fromLocation?.senderPhone || ''
+          },
+          receiverDetails: {
+            name: receiverName || bookingData.receiverName || '',
+            phone: receiverPhone || bookingData.receiverPhone || ''
+          }
         }),
       });
 
@@ -822,7 +882,16 @@ const BookingStep2 = () => {
   };
 
   const getIcon = (category) => {
-    switch (category.toLowerCase()) {
+    const categoryLower = category.toLowerCase();
+    const isParcel = bookingData?.categoryName?.toLowerCase() === 'parcel';
+    
+    if (isParcel) {
+      // For parcel bookings, show bike for "bike" category, car for others
+      return categoryLower === 'bike' ? '🏍️' : '🚗';
+    }
+    
+    // For non-parcel bookings, use existing logic
+    switch (categoryLower) {
       case "prime":
         return "👑";
       case "normal":
@@ -996,13 +1065,51 @@ const BookingStep2 = () => {
             </Card>
           )}
 
+          {/* Parcel Categories for Parcel */}
+          {bookingData?.categoryName?.toLowerCase() === 'parcel' && parcelCategories.length > 0 && (
+            <Card className="bg-white shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Select Parcel Category</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  {parcelCategories
+                    .sort((a, b) => {
+                      if (a.categoryName.toLowerCase() === "classic") return -1;
+                      if (b.categoryName.toLowerCase() === "classic") return 1;
+                      return a.categoryName.localeCompare(b.categoryName);
+                    })
+                    .map((category) => (
+                      <button
+                        key={category._id}
+                        type="button"
+                        onClick={() => setSelectedParcelCategory(category)}
+                        className={`p-4 rounded-lg transition-all duration-200 text-left
+                ${selectedParcelCategory?._id === category._id
+                            ? "border-2 border-blue-700 bg-blue-50 shadow-md"
+                            : "border border-gray-200 bg-white hover:shadow-md hover:border-blue-300"}
+              `}
+                      >
+                        <h3 className="font-semibold text-gray-800">{category.categoryName}</h3>
+                        <p className="text-sm text-gray-500 mt-1">{category.description}</p>
+                      </button>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Price Categories */}
-          {isCalculating && bookingData?.categoryName?.toLowerCase() === 'cab' ? (
+          {isCalculating && (bookingData?.categoryName?.toLowerCase() === 'cab' || bookingData?.categoryName?.toLowerCase() === 'parcel') ? (
             <Card className="bg-white shadow-lg">
               <CardContent className="p-8">
                 <div className="flex flex-col items-center justify-center space-y-4">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  <p className="text-gray-600 text-center">Calculating prices for selected car category...</p>
+                  <p className="text-gray-600 text-center">
+                    {bookingData?.categoryName?.toLowerCase() === 'cab' 
+                      ? 'Calculating prices for selected car category...' 
+                      : 'Calculating prices for selected parcel category...'}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -1091,29 +1198,7 @@ const BookingStep2 = () => {
             )}
           </div>
 
-          {bookingData?.categoryName?.toLowerCase().includes('parcel') && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="receiverName">Receiver Name</Label>
-                <Input
-                  id="receiverName"
-                  placeholder="Enter receiver name"
-                  value={receiverName}
-                  onChange={(e) => setReceiverName(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="receiverPhone">Receiver's Phone No</Label>
-                <Input
-                  id="receiverPhone"
-                  placeholder="Enter receiver phone number"
-                  value={receiverPhone}
-                  onChange={(e) => setReceiverPhone(e.target.value)}
-                  type="tel"
-                />
-              </div>
-            </div>
-          )}
+
 
           {/* Payment Method Selection */}
           {termsAccepted && (
