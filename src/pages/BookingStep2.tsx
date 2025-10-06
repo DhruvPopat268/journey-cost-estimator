@@ -851,12 +851,12 @@ const BookingStep2 = () => {
           referralEarning: useReferral ? true : false,
           referralBalance: useReferral ? referralBalance : 0,
           senderDetails: {
-            name: bookingData.senderName || bookingData.fromLocation?.senderName || '',
-            phone: bookingData.senderPhone || bookingData.fromLocation?.senderPhone || ''
+            name: bookingData.senderName || '',
+            phone: bookingData.senderMobile || ''
           },
           receiverDetails: {
             name: receiverName || bookingData.receiverName || '',
-            phone: receiverPhone || bookingData.receiverPhone || ''
+            phone: receiverPhone || bookingData.receiverMobile || ''
           }
         }),
       });

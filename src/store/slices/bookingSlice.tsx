@@ -19,6 +19,16 @@ const initialState = {
   selectedDate: '',
   selectedTime: '',
   includeInsurance: false,
+  startTime: '',
+  endTime: '',
+  
+  // Sender and Receiver details
+  senderType: 'myself',
+  senderName: '',
+  senderMobile: '',
+  receiverType: 'other',
+  receiverName: '',
+  receiverMobile: '',
   
   // Step 2 data
   selectedUsage: '',
@@ -61,7 +71,15 @@ export const bookingSlice = createSlice({
         transmissionType,
         selectedDate,
         selectedTime,
-        includeInsurance
+        includeInsurance,
+        startTime,
+        endTime,
+        senderType,
+        senderName,
+        senderMobile,
+        receiverType,
+        receiverName,
+        receiverMobile
       } = action.payload
       
       state.categoryId = categoryId
@@ -81,6 +99,14 @@ export const bookingSlice = createSlice({
       state.selectedDate = selectedDate
       state.selectedTime = selectedTime
       state.includeInsurance = includeInsurance
+      state.startTime = startTime
+      state.endTime = endTime
+      state.senderType = senderType
+      state.senderName = senderName
+      state.senderMobile = senderMobile
+      state.receiverType = receiverType
+      state.receiverName = receiverName
+      state.receiverMobile = receiverMobile
       state.currentStep = 2
     },
     
@@ -152,6 +178,22 @@ export const bookingSlice = createSlice({
     updateField: (state, action) => {
       const { field, value } = action.payload
       state[field] = value
+    },
+    
+    // Update sender details
+    setSenderDetails: (state, action) => {
+      const { senderType, senderName, senderMobile } = action.payload
+      state.senderType = senderType
+      state.senderName = senderName
+      state.senderMobile = senderMobile
+    },
+    
+    // Update receiver details
+    setReceiverDetails: (state, action) => {
+      const { receiverType, receiverName, receiverMobile } = action.payload
+      state.receiverType = receiverType
+      state.receiverName = receiverName
+      state.receiverMobile = receiverMobile
     }
   }
 })
@@ -170,6 +212,8 @@ export const {
   resetBooking,
   clearStep2Data,
   updateField,
+  setSenderDetails,
+  setReceiverDetails,
   purgeStore
 } = bookingSlice.actions
 

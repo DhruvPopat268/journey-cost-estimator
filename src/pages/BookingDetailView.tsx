@@ -190,13 +190,13 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                     <div className="flex items-center justify-between mb-4 pb-3 border-b">
                         <div>
                             <h3 className="font-semibold text-lg">
-                                {booking.rideInfo?.subcategoryName}
+                               {booking.rideInfo?.categoryName} - {booking.rideInfo?.subcategoryName}
                             </h3>
                         </div>
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${booking.status === 'BOOKED' ? 'bg-blue-100 text-blue-800' :
-                                booking.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
-                                    booking.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                                        'bg-gray-100 text-gray-800'
+                            booking.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
+                                booking.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'
                             }`}>
                             {booking.status}
                         </span>
@@ -252,6 +252,39 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Sender & Receiver Details */}
+                    {(booking.rideInfo?.senderDetails || booking.rideInfo?.receiverDetails) && (
+                        <div className="mb-5">
+                            <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+                                <User size={16} className="mr-2" />
+                                Sender & Receiver Details
+                            </h4>
+
+                            <div className="space-y-3 text-sm">
+                                {booking.rideInfo?.senderDetails && (
+                                    <div className="p-3 border rounded-lg ">
+                                        <div className="font-medium text-gray-700 mb-1">Sender Details</div>
+                                        <div className="text-gray-600">
+                                            <span className="block">Name: {booking.rideInfo.senderDetails.name}</span>
+                                            <span className="block">Phone: {booking.rideInfo.senderDetails.phone}</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {booking.rideInfo?.receiverDetails && (
+                                    <div className="p-3 border rounded-lg ">
+                                        <div className="font-medium text-gray-700 mb-1">Receiver Details</div>
+                                        <div className="text-gray-600">
+                                            <span className="block">Name: {booking.rideInfo.receiverDetails.name}</span>
+                                            <span className="block">Phone: {booking.rideInfo.receiverDetails.phone}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
 
                     {/* Location Details */}
                     <div className="mb-5">

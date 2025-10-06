@@ -158,7 +158,7 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
                 >
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-semibold text-lg">
-                      {booking.subcategoryName || booking.carType}
+                      {booking.categoryName} - {booking.subcategoryName || booking.carType}
                     </h3>
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-medium ${booking.status === "BOOKED"

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -74,6 +74,16 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
   onFieldChange,
   onLocationChange,
 }) => {
+  const [senderMobileError, setSenderMobileError] = useState('');
+  const [receiverMobileError, setReceiverMobileError] = useState('');
+  
+  const validateMobile = (mobile: string) => {
+    const cleanMobile = mobile.replace(/\D/g, '');
+    if (cleanMobile.length === 0) return '';
+    if (cleanMobile.length !== 10) return 'Please enter a valid 10-digit mobile number';
+    return '';
+  };
+  
   const isOutstation = subcategoryName?.toLowerCase() === 'outstation' || subcategoryName?.toLowerCase() === 'out-station';
   console.log('isOutstation:', isOutstation);
   return (
@@ -230,10 +240,18 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
                     id="senderMobile"
                     placeholder="Enter sender mobile"
                     value={senderMobile}
-                    onChange={(e) => onFieldChange('senderMobile', e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      onFieldChange('senderMobile', value);
+                      setSenderMobileError(validateMobile(value));
+                    }}
                     type="tel"
                     disabled={senderType === 'myself'}
+                    className={senderMobileError ? 'border-red-500' : ''}
                   />
+                  {senderMobileError && (
+                    <p className="text-red-500 text-sm mt-1">{senderMobileError}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -284,10 +302,18 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
                     id="receiverPhone"
                     placeholder="Enter receiver mobile"
                     value={receiverMobile}
-                    onChange={(e) => onFieldChange('receiverPhone', e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      onFieldChange('receiverPhone', value);
+                      setReceiverMobileError(validateMobile(value));
+                    }}
                     type="tel"
                     disabled={receiverType === 'myself'}
+                    className={receiverMobileError ? 'border-red-500' : ''}
                   />
+                  {receiverMobileError && (
+                    <p className="text-red-500 text-sm mt-1">{receiverMobileError}</p>
+                  )}
                 </div>
               </div>
             </div>
