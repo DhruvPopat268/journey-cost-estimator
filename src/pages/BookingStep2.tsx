@@ -194,6 +194,7 @@ const BookingStep2 = () => {
 
     setInstructionsLoading(true);
     try {
+      const token = localStorage.getItem("RiderToken");
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/instructions/getInstructions`,
         {
@@ -201,11 +202,33 @@ const BookingStep2 = () => {
           subCategoryId: bookingData.subcategoryId,
           ...(bookingData.subSubcategoryId && { subSubCategoryId: bookingData.subSubcategoryId }),
           selectedCategoryName: categoryName
+        },
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
         }
       );
       setInstructions(res.data.instructions || []);
     } catch (error) {
       console.error('Failed to fetch instructions', error);
+      if (error.response?.status === 401) {
+        localStorage.removeItem("RiderToken");
+        const bookingDetails = {
+          ...bookingData,
+          selectedUsage: selectedUsage || customUsage,
+          selectedCategory: selectedCategory?.category,
+          insuranceCharges: selectedCategory?.insuranceCharges,
+          subtotal: selectedCategory?.subtotal,
+          gstCharges: selectedCategory?.gstCharges,
+          totalPayable: selectedCategory?.totalPayable,
+          notes: notes,
+          includeInsurance: includeInsurance,
+          receiverName: receiverName,
+          receiverPhone: receiverPhone,
+          selectedDates: selectedDates
+        };
+        navigate("/login", { state: bookingDetails });
+        return;
+      }
       setInstructions([]);
     } finally {
       setInstructionsLoading(false);
@@ -214,21 +237,65 @@ const BookingStep2 = () => {
 
   const fetchCarCategories = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/car-categories`);
+      const token = localStorage.getItem("RiderToken");
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/car-categories`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       const activeCategories = res.data.filter(category => category.status === true);
       setCarCategories(activeCategories);
     } catch (error) {
       console.error('Failed to fetch car categories:', error);
+      if (error.response?.status === 401) {
+        localStorage.removeItem("RiderToken");
+        const bookingDetails = {
+          ...bookingData,
+          selectedUsage: selectedUsage || customUsage,
+          selectedCategory: selectedCategory?.category,
+          insuranceCharges: selectedCategory?.insuranceCharges,
+          subtotal: selectedCategory?.subtotal,
+          gstCharges: selectedCategory?.gstCharges,
+          totalPayable: selectedCategory?.totalPayable,
+          notes: notes,
+          includeInsurance: includeInsurance,
+          receiverName: receiverName,
+          receiverPhone: receiverPhone,
+          selectedDates: selectedDates
+        };
+        navigate("/login", { state: bookingDetails });
+        return;
+      }
       setCarCategories([]);
     }
   };
 
   const fetchParcelCategories = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/parcel-categories`);
+      const token = localStorage.getItem("RiderToken");
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/parcel-categories`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       setParcelCategories(res.data);
     } catch (error) {
       console.error('Failed to fetch parcel categories:', error);
+      if (error.response?.status === 401) {
+        localStorage.removeItem("RiderToken");
+        const bookingDetails = {
+          ...bookingData,
+          selectedUsage: selectedUsage || customUsage,
+          selectedCategory: selectedCategory?.category,
+          insuranceCharges: selectedCategory?.insuranceCharges,
+          subtotal: selectedCategory?.subtotal,
+          gstCharges: selectedCategory?.gstCharges,
+          totalPayable: selectedCategory?.totalPayable,
+          notes: notes,
+          includeInsurance: includeInsurance,
+          receiverName: receiverName,
+          receiverPhone: receiverPhone,
+          selectedDates: selectedDates
+        };
+        navigate("/login", { state: bookingDetails });
+        return;
+      }
       setParcelCategories([]);
     }
   };
@@ -260,6 +327,7 @@ const BookingStep2 = () => {
     }
 
     try {
+      const token = localStorage.getItem("RiderToken");
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}${apiEndpoint}`,
         {
@@ -271,6 +339,9 @@ const BookingStep2 = () => {
           ...(bookingData.subSubcategoryId && { subSubcategoryId: bookingData.subSubcategoryId }),
           ...(categoryName === 'cab' && (carCategory || selectedCarCategory) && { carCategoryId: (carCategory || selectedCarCategory)._id }),
           ...(categoryName === 'parcel' && (parcelCategory || selectedParcelCategory) && { parcelCategoryId: (parcelCategory || selectedParcelCategory)._id })
+        },
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
         }
       );
 
@@ -280,6 +351,25 @@ const BookingStep2 = () => {
       setLoading(false);
     } catch (err) {
       console.error('API error:', err);
+      if (err.response?.status === 401) {
+        localStorage.removeItem("RiderToken");
+        const bookingDetails = {
+          ...bookingData,
+          selectedUsage: defaultUsage,
+          selectedCategory: selectedCategory?.category,
+          insuranceCharges: selectedCategory?.insuranceCharges,
+          subtotal: selectedCategory?.subtotal,
+          gstCharges: selectedCategory?.gstCharges,
+          totalPayable: selectedCategory?.totalPayable,
+          notes: notes,
+          includeInsurance: includeInsurance,
+          receiverName: receiverName,
+          receiverPhone: receiverPhone,
+          selectedDates: selectedDates
+        };
+        navigate("/login", { state: bookingDetails });
+        return;
+      }
       setLoading(false);
     } finally {
       setIsCalculating(false);
@@ -304,7 +394,10 @@ const BookingStep2 = () => {
       // Fetch car categories and set default for cab bookings
       let defaultCarCategory = null;
       if (categoryName === 'cab') {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/car-categories`);
+        const token = localStorage.getItem("RiderToken");
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/car-categories`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
         const activeCategories = res.data.filter(category => category.status === true);
         setCarCategories(activeCategories);
 
@@ -319,7 +412,10 @@ const BookingStep2 = () => {
       // Fetch parcel categories and set default for parcel bookings
       let defaultParcelCategory = null;
       if (categoryName === 'parcel') {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/parcel-categories`);
+        const token = localStorage.getItem("RiderToken");
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/parcel-categories`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
         setParcelCategories(res.data);
 
         // Find and set Classic as default
@@ -341,12 +437,16 @@ const BookingStep2 = () => {
       }
 
       try {
+        const token = localStorage.getItem("RiderToken");
         const res = await axios.post(
           `${import.meta.env.VITE_API_URL}${apiEndpoint}`,
           {
             categoryId: bookingData.categoryId,
             subcategoryId: bookingData.subcategoryId,
             ...(bookingData.subSubcategoryId && { subSubcategoryId: bookingData.subSubcategoryId })
+          },
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
           }
         );
 
@@ -388,6 +488,25 @@ const BookingStep2 = () => {
         }
       } catch (error) {
         console.error('Failed to fetch included data:', error);
+        if (error.response?.status === 401) {
+          localStorage.removeItem("RiderToken");
+          const bookingDetails = {
+            ...bookingData,
+            selectedUsage: selectedUsage || customUsage,
+            selectedCategory: selectedCategory?.category,
+            insuranceCharges: selectedCategory?.insuranceCharges,
+            subtotal: selectedCategory?.subtotal,
+            gstCharges: selectedCategory?.gstCharges,
+            totalPayable: selectedCategory?.totalPayable,
+            notes: notes,
+            includeInsurance: includeInsurance,
+            receiverName: receiverName,
+            receiverPhone: receiverPhone,
+            selectedDates: selectedDates
+          };
+          navigate("/login", { state: bookingDetails });
+          return;
+        }
       }
 
     };
@@ -630,6 +749,25 @@ const BookingStep2 = () => {
         setWalletBalance(res.data.balance || 0);
       } catch (error) {
         console.error("Failed to fetch wallet balance:", error);
+        if (error.response?.status === 401) {
+          localStorage.removeItem("RiderToken");
+          const bookingDetails = {
+            ...bookingData,
+            selectedUsage: selectedUsage || customUsage,
+            selectedCategory: selectedCategory?.category,
+            insuranceCharges: selectedCategory?.insuranceCharges,
+            subtotal: selectedCategory?.subtotal,
+            gstCharges: selectedCategory?.gstCharges,
+            totalPayable: selectedCategory?.totalPayable,
+            notes: notes,
+            includeInsurance: includeInsurance,
+            receiverName: receiverName,
+            receiverPhone: receiverPhone,
+            selectedDates: selectedDates
+          };
+          navigate("/login", { state: bookingDetails });
+          return;
+        }
         setWalletBalance(0);
       } finally {
         setWalletLoading(false);
@@ -1452,10 +1590,10 @@ const BookingStep2 = () => {
                     </div>
                   )}
 
-                  {/* <div className="flex justify-between">
+                  <div className="flex justify-between">
                     <span className="font-medium">Cancellation Fee:</span>
                     <span className="font-medium">₹{selectedCategory.cancellationCharges || 0}</span>
-                  </div> */}
+                  </div>
 
                   {useReferral && referralBalance > 0 && (
                     <div className="flex justify-between text-green-600">
