@@ -190,7 +190,7 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                     <div className="flex items-center justify-between mb-4 pb-3 border-b">
                         <div>
                             <h3 className="font-semibold text-lg">
-                               {booking.rideInfo?.categoryName} - {booking.rideInfo?.subcategoryName}
+                                {booking.rideInfo?.categoryName} - {booking.rideInfo?.subcategoryName}
                             </h3>
                         </div>
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${booking.status === 'BOOKED' ? 'bg-blue-100 text-blue-800' :
@@ -244,6 +244,11 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                             <div className="flex justify-between">
                                 <span className="text-gray-600">GST</span>
                                 <span className="font-medium">₹{booking.rideInfo?.gstCharges || 0}</span>
+                            </div>
+
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Cancellation Charges</span>
+                                <span className="font-medium">₹{booking.rideInfo?.cancellationCharges || 0}</span>
                             </div>
 
                             <div className="flex justify-between border-t pt-2 font-semibold">
