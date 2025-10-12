@@ -988,14 +988,17 @@ const BookingStep2 = () => {
           paymentType: selectedPaymentMethod,
           referralEarning: useReferral ? true : false,
           referralBalance: useReferral ? referralBalance : 0,
-          senderDetails: {
-            name: bookingData.senderName || '',
-            phone: bookingData.senderMobile || ''
-          },
-          receiverDetails: {
-            name: receiverName || bookingData.receiverName || '',
-            phone: receiverPhone || bookingData.receiverMobile || ''
-          }
+          selectedCategoryId: selectedCategory?._id || selectedCategory?.id,
+          ...(bookingData?.categoryName?.toLowerCase() === 'parcel' && {
+            senderDetails: {
+              name: bookingData.senderName || '',
+              phone: bookingData.senderMobile || ''
+            },
+            receiverDetails: {
+              name: receiverName || bookingData.receiverName || '',
+              phone: receiverPhone || bookingData.receiverMobile || ''
+            }
+          })
         }),
       });
 

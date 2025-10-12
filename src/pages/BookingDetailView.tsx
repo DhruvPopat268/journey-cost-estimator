@@ -253,7 +253,6 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                                 </div>
                             )}
 
-
                             <div className="flex justify-between border-t pt-2 font-semibold">
                                 <span className="text-gray-800">Total Payable</span>
                                 <span className="text-gray-800">₹{booking.totalPayable}</span>
