@@ -825,6 +825,7 @@ const BookingStep2 = () => {
 
   const handleCategorySelect = (item) => {
     setSelectedCategoryLocal(item);
+    console.log('Selected Category ID:', item.categoryId);
   };
 
   const handleInfoClick = (e, item) => {
@@ -988,7 +989,7 @@ const BookingStep2 = () => {
           paymentType: selectedPaymentMethod,
           referralEarning: useReferral ? true : false,
           referralBalance: useReferral ? referralBalance : 0,
-          selectedCategoryId: selectedCategory?._id || selectedCategory?.id,
+          selectedCategoryId: selectedCategory?.categoryId,
           ...(bookingData?.categoryName?.toLowerCase() === 'parcel' && {
             senderDetails: {
               name: bookingData.senderName || '',
