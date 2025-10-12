@@ -246,10 +246,13 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                                 <span className="font-medium">₹{booking.rideInfo?.gstCharges || 0}</span>
                             </div>
 
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Cancellation Charges</span>
-                                <span className="font-medium">₹{booking.rideInfo?.cancellationCharges || 0}</span>
-                            </div>
+                            {booking.rideInfo?.cancellationCharges > 0 && (
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Cancellation Charges</span>
+                                    <span className="font-medium">₹{booking.rideInfo.cancellationCharges}</span>
+                                </div>
+                            )}
+
 
                             <div className="flex justify-between border-t pt-2 font-semibold">
                                 <span className="text-gray-800">Total Payable</span>
