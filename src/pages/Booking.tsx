@@ -109,7 +109,7 @@ const Booking = () => {
           setCarType(vehicleRes.data.data[0].vehicleName.toLowerCase());
         }
         if (!transmissionType) {
-          setTransmissionType('manual');
+          setTransmissionType('automatic');
         }
       } catch (error) {
         console.error('Failed to fetch data', error);

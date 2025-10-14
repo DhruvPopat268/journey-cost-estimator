@@ -76,14 +76,14 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
 }) => {
   const [senderMobileError, setSenderMobileError] = useState('');
   const [receiverMobileError, setReceiverMobileError] = useState('');
-  
+
   const validateMobile = (mobile: string) => {
     const cleanMobile = mobile.replace(/\D/g, '');
     if (cleanMobile.length === 0) return '';
     if (cleanMobile.length !== 10) return 'Please enter a valid 10-digit mobile number';
     return '';
   };
-  
+
   const isOutstation = subcategoryName?.toLowerCase() === 'outstation' || subcategoryName?.toLowerCase() === 'out-station';
   console.log('isOutstation:', isOutstation);
   return (
@@ -160,6 +160,20 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
         {/* Vehicle Fields - Show only if showVehicleFields is true */}
         {showVehicleFields && (
           <div className="grid grid-cols-2 gap-4">
+
+            <div>
+              <Label>Transmission</Label>
+              <Select value={transmissionType} onValueChange={(value) => onFieldChange('transmissionType', value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {transmissionOptions.map((trans) => (
+                    <SelectItem key={trans} value={trans.toLowerCase()}>{trans}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <Label>Car Type</Label>
               <Select value={carType} onValueChange={(value) => onFieldChange('carType', value)}>
@@ -175,19 +189,7 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Transmission</Label>
-              <Select value={transmissionType} onValueChange={(value) => onFieldChange('transmissionType', value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {transmissionOptions.map((trans) => (
-                    <SelectItem key={trans} value={trans.toLowerCase()}>{trans}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+
           </div>
         )}
 

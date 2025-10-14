@@ -977,6 +977,7 @@ const BookingStep2 = () => {
 
   const bookRideDirectly = async (bookingDetails) => {
     try {
+      console.log('selectedCategoryId:', selectedCategory?.categoryId);
       const token = localStorage.getItem("RiderToken");
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rides/book`, {
         method: "POST",
