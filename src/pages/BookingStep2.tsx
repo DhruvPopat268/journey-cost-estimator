@@ -484,10 +484,22 @@ const BookingStep2 = () => {
               }, 0);
               return;
             }
+          } else {
+            // Set empty options if no data returned
+            setDurationOptions([]);
           }
+        } else {
+          // Set empty options if API call unsuccessful
+          setDurationOptions([]);
         }
+        
+        // Always set loading to false after processing API response
+        setLoading(false);
       } catch (error) {
         console.error('Failed to fetch included data:', error);
+        // Set empty options on error
+        setDurationOptions([]);
+        setLoading(false);
         if (error.response?.status === 401) {
           localStorage.removeItem("RiderToken");
           const bookingDetails = {
@@ -1058,7 +1070,7 @@ const BookingStep2 = () => {
             <ArrowLeft className="w-6 h-6" />
           </Button>
           <h1 className="text-2xl font-bold text-gray-900">
-            {bookingData.subcategoryName}{bookingData.subSubcategoryName ? ` - ${bookingData.subSubcategoryName}` : ''} Booking - Step 2
+            {bookingData.categoryName} - {bookingData.subcategoryName}{bookingData.subSubcategoryName ? ` - ${bookingData.subSubcategoryName}` : ''} Booking - Step 2
           </h1>
         </div>
 
