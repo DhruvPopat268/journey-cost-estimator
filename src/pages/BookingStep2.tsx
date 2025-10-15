@@ -29,7 +29,7 @@ const BookingStep2 = () => {
   const bookingData = bookingDataFromStore && Object.keys(bookingDataFromStore).length > 0
     ? bookingDataFromStore
     : location.state;
-    console.log("booking data",bookingData)
+  console.log("booking data", bookingData)
 
   const [selectedUsage, setSelectedUsage] = useState(bookingData?.selectedUsage || '');
   const [customUsage, setCustomUsage] = useState(bookingData?.customUsage || '');
@@ -492,7 +492,7 @@ const BookingStep2 = () => {
           // Set empty options if API call unsuccessful
           setDurationOptions([]);
         }
-        
+
         // Always set loading to false after processing API response
         setLoading(false);
       } catch (error) {
@@ -1039,12 +1039,12 @@ const BookingStep2 = () => {
   const getIcon = (category) => {
     const categoryLower = category.toLowerCase();
     const isParcel = bookingData?.categoryName?.toLowerCase() === 'parcel';
-    
+
     if (isParcel) {
       // For parcel bookings, show bike for "bike" category, car for others
       return categoryLower === 'bike' ? '🏍️' : '🚗';
     }
-    
+
     // For non-parcel bookings, use existing logic
     switch (categoryLower) {
       case "prime":
@@ -1261,8 +1261,8 @@ const BookingStep2 = () => {
                 <div className="flex flex-col items-center justify-center space-y-4">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   <p className="text-gray-600 text-center">
-                    {bookingData?.categoryName?.toLowerCase() === 'cab' 
-                      ? 'Calculating prices for selected car category...' 
+                    {bookingData?.categoryName?.toLowerCase() === 'cab'
+                      ? 'Calculating prices for selected car category...'
                       : 'Calculating prices for selected parcel category...'}
                   </p>
                 </div>
@@ -1607,10 +1607,11 @@ const BookingStep2 = () => {
                     </div>
                   )}
 
-                  <div className="flex justify-between">
-                    <span className="font-medium">Cancellation Fee:</span>
-                    <span className="font-medium">₹{selectedCategory.cancellationCharges || 0}</span>
-                  </div>
+                  {selectedCategory.cancellationCharges > 0 &&
+                    <div className="flex justify-between">
+                      <span className="font-medium">Cancellation Fee:</span>
+                      <span className="font-medium">₹{selectedCategory.cancellationCharges || 0}</span>
+                    </div>}
 
                   {useReferral && referralBalance > 0 && (
                     <div className="flex justify-between text-green-600">
