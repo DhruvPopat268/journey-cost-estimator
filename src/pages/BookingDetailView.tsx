@@ -38,6 +38,8 @@ interface BookingDetailViewProps {
     onBack: () => void;
 }
 
+
+
 const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
     const [booking, setBooking] = useState<Booking | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
@@ -71,6 +73,7 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                     },
                 }
             );
+            
 
             setBooking(response.data.booking || response.data);
         } catch (error: any) {
@@ -144,6 +147,8 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
         );
     }
 
+    
+
     if (error || !booking) {
         return (
             <div className="p-6 bg-gray-50 min-h-screen">
@@ -169,6 +174,9 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
             </div>
         );
     }
+
+    const subcategoryLower = booking.rideInfo?.subcategoryName?.toLowerCase() || '';
+    const isWeeklyOrMonthly = subcategoryLower === 'weekly' || subcategoryLower === 'monthly';
 
     return (
         <div className="p-4 bg-gray-50 min-h-screen">
@@ -222,11 +230,6 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                                 <span className="font-medium">₹{booking.rideInfo?.subtotal || 0}</span>
                             </div>
 
-                            {/* <div className="flex justify-between">
-                                <span className="text-gray-600">Cancellation Charges</span>
-                                <span className="font-medium">₹{booking.rideInfo?.cancellationCharges || 0}</span>
-                            </div> */}
-
                             {booking.rideInfo?.discount && (
                                 <div className="flex justify-between">
                                     <span className="text-gray-600">Discount</span>
@@ -262,7 +265,7 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
 
                     {/* Sender & Receiver Details */}
                     {(booking.rideInfo?.senderDetails || booking.rideInfo?.receiverDetails) && (
-                        <div className="mb-5">
+                        <div className="mb-5 pb-4 border-b">
                             <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
                                 <User size={16} className="mr-2" />
                                 Sender & Receiver Details
@@ -294,7 +297,7 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
 
 
                     {/* Location Details */}
-                    <div className="mb-5">
+                    <div className="mb-5 pb-4 border-b">
                         <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
                             <MapPin size={16} className="mr-2" />
                             Location Details
@@ -320,6 +323,41 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                             )}
                         </div>
                     </div>
+
+                    {/* Weekly/Monthly Booking Details */}
+                    {isWeeklyOrMonthly && (
+                        <div className="mb-5 pb-4 border-b">
+                            <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+                                <Calendar size={16} className="mr-2" />
+                                {subcategoryLower === 'weekly' ? 'Weekly' : 'Monthly'} Booking Details
+                            </h4>
+
+                            <div className="space-y-3 text-sm">
+                                {booking.rideInfo?.SelectedDays && (
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-gray-600">Number of Days</span>
+                                        <span className="font-medium text-gray-800">{booking.rideInfo.SelectedDays} days</span>
+                                    </div>
+                                )}
+
+                                {booking.rideInfo?.selectedDates && Array.isArray(booking.rideInfo.selectedDates) && booking.rideInfo.selectedDates.length > 0 && (
+                                    <div>
+                                        <div className="text-gray-600 mb-2">Selected Dates</div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {booking.rideInfo.selectedDates.map((date: string, index: number) => (
+                                                <span 
+                                                    key={index}
+                                                    className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium"
+                                                >
+                                                    {formatDate(date)}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Booking Information */}
                     <div className="grid grid-cols-2 gap-3 mb-5">
@@ -347,7 +385,7 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                             <div className="text-xs text-gray-500">Ride Duration</div>
                             <div className="text-sm font-medium">
                                 {booking.rideInfo?.selectedUsage}{" "}
-                                {booking.rideInfo?.subcategoryName === "Hourly" ? "hr" : "km"}
+                                {subcategoryLower === "oneway" ? "km" : "hrs"}
                             </div>
                         </div>
 
