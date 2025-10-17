@@ -92,52 +92,35 @@ const BookingStep2 = () => {
   useEffect(() => {
     if (durationValue && (bookingData?.subcategoryName?.toLowerCase().includes('weekly') ||
       bookingData?.subcategoryName?.toLowerCase().includes('monthly'))) {
+
+      const maxDays = parseInt(durationValue);
       const dates = [];
-      const initialSelected = selectedDates.length > 0 ? selectedDates : [];
 
-      // If we have selectedDates from Redux, use them to generate displayDates
-      if (selectedDates.length > 0) {
-        selectedDates.forEach((dateStr, index) => {
-          const date = new Date(dateStr);
-          const displayDate = date.toLocaleDateString('en-US', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric'
-          });
-          dates.push({
-            dateStr,
-            displayDate,
-            index
-          });
+      // Always generate dates starting from tomorrow
+      for (let i = 0; i < maxDays; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() + i + 1); // Start from tomorrow
+        const dateStr = date.toISOString().split('T')[0];
+        const displayDate = date.toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric'
         });
-      } else {
-        // Generate default dates if no selectedDates
-        const maxDays = parseInt(durationValue);
 
-        for (let i = 0; i < maxDays; i++) {
-          const date = new Date();
-          date.setDate(date.getDate() + i + 1);
-          const dateStr = date.toISOString().split('T')[0];
-          const displayDate = date.toLocaleDateString('en-US', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric'
-          });
-
-          dates.push({
-            dateStr,
-            displayDate,
-            index: i
-          });
-
-          initialSelected.push(dateStr);
-        }
-        setSelectedDates(initialSelected);
+        dates.push({
+          dateStr,
+          displayDate,
+          index: i
+        });
       }
 
       setDisplayDates(dates);
+
+      // Set all dates as selected initially
+      const allDateStrings = dates.map(d => d.dateStr);
+      setSelectedDates(allDateStrings);
     }
-  }, [durationValue, bookingData?.subcategoryName, selectedDates.length]);
+  }, [durationValue, bookingData?.subcategoryName]);
 
   useEffect(() => {
     dispatch(updateField({ field: 'receiverName', value: receiverName }));
@@ -789,6 +772,43 @@ const BookingStep2 = () => {
     fetchWalletBalance();
   }, [selectedPaymentMethod]);
 
+  useEffect(() => {
+    const isWeeklyOrMonthly = bookingData?.subcategoryName?.toLowerCase().includes('weekly') ||
+      bookingData?.subcategoryName?.toLowerCase().includes('monthly');
+
+    if (isWeeklyOrMonthly && durationValue) {
+      const maxDays = parseInt(durationValue);
+
+      // If current selected dates don't match duration, reset them
+      if (selectedDates.length !== maxDays) {
+        const dates = [];
+        const newSelected = [];
+
+        for (let i = 0; i < maxDays; i++) {
+          const date = new Date();
+          date.setDate(date.getDate() + i + 1); // Start from tomorrow
+          const dateStr = date.toISOString().split('T')[0];
+          const displayDate = date.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
+          });
+
+          dates.push({
+            dateStr,
+            displayDate,
+            index: i
+          });
+          newSelected.push(dateStr);
+        }
+
+        setDisplayDates(dates);
+        setSelectedDates(newSelected);
+      }
+    }
+  }, [durationValue]);
+
+
   const finalPayable = React.useMemo(() => {
     if (!selectedCategory) return 0;
     const baseTotal = selectedCategory.totalPayable || 0;
@@ -1095,95 +1115,148 @@ const BookingStep2 = () => {
           />
 
           {/* Date Selection for Weekly/Monthly */}
-          {(bookingData?.subcategoryName?.toLowerCase().includes('weekly') || bookingData?.subcategoryName?.toLowerCase().includes('monthly')) && (
-            <Card className="bg-white shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">Select Dates</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-4 gap-2">
-                  {displayDates.map((dateObj) => {
-                    const isSelected = selectedDates.includes(dateObj.dateStr);
+          {(bookingData?.subcategoryName?.toLowerCase().includes('weekly') ||
+            bookingData?.subcategoryName?.toLowerCase().includes('monthly')) && (
+              <Card className="bg-white shadow-lg">
+                <CardHeader className="flex flex-row justify-between items-center">
+                  <CardTitle className="text-lg font-semibold">Select Dates</CardTitle>
 
-                    return (
-                      <div
-                        key={dateObj.dateStr}
-                        onClick={() => {
-                          if (isSelected) {
-                            // Remove the date
-                            const newSelected = selectedDates.filter(d => d !== dateObj.dateStr);
+                  {/* ✅ Reset Button */}
+                  <button
+                    onClick={() => {
+                      setSelectedDates([]); // Clear all selections
 
-                            // Find the max index in displayDates
-                            const maxIndex = Math.max(...displayDates.map(d => d.index));
+                      // Reset displayDates based on durationValue (starting from tomorrow)
+                      const today = new Date();
+                      const totalDays = parseInt(durationValue) || 0;
 
-                            // Generate next date
-                            const nextDate = new Date();
-                            nextDate.setDate(nextDate.getDate() + maxIndex + 2);
-                            const nextDateStr = nextDate.toISOString().split('T')[0];
-                            const nextDisplayDate = nextDate.toLocaleDateString('en-US', {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric'
-                            });
+                      const resetDates = Array.from({ length: totalDays }, (_, i) => {
+                        const date = new Date(today);
+                        date.setDate(today.getDate() + i + 1); // +1 to exclude today
+                        return {
+                          dateStr: date.toISOString().split('T')[0],
+                          displayDate: date.toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric',
+                          }),
+                          index: i,
+                        };
+                      });
 
-                            // Add new date to display
-                            const dateExists = displayDates.some(d => d.dateStr === nextDateStr);
-                            if (!dateExists) {
-                              setDisplayDates([...displayDates, {
-                                dateStr: nextDateStr,
-                                displayDate: nextDisplayDate,
-                                index: maxIndex + 1
-                              }]);
+                      setDisplayDates(resetDates);
+                    }}
+                    className="text-sm font-medium text-blue-600 hover:text-blue-800 border border-blue-500 px-3 py-1 rounded-lg transition"
+                  >
+                    Reset
+                  </button>
+                </CardHeader>
+
+                <CardContent>
+                  <div className="grid grid-cols-4 gap-2">
+                    {displayDates.map((dateObj) => {
+                      const isSelected = selectedDates.includes(dateObj.dateStr);
+
+                      return (
+                        <div
+                          key={dateObj.dateStr}
+                          onClick={() => {
+                            const maxDays = parseInt(durationValue);
+
+                            if (isSelected) {
+                              // Unselect the date
+                              const newSelected = selectedDates.filter(
+                                (d) => d !== dateObj.dateStr
+                              );
+
+                              // Maintain duration count by adding next date
+                              if (newSelected.length < maxDays) {
+                                const lastDisplayDate =
+                                  displayDates[displayDates.length - 1];
+                                const lastDate = new Date(lastDisplayDate.dateStr);
+
+                                const nextDate = new Date(lastDate);
+                                nextDate.setDate(nextDate.getDate() + 1);
+                                const nextDateStr = nextDate.toISOString().split('T')[0];
+                                const nextDisplayDate = nextDate.toLocaleDateString(
+                                  'en-US',
+                                  {
+                                    weekday: 'short',
+                                    month: 'short',
+                                    day: 'numeric',
+                                  }
+                                );
+
+                                setDisplayDates([
+                                  ...displayDates,
+                                  {
+                                    dateStr: nextDateStr,
+                                    displayDate: nextDisplayDate,
+                                    index: displayDates.length,
+                                  },
+                                ]);
+
+                                setSelectedDates([...newSelected, nextDateStr]);
+                              }
+                            } else {
+                              if (selectedDates.length < maxDays) {
+                                setSelectedDates([...selectedDates, dateObj.dateStr]);
+                              }
                             }
-
-                            // Add the new date to selected dates
-                            setSelectedDates([...newSelected, nextDateStr]);
-                          } else {
-                            // Select the date
-                            setSelectedDates([...selectedDates, dateObj.dateStr]);
-                          }
-                        }}
-                        className={`
+                          }}
+                          className={`
                 relative p-2 rounded-lg border-2 cursor-pointer transition-all text-center
                 ${isSelected
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-300 bg-white hover:border-blue-300'
-                          }
-              `}
-                      >
-                        {/* Checkbox indicator */}
-                        <div className="absolute top-1 left-1">
-                          <div className={`
-                  w-4 h-4 rounded border-2 flex items-center justify-center
-                  ${isSelected
-                              ? 'bg-blue-500 border-blue-500'
-                              : 'bg-white border-gray-400'
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-300 bg-white hover:border-blue-300'
                             }
-                `}>
-                            {isSelected && (
-                              <svg className="w-2 h-2 text-white" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" viewBox="0 0 24 24" stroke="currentColor">
-                                <path d="M5 13l4 4L19 7"></path>
-                              </svg>
-                            )}
+              `}
+                        >
+                          {/* Checkbox indicator */}
+                          <div className="absolute top-1 left-1">
+                            <div
+                              className={`
+                    w-4 h-4 rounded border-2 flex items-center justify-center
+                    ${isSelected
+                                  ? 'bg-blue-500 border-blue-500'
+                                  : 'bg-white border-gray-400'
+                                }
+                  `}
+                            >
+                              {isSelected && (
+                                <svg
+                                  className="w-2 h-2 text-white"
+                                  fill="none"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="3"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path d="M5 13l4 4L19 7"></path>
+                                </svg>
+                              )}
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Date text */}
-                        <div className="mt-1">
-                          <div className="text-xs text-gray-600 font-medium">
-                            {dateObj.displayDate.split(',')[0]}
-                          </div>
-                          <div className="text-xs font-semibold text-gray-800">
-                            {dateObj.displayDate.split(',')[1]}
+                          {/* Date text */}
+                          <div className="mt-1">
+                            <div className="text-xs text-gray-600 font-medium">
+                              {dateObj.displayDate.split(',')[0]}
+                            </div>
+                            <div className="text-xs font-semibold text-gray-800">
+                              {dateObj.displayDate.split(',')[1]}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+
 
           {/* Car Categories for Cab */}
           {bookingData?.categoryName?.toLowerCase() === 'cab' && carCategories.length > 0 && (
