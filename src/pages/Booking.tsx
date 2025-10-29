@@ -277,7 +277,7 @@ const Booking = () => {
     };
 
     dispatch(setBookingStep1(bookingData));
-    console.log('Booking Data:', bookingData);
+    // console.log('Booking Data:', bookingData);
     navigate('/booking-step2', { state: bookingData });
   };
 

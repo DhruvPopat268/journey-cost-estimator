@@ -29,7 +29,7 @@ const BookingStep2 = () => {
   const bookingData = bookingDataFromStore && Object.keys(bookingDataFromStore).length > 0
     ? bookingDataFromStore
     : location.state;
-  console.log("booking data", bookingData)
+  // console.log("booking data", bookingData)
 
   const [selectedUsage, setSelectedUsage] = useState(bookingData?.selectedUsage || '');
   const [customUsage, setCustomUsage] = useState(bookingData?.customUsage || '');
@@ -142,7 +142,7 @@ const BookingStep2 = () => {
   useEffect(() => {
     const isWeekly = bookingData?.subcategoryName?.toLowerCase().includes('weekly');
     if (isWeekly && (!bookingData?.durationValue || parseInt(bookingData.durationValue) < 3)) {
-      console.log('Updating Redux store with default weekly value: 3');
+      // console.log('Updating Redux store with default weekly value: 3');
       setDurationValue('3');
     }
   }, [bookingData?.subcategoryName]);
@@ -437,7 +437,7 @@ const BookingStep2 = () => {
           const isHourly = bookingData?.subcategoryName?.toLowerCase().includes('hourly') || bookingData?.subcategoryName?.toLowerCase().includes('weekly') || bookingData?.subcategoryName?.toLowerCase().includes('monthly') || bookingData?.subSubcategoryName?.toLowerCase().includes('roundtrip');
           const options = isHourly ? res.data.data.includedMinutes : res.data.data.includedKm;
 
-          console.log("options (raw)", options);
+          // console.log("options (raw)", options);
 
           if (options && options.length > 0) {
             // ✅ Sort numerically & remove duplicates
@@ -447,8 +447,8 @@ const BookingStep2 = () => {
               .sort((a, b) => a - b)
               .map(opt => opt.toString());
 
-            console.log("options (sorted)", sortedOptions);
-            console.log("for default usage", sortedOptions[0])
+            // console.log("options (sorted)", sortedOptions);
+            // console.log("for default usage", sortedOptions[0])
 
             setDurationOptions(sortedOptions);
 
@@ -857,7 +857,7 @@ const BookingStep2 = () => {
 
   const handleCategorySelect = (item) => {
     setSelectedCategoryLocal(item);
-    console.log('Selected Category ID:', item.categoryId);
+    // console.log('Selected Category ID:', item.categoryId);
   };
 
   const handleInfoClick = (e, item) => {
@@ -1009,7 +1009,7 @@ const BookingStep2 = () => {
 
   const bookRideDirectly = async (bookingDetails) => {
     try {
-      console.log('selectedCategoryId:', selectedCategory?.categoryId);
+      // console.log('selectedCategoryId:', selectedCategory?.categoryId);
       const token = localStorage.getItem("RiderToken");
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rides/book`, {
         method: "POST",
