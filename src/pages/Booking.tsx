@@ -262,8 +262,10 @@ const Booking = () => {
       toLocation,
       fromLocationData,
       toLocationData,
-      carType,
-      transmissionType,
+      ...(categoryName.toLowerCase() === 'driver' && {
+        carType,
+        transmissionType,
+      }),
       selectedDate,
       selectedTime,
       startTime,
