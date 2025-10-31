@@ -61,9 +61,8 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
         return;
       }
 
-      const response = await axios.post(
+      const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/rides/booked/my-rides`,
-        {}, // no body required
         {
           headers: {
             Authorization: `Bearer ${token}`, // 👈 send token in header

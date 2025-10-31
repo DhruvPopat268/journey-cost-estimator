@@ -38,9 +38,8 @@ const ConfirmedRides: React.FC = () => {
         return;
       }
 
-      const response = await axios.post(
+      const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/rides/confirmed/my-rides`,
-        {},
         {
           headers: {
             Authorization: `Bearer ${token}`,
