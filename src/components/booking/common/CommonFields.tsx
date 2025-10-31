@@ -40,6 +40,7 @@ interface CommonFieldsProps {
   showVehicleFields?: boolean;
   showReceiverFields?: boolean;
   dateLabel?: string;
+  timeLabel?: string;
   onFieldChange: (field: string, value: string) => void;
   onLocationChange?: (field: 'fromLocation' | 'toLocation', locationData: LocationData) => void;
 }
@@ -71,6 +72,7 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
   showVehicleFields = true,
   showReceiverFields = false,
   dateLabel = 'Date',
+  timeLabel = 'Time',
   onFieldChange,
   onLocationChange,
 }) => {
@@ -145,7 +147,7 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
             />
           </div>
           <div>
-            <Label htmlFor="selectedTime">Time</Label>
+            <Label htmlFor="selectedTime">{timeLabel}</Label>
             <Input
               type="time"
               value={selectedTime}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Star, Loader2 } from 'lucide-react';
+import { ArrowLeft, Star, Loader2, MapPin, Clock } from 'lucide-react';
 import axios from 'axios';
 import { Navbar } from '@/components/Sidebar';
 
@@ -103,13 +103,14 @@ const AllBookedServices = ({ onBack }) => {
 
   if (loading) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen">
-        <div className="max-w-md mx-auto">
-
-
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="animate-spin mr-2" size={24} />
-            <span>Loading your rides...</span>
+      <div className="bg-gray-50 min-h-screen">
+        <Navbar title="All Booked Services" />
+        <div className="pt-4 p-6">
+          <div className="max-w-md mx-auto">
+            <div className="text-center py-12">
+              <Clock size={48} className="mx-auto text-gray-400 mb-4 animate-spin" />
+              <p className="text-gray-500">Loading bookings...</p>
+            </div>
           </div>
         </div>
       </div>
@@ -139,10 +140,23 @@ const AllBookedServices = ({ onBack }) => {
           <div className="space-y-3">
             {rides.map(ride => (
               <div key={ride._id} className="bg-white rounded-lg shadow-sm p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium text-sm">
-                    {formatDestination(ride.fromLocation?.address, ride.toLocation?.address)}
-                  </h3>
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-1 mb-1">
+                      <MapPin className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      <h3 className="font-medium text-sm">
+                        {ride.fromLocation?.address || "Unknown pickup"}
+                      </h3>
+                    </div>
+                    {ride.toLocation?.address && (
+                      <div className="flex items-center space-x-1">
+                        <MapPin className="w-4 h-4 text-red-500 flex-shrink-0" />
+                        <h3 className="font-medium text-sm">
+                          {ride.toLocation.address}
+                        </h3>
+                      </div>
+                    )}
+                  </div>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ride.status)}`}>
                     {ride.status}
                   </span>
@@ -157,10 +171,14 @@ const AllBookedServices = ({ onBack }) => {
 
                 <div className="flex items-center justify-between text-xs text-gray-500">
                   <div className="space-y-1">
-                    <div>Category: {ride.selectedCategory}</div>
-                    <div>Car Type: {ride.carType?.charAt(0).toUpperCase() + ride.carType?.slice(1)}</div>
-                    {ride.subcategoryName && (
-                      <div>Type: {ride.subcategoryName}</div>
+                    <div>{ride.categoryName} - {ride.subcategoryName}</div>
+                    <div>Driver Category: {ride.selectedCategory}</div>
+                    {ride.carType && ride.transmissionType && (
+                      <>
+                        <div>Car Type: {ride.carType?.charAt(0).toUpperCase() + ride.carType?.slice(1)}</div>
+
+                        <div>Transmission Type: {ride.transmissionType}</div>
+                      </>
                     )}
                   </div>
                   <div className="text-right">

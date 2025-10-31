@@ -389,26 +389,28 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                             </div>
                         </div>
 
+                          {booking.createdAt && (
+                            <div>
+                                <div className="text-xs text-gray-500">Booked On</div>
+                                <div className="text-sm font-medium">{formatDate(booking.createdAt)}</div>
+                            </div>
+                        )}
+
                         {booking.rideInfo?.selectedDate && (
                             <div>
-                                <div className="text-xs text-gray-500">Service Date</div>
+                                <div className="text-xs text-gray-500">Start Date</div>
                                 <div className="text-sm font-medium">{formatDate(booking.rideInfo?.selectedDate)}</div>
                             </div>
                         )}
 
                         {booking.rideInfo?.selectedTime && (
                             <div>
-                                <div className="text-xs text-gray-500">Service Time</div>
+                                <div className="text-xs text-gray-500">Start Time</div>
                                 <div className="text-sm font-medium">{booking.rideInfo?.selectedTime}</div>
                             </div>
                         )}
 
-                        {booking.createdAt && (
-                            <div>
-                                <div className="text-xs text-gray-500">Booked On</div>
-                                <div className="text-sm font-medium">{formatDate(booking.createdAt)}</div>
-                            </div>
-                        )}
+                      
                     </div>
 
                     {/* Additional Service Details */}

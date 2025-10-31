@@ -1019,6 +1019,7 @@ const BookingStep2 = () => {
         },
         body: JSON.stringify({
           ...bookingDetails,
+          selectedDate: (bookingData?.subcategoryName?.toLowerCase().includes('weekly') || bookingData?.subcategoryName?.toLowerCase().includes('monthly')) && selectedDates.length > 0 ? selectedDates[0] : bookingDetails.selectedDate,
           paymentType: selectedPaymentMethod,
           referralEarning: useReferral ? true : false,
           referralBalance: useReferral ? referralBalance : 0,

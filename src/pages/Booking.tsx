@@ -392,7 +392,8 @@ const Booking = () => {
                     receiverType={receiverType}
                     receiverName={receiverName}
                     receiverMobile={receiverMobile}
-                    dateLabel="Date"
+                    dateLabel={subcategoryName?.toLowerCase() === 'weekly' || subcategoryName?.toLowerCase() === 'monthly' ? 'Start Date' : 'Date'}
+                    timeLabel={subcategoryName?.toLowerCase() === 'weekly' || subcategoryName?.toLowerCase() === 'monthly' ? 'Start Time' : 'Time'}
                     onFieldChange={(field, value) => {
                       switch (field) {
                         case 'fromLocation': setFromLocation(value); break;
