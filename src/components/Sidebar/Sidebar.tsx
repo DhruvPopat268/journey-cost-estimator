@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Clock, User, LogOut, Trash2, Bike, AlertTriangle, House, LogIn , Gift , Wallet} from 'lucide-react';
+import { X, Clock, User, LogOut, Trash2, Bike, AlertTriangle, House, LogIn , Gift , Wallet, CheckCircle, Play} from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -131,6 +131,22 @@ const menuItems = [
     label: 'Current Booked Service',
     onClick: () => {
       handleNavigation('/currentBookings', 'Current Bookings');
+      window.location.reload();
+    }
+  },
+  {
+    icon: CheckCircle,
+    label: 'Confirmed Rides',
+    onClick: () => {
+      handleNavigation('/confirmedRides', 'Confirmed Rides');
+      window.location.reload();
+    }
+  },
+  {
+    icon: Play,
+    label: 'Ongoing Rides',
+    onClick: () => {
+      handleNavigation('/ongoingRides', 'Ongoing Rides');
       window.location.reload();
     }
   },
