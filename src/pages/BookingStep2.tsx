@@ -190,7 +190,9 @@ const BookingStep2 = () => {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         }
       );
-      setInstructions(res.data.instructions || []);
+      const allInstructions = res.data.instructions || [];
+
+      setInstructions(allInstructions);
     } catch (error) {
       console.error('Failed to fetch instructions', error);
       if (error.response?.status === 401) {
@@ -655,7 +657,7 @@ const BookingStep2 = () => {
       dispatch(setSelectedCategory(serializableCategory));
 
       const categoryName = selectedCategory.category;
-      if (categoryName && instructions.length === 0) {
+      if (categoryName) {
         fetchInstructions(categoryName);
       }
     }
