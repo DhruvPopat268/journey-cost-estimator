@@ -178,21 +178,35 @@ const BookingStep2 = () => {
     setInstructionsLoading(true);
     try {
       const token = localStorage.getItem("RiderToken");
+      const categoryType = bookingData?.categoryName?.toLowerCase();
+      
+      const requestBody = {
+        categoryId: bookingData.categoryId,
+        subCategoryId: bookingData.subcategoryId,
+        ...(bookingData.subSubcategoryId && { subSubCategoryId: bookingData.subSubcategoryId })
+      };
+
+      // Add appropriate category ID based on booking type
+      if (categoryType === 'driver') {
+        requestBody.driverCategoryId = selectedCategory?.categoryId;
+      } else if (categoryType === 'cab') {
+        requestBody.carId = selectedCategory?.categoryId; // Store as carId
+        requestBody.carCategoryId = selectedCarCategory?._id;
+      } else if (categoryType === 'parcel') {
+        requestBody.vehicleTypeId = selectedCategory?.categoryId; // Store as carId
+        requestBody.parcelCategoryId = selectedParcelCategory?._id;
+      }
+
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/instructions/getInstructions`,
-        {
-          categoryId: bookingData.categoryId,
-          subCategoryId: bookingData.subcategoryId,
-          ...(bookingData.subSubcategoryId && { subSubCategoryId: bookingData.subSubcategoryId }),
-          selectedCategoryName: categoryName
-        },
+        requestBody,
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         }
       );
-      const allInstructions = res.data.instructions || [];
+      const instructionTexts = res.data.data || [];
 
-      setInstructions(allInstructions);
+      setInstructions(instructionTexts.flat());
     } catch (error) {
       console.error('Failed to fetch instructions', error);
       if (error.response?.status === 401) {
