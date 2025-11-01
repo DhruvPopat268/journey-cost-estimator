@@ -677,6 +677,20 @@ const BookingStep2 = () => {
     }
   }, [selectedCategory?.category]);
 
+  // Fetch instructions when car category changes for cab bookings
+  useEffect(() => {
+    if (selectedCarCategory && bookingData?.categoryName?.toLowerCase() === 'cab' && selectedCategory?.category) {
+      fetchInstructions(selectedCategory.category);
+    }
+  }, [selectedCarCategory?._id]);
+
+  // Fetch instructions when parcel category changes for parcel bookings
+  useEffect(() => {
+    if (selectedParcelCategory && bookingData?.categoryName?.toLowerCase() === 'parcel' && selectedCategory?.category) {
+      fetchInstructions(selectedCategory.category);
+    }
+  }, [selectedParcelCategory?._id]);
+
   useEffect(() => {
     if (totalAmount?.length > 0) {
       const isCab = bookingData?.categoryName?.toLowerCase() === 'cab';
