@@ -17,7 +17,7 @@
     
     <script>
       console.log('Fetching Google Maps script from backend...');
-      fetch('http://localhost:5000/api/google-maps-script')
+      fetch('https://adminbackend.hire4drive.com/api/google-maps-script')
         .then(response => {
           console.log('Backend response status:', response.status);
           return response.text();

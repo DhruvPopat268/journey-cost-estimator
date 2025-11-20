@@ -65,7 +65,7 @@ export const LocationInput: React.FC<LocationInputProps> = ({
     try {
       const searchInput = selectedCityName ? `${input} ${selectedCityName}` : input;
       const response = await fetch(
-        `http://localhost:5000/api/places/autocomplete?input=${encodeURIComponent(searchInput)}&sessiontoken=${Date.now()}`
+        `https://adminbackend.hire4drive.com/api/places/autocomplete?input=${encodeURIComponent(searchInput)}&sessiontoken=${Date.now()}`
       );
       const data = await response.json();
       
@@ -94,7 +94,7 @@ export const LocationInput: React.FC<LocationInputProps> = ({
   const fetchPlaceDetails = async (placeId: string) => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/places/details?place_id=${placeId}&sessiontoken=${Date.now()}`
+        `https://adminbackend.hire4drive.com/api/places/details?place_id=${placeId}&sessiontoken=${Date.now()}`
       );
       const data = await response.json();
       
