@@ -184,7 +184,6 @@ const Booking = () => {
   const [receiverType, setReceiverType] = useState('other');
   const [receiverName, setReceiverName] = useState('');
   const [receiverMobile, setReceiverMobile] = useState('');
-  const [validationError, setValidationError] = useState('');
 
   useEffect(() => {
     const fetchRider = async () => {
@@ -289,14 +288,20 @@ const Booking = () => {
     
     if (categoryName.toLowerCase() === 'parcel') {
       const parcelValid = senderName.trim() && senderMobile.trim() && receiverName.trim() && receiverMobile.trim();
-      if (!parcelValid) {
-        setValidationError('Please fill in all sender and receiver details for parcel booking');
-        return false;
-      }
+      return basicValid && parcelValid;
     }
     
-    setValidationError('');
     return basicValid;
+  };
+
+  const getValidationError = () => {
+    if (categoryName.toLowerCase() === 'parcel') {
+      const parcelValid = senderName.trim() && senderMobile.trim() && receiverName.trim() && receiverMobile.trim();
+      if (!parcelValid) {
+        return 'Please fill in all sender and receiver details for parcel booking';
+      }
+    }
+    return '';
   };
 
   if (citiesLoading) {
@@ -432,9 +437,9 @@ const Booking = () => {
                       }
                     }}
                   />
-                  {validationError && (
+                  {getValidationError() && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                      <p className="text-red-600 text-sm font-medium">{validationError}</p>
+                      <p className="text-red-600 text-sm font-medium">{getValidationError()}</p>
                     </div>
                   )}
                   <Button
