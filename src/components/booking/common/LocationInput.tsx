@@ -38,7 +38,7 @@ export const LocationInput: React.FC<LocationInputProps> = ({
   const debounceRef = useRef<NodeJS.Timeout>();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const API_KEY = import.meta.env.VITE_MAP_API_KEY;
+
 
   useEffect(() => {
     setInputValue(value);
@@ -55,75 +55,63 @@ export const LocationInput: React.FC<LocationInputProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const fetchSuggestions = (input: string) => {
+  const fetchSuggestions = async (input: string) => {
     if (!input.trim() || input.length < 2) {
       setSuggestions([]);
       return;
     }
 
-    if (!window.google?.maps?.places) {
-      console.error('Google Maps Places library not loaded');
-      return;
-    }
-
     setLoading(true);
-    const service = new window.google.maps.places.AutocompleteService();
-    
-    const request: any = {
-      input: selectedCityName ? `${input} ${selectedCityName}` : input,
-      componentRestrictions: {
-        country: 'IN'
+    try {
+      const searchInput = selectedCityName ? `${input} ${selectedCityName}` : input;
+      const response = await fetch(
+        `http://localhost:5000/api/places/autocomplete?input=${encodeURIComponent(searchInput)}&sessiontoken=${Date.now()}`
+      );
+      const data = await response.json();
+      
+      if (data.status === 'OK' && data.predictions) {
+        const filteredPredictions = selectedCityName 
+          ? data.predictions.filter(p => 
+              p.description.toLowerCase().includes(selectedCityName.toLowerCase())
+            )
+          : data.predictions;
+          
+        setSuggestions(filteredPredictions.map(p => ({
+          place_id: p.place_id,
+          description: p.description
+        })));
+      } else {
+        setSuggestions([]);
       }
-    };
-    
-    service.getPlacePredictions(
-      request,
-      (predictions, status) => {
-        setLoading(false);
-        if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
-          // Filter predictions to only include locations in the selected city
-          const filteredPredictions = selectedCityName 
-            ? predictions.filter(p => 
-                p.description.toLowerCase().includes(selectedCityName.toLowerCase())
-              )
-            : predictions;
-            
-          setSuggestions(filteredPredictions.map(p => ({
-            place_id: p.place_id,
-            description: p.description
-          })));
-        } else {
-          setSuggestions([]);
-        }
-      }
-    );
+    } catch (error) {
+      console.error('Failed to fetch suggestions:', error);
+      setSuggestions([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const fetchPlaceDetails = (placeId: string) => {
-    if (!window.google?.maps?.places) {
-      console.error('Google Maps Places library not loaded');
-      return;
-    }
-
-    const service = new window.google.maps.places.PlacesService(
-      document.createElement('div')
-    );
-    
-    service.getDetails(
-      { placeId, fields: ['formatted_address', 'geometry', 'address_components'] },
-      (place, status) => {
-        if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
-          const locationData: LocationData = {
-            address: place.formatted_address || '',
-            place_id: placeId,
-            lat: place.geometry?.location?.lat() || 0,
-            lng: place.geometry?.location?.lng() || 0,
-            address_components: place.address_components || []
-          };
-          onChange(locationData);
-        }
+  const fetchPlaceDetails = async (placeId: string) => {
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/places/details?place_id=${placeId}&sessiontoken=${Date.now()}`
+      );
+      const data = await response.json();
+      
+      if (data.status === 'OK' && data.result) {
+        const place = data.result;
+        const locationData: LocationData = {
+          address: place.formatted_address || '',
+          place_id: placeId,
+          lat: place.geometry?.location?.lat || 0,
+          lng: place.geometry?.location?.lng || 0,
+          address_components: place.address_components || []
+        };
+        onChange(locationData);
       }
-    );
+    } catch (error) {
+      console.error('Failed to fetch place details:', error);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

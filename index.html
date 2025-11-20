@@ -15,7 +15,24 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@ridebooking" />
     
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCYJrI4qi8sgD5DsKn9lVlUtQtKr_y13t4&libraries=places"></script>
+    <script>
+      console.log('Fetching Google Maps script from backend...');
+      fetch('http://localhost:5000/api/google-maps-script')
+        .then(response => {
+          console.log('Backend response status:', response.status);
+          return response.text();
+        })
+        .then(scriptContent => {
+          console.log('Script content received:', scriptContent.substring(0, 100));
+          const script = document.createElement('script');
+          script.textContent = scriptContent;
+          document.head.appendChild(script);
+        })
+        .catch(error => {
+          console.error('Failed to load Google Maps script from backend:', error);
+          
+        });
+    </script>
   </head>
 
   <body>
