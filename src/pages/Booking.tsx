@@ -184,6 +184,7 @@ const Booking = () => {
   const [receiverType, setReceiverType] = useState('other');
   const [receiverName, setReceiverName] = useState('');
   const [receiverMobile, setReceiverMobile] = useState('');
+  const [validationError, setValidationError] = useState('');
 
   useEffect(() => {
     const fetchRider = async () => {
@@ -284,7 +285,18 @@ const Booking = () => {
   };
 
   const isFormValid = () => {
-    return fromLocation && selectedDate && selectedTime;
+    const basicValid = fromLocation && selectedDate && selectedTime;
+    
+    if (categoryName.toLowerCase() === 'parcel') {
+      const parcelValid = senderName.trim() && senderMobile.trim() && receiverName.trim() && receiverMobile.trim();
+      if (!parcelValid) {
+        setValidationError('Please fill in all sender and receiver details for parcel booking');
+        return false;
+      }
+    }
+    
+    setValidationError('');
+    return basicValid;
   };
 
   if (citiesLoading) {
@@ -420,6 +432,11 @@ const Booking = () => {
                       }
                     }}
                   />
+                  {validationError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <p className="text-red-600 text-sm font-medium">{validationError}</p>
+                    </div>
+                  )}
                   <Button
                     onClick={handleNextPage}
                     disabled={!isFormValid()}
