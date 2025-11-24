@@ -6,7 +6,7 @@ import { Clock } from 'lucide-react';
 
 interface HourlyFormProps {
   selectedUsage: string;
-  durationOptions?: string[];
+  durationOptions?: Array<{value: string; hours: string; km: string}> | string[];
   onUsageChange: (value: string) => void;
 }
 
@@ -15,20 +15,13 @@ export const HourlyForm: React.FC<HourlyFormProps> = ({
   durationOptions = [],
   onUsageChange,
 }) => {
-  const usageOptions = durationOptions.length > 0 ? durationOptions : ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
-  
-  const convertMinutesToHours = (minutes: string) => {
-    const mins = parseInt(minutes);
-    return (mins / 60).toString();
-  };
-  
-  const getDisplayText = (option: string) => {
-    if (durationOptions.length > 0) {
-      const hours = parseInt(option) / 60;
-      return hours === 1 ? '1 Hour' : `${hours} Hours`;
-    }
-    return `${option} Hr`;
-  };
+  // Handle both new object format and legacy string array
+  console.log('Duration Options:', durationOptions);
+  const usageOptions = Array.isArray(durationOptions) && durationOptions.length > 0 && typeof durationOptions[0] === 'object'
+    ? durationOptions as Array<{value: string; hours: string; km: string}>
+    : durationOptions.length > 0 
+      ? (durationOptions as string[]).map(opt => ({ value: opt, hours: opt, km: '0' }))
+      : ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'].map(opt => ({ value: opt, hours: opt, km: '0' }));
 
   return (
     <Card className="bg-white shadow-lg">
@@ -47,8 +40,8 @@ export const HourlyForm: React.FC<HourlyFormProps> = ({
             </SelectTrigger>
             <SelectContent>
               {usageOptions.map((option) => (
-                <SelectItem key={option} value={durationOptions.length > 0 ? convertMinutesToHours(option) : option}>
-                  {getDisplayText(option)}
+                <SelectItem key={typeof option === 'string' ? option : option.value} value={typeof option === 'string' ? option : option.value}>
+                  {typeof option === 'string' ? `${option} Hr` : option.value}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -385,7 +385,7 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                             <div className="text-xs text-gray-500">Ride Duration</div>
                             <div className="text-sm font-medium">
                                 {booking.rideInfo?.selectedUsage}{" "}
-                                {subcategoryLower === "oneway" ? "km" : "hrs"}
+                                
                             </div>
                         </div>
 

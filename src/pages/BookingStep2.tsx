@@ -84,6 +84,7 @@ const BookingStep2 = () => {
   const [selectedCarCategory, setSelectedCarCategory] = useState(null);
   const [parcelCategories, setParcelCategories] = useState([]);
   const [selectedParcelCategory, setSelectedParcelCategory] = useState(null);
+  const [rawIncludedData, setRawIncludedData] = useState([]); // Store raw API data
 
   // Add this state to store display dates
   const [displayDates, setDisplayDates] = useState([]);
@@ -179,7 +180,7 @@ const BookingStep2 = () => {
     try {
       const token = localStorage.getItem("RiderToken");
       const categoryType = bookingData?.categoryName?.toLowerCase();
-      
+
       const requestBody = {
         categoryId: bookingData.categoryId,
         subCategoryId: bookingData.subcategoryId,
@@ -327,11 +328,48 @@ const BookingStep2 = () => {
 
     try {
       const token = localStorage.getItem("RiderToken");
+      // Find the raw data for the selected usage and create combined selectedUsage
+      const selectedRawData = rawIncludedData.find(item => {
+        const minutes = parseInt(item.includedMinutes);
+        const hours = Math.round(minutes / 60 * 100) / 100;
+        const km = parseInt(item.includedKm);
+        const timeDisplay = hours < 1 ? `${minutes}Min` : `${hours}Hrs`;
+        
+        const subcategoryLower = bookingData?.subcategoryName?.toLowerCase() || '';
+        const isDistanceBased = subcategoryLower.includes('oneway') || 
+                               subcategoryLower.includes('one-way') || 
+                               subcategoryLower.includes('out-station') || 
+                               subcategoryLower.includes('in-city');
+        
+        let displayValue = '';
+        if (minutes > 0 && km > 0) {
+          displayValue = isDistanceBased ? `${km}Km & ${timeDisplay}` : `${timeDisplay} & ${km}Km`;
+        } else if (minutes > 0) {
+          displayValue = timeDisplay;
+        } else if (km > 0) {
+          displayValue = `${km}Km`;
+        }
+        
+        return displayValue === defaultUsage;
+      });
+
+      // Create combined selectedUsage with converted time format
+      let combinedSelectedUsage = defaultUsage;
+      if (selectedRawData) {
+        const minutes = parseInt(selectedRawData.includedMinutes);
+        const hours = Math.round(minutes / 60 * 100) / 100;
+        const timeDisplay = hours >= 1 ? `${hours}Hrs` : `${minutes}Min`;
+        combinedSelectedUsage = `${timeDisplay} & ${selectedRawData.includedKm}Km`;
+      }
+
+      // Create payload without sender/receiver fields for calculation
+      const { senderMobile, senderName, senderType, receiverMobile, receiverName, receiverType, senderDetails, receiverDetails, ...calculationData } = bookingData;
+      
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}${apiEndpoint}`,
         {
-          ...bookingData,
-          selectedUsage: defaultUsage,
+          ...calculationData,
+          selectedUsage: combinedSelectedUsage,
           includeInsurance: includeInsurance,
           durationType: finalDurationType,
           durationValue: finalDurationValue,
@@ -448,31 +486,52 @@ const BookingStep2 = () => {
             headers: token ? { Authorization: `Bearer ${token}` } : {}
           }
         );
+        if (res.data) {
+          const dataArray = Array.isArray(res.data) ? res.data : [];
+          
+          if (dataArray.length > 0) {
+            // Check if subcategory is distance-based
+            const subcategoryLower = bookingData?.subcategoryName?.toLowerCase() || '';
+            const isDistanceBased = subcategoryLower.includes('oneway') || 
+                                   subcategoryLower.includes('one-way') || 
+                                   subcategoryLower.includes('out-station') || 
+                                   subcategoryLower.includes('in-city');
+            
+            // Create combined options showing only non-zero values
+            const combinedOptions = dataArray.map(item => {
+              const minutes = parseInt(item.includedMinutes);
+              const hours = Math.round(minutes / 60 * 100) / 100;
+              const km = parseInt(item.includedKm);
+              
+              // Use minutes if less than 1 hour, otherwise use hours
+              const timeDisplay = hours < 1 ? `${minutes}Min` : `${hours}Hrs`;
+              
+              let displayValue = '';
+              if (minutes > 0 && km > 0) {
+                // Show Km first for distance-based services, time first for time-based
+                displayValue = isDistanceBased ? `${km}Km & ${timeDisplay}` : `${timeDisplay} & ${km}Km`;
+              } else if (minutes > 0) {
+                displayValue = timeDisplay;
+              } else if (km > 0) {
+                displayValue = `${km}Km`;
+              }
+              
+              return {
+                value: displayValue,
+                hours: hours.toString(),
+                km: km.toString(),
+                rawMinutes: item.includedMinutes,
+                rawKm: item.includedKm
+              };
+            }).filter(option => option.value !== ''); // Remove empty options
+            console.log('Combined Duration Options:', combinedOptions);
 
-        if (res.data.success && res.data.data) {
-          const isHourly = bookingData?.subcategoryName?.toLowerCase().includes('hourly') || bookingData?.subcategoryName?.toLowerCase().includes('weekly') || bookingData?.subcategoryName?.toLowerCase().includes('monthly') || bookingData?.subSubcategoryName?.toLowerCase().includes('roundtrip');
-          const options = isHourly ? res.data.data.includedMinutes : res.data.data.includedKm;
-
-          // console.log("options (raw)", options);
-
-          if (options && options.length > 0) {
-            // ✅ Sort numerically & remove duplicates
-            const sortedOptions = [...new Set(
-              options.map(opt => parseInt(opt, 10))
-            )]
-              .sort((a, b) => a - b)
-              .map(opt => opt.toString());
-
-            // console.log("options (sorted)", sortedOptions);
-            // console.log("for default usage", sortedOptions[0])
-
-            setDurationOptions(sortedOptions);
+            setDurationOptions(combinedOptions);
+            setRawIncludedData(dataArray); // Store raw data for calculation API
 
             // Set default usage
             if (!selectedUsage && !customUsage) {
-              const defaultUsage = isHourly
-                ? (parseInt(sortedOptions[0]) / 60).toString()
-                : sortedOptions[0].toString();
+              const defaultUsage = combinedOptions[0].value;
 
               setSelectedUsage(defaultUsage);
               dispatch(setUsage({ selectedUsage: defaultUsage, customUsage: '' }));
@@ -486,10 +545,12 @@ const BookingStep2 = () => {
           } else {
             // Set empty options if no data returned
             setDurationOptions([]);
+            setRawIncludedData([]);
           }
         } else {
           // Set empty options if API call unsuccessful
           setDurationOptions([]);
+          setRawIncludedData([]);
         }
 
         // Always set loading to false after processing API response
@@ -1055,6 +1116,12 @@ const BookingStep2 = () => {
           referralBalance: useReferral ? referralBalance : 0,
           selectedCategoryId: selectedCategory?.categoryId,
           ...(bookingData?.categoryName?.toLowerCase() === 'parcel' && {
+            senderMobile: bookingData.senderMobile || '',
+            senderName: bookingData.senderName || '',
+            senderType: bookingData.senderType || '',
+            receiverMobile: receiverPhone || bookingData.receiverMobile || '',
+            receiverName: receiverName || bookingData.receiverName || '',
+            receiverType: bookingData.receiverType || '',
             senderDetails: {
               name: bookingData.senderName || '',
               phone: bookingData.senderMobile || ''
@@ -1064,7 +1131,7 @@ const BookingStep2 = () => {
               phone: receiverPhone || bookingData.receiverMobile || ''
             }
           })
-        }),
+        })
       });
 
       if (response.status === 401) {
@@ -1667,7 +1734,7 @@ const BookingStep2 = () => {
 
                   <div className="flex justify-between text-sm">
                     <span className=" font-medium">Package:</span>
-                    <span className="font-medium">{selectedUsage} {bookingData?.subcategoryName?.toLowerCase().includes('hourly') || bookingData?.subcategoryName?.toLowerCase().includes('weekly') || bookingData?.subcategoryName?.toLowerCase().includes('monthly') || bookingData?.subSubcategoryName?.toLowerCase().includes('roundtrip') ? 'Hours' : 'Km'}</span>
+                    <span className="font-medium">{selectedUsage}</span>
                   </div>
                 </div>
 

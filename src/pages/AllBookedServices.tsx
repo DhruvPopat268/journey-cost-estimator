@@ -184,7 +184,7 @@ const AllBookedServices = ({ onBack }) => {
                   <div className="text-right">
                     <div className="mb-1">Payment: {ride.paymentType?.toUpperCase()}</div>
                     {ride.selectedUsage && (
-                      <div>Usage: {ride.selectedUsage} hrs</div>
+                      <div>Usage: {ride.selectedUsage}</div>
                     )}
                   </div>
                 </div>

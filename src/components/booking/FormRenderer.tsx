@@ -9,7 +9,7 @@ interface FormRendererProps {
   customUsage: string;
   durationType?: string;
   durationValue?: string;
-  durationOptions?: string[];
+  durationOptions?: Array<{value: string; hours: string; km: string}> | string[];
   durationError?: string;
   onUsageChange: (value: string) => void;
   onCustomUsageChange: (value: string) => void;

@@ -212,7 +212,7 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
                           <div className="font-medium text-sm">Usage</div>
                           <div className="text-gray-600 text-sm">
                             {booking.selectedUsage}{" "}
-                            {booking.subcategoryName === "Hourly" ? "hr" : "km"}
+                            
                           </div>
                         </div>
                       </div>

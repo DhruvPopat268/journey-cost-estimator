@@ -10,7 +10,7 @@ interface OneWayFormProps {
   customUsage: string;
   onUsageChange: (value: string) => void;
   onCustomUsageChange: (value: string) => void;
-  durationOptions?: string[];
+  durationOptions?: Array<{value: string; hours: string; km: string}> | string[];
 }
 
 export const OneWayForm: React.FC<OneWayFormProps> = ({
@@ -20,7 +20,10 @@ export const OneWayForm: React.FC<OneWayFormProps> = ({
   onCustomUsageChange,
   durationOptions = ['10', '25', '50', '100'],
 }) => {
-  const usageOptions = durationOptions;
+  // Handle both new object format and legacy string array
+  const usageOptions = Array.isArray(durationOptions) && durationOptions.length > 0 && typeof durationOptions[0] === 'object'
+    ? durationOptions as Array<{value: string; hours: string; km: string}>
+    : (durationOptions as string[]).map(opt => ({ value: opt, hours: '0', km: opt }));
 
   return (
     <Card className="bg-white shadow-lg">
@@ -40,8 +43,8 @@ export const OneWayForm: React.FC<OneWayFormProps> = ({
               </SelectTrigger>
               <SelectContent>
                 {usageOptions.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option} KM
+                  <SelectItem key={typeof option === 'string' ? option : option.value} value={typeof option === 'string' ? option : option.value}>
+                    {typeof option === 'string' ? `${option} KM` : option.value}
                   </SelectItem>
                 ))}
               </SelectContent>
