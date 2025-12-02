@@ -619,6 +619,8 @@ const BookingStep2 = () => {
   // Trigger calculation API when car category changes for cab bookings
   useEffect(() => {
     if (selectedCarCategory && bookingData?.categoryName?.toLowerCase() === 'cab' && (selectedUsage || customUsage) && !isCalculating) {
+      // Clear Redux store when car category changes
+      dispatch(clearStep2Data());
       callCalculationAPI(selectedUsage || customUsage);
     }
   }, [selectedCarCategory]);
@@ -626,6 +628,8 @@ const BookingStep2 = () => {
   // Trigger calculation API when parcel category changes for parcel bookings
   useEffect(() => {
     if (selectedParcelCategory && bookingData?.categoryName?.toLowerCase() === 'parcel' && (selectedUsage || customUsage) && !isCalculating) {
+      // Clear Redux store when parcel category changes
+      dispatch(clearStep2Data());
       callCalculationAPI(selectedUsage || customUsage, durationType, durationValue, null, selectedParcelCategory);
     }
   }, [selectedParcelCategory]);
