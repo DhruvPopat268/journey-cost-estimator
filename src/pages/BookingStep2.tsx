@@ -264,6 +264,7 @@ const BookingStep2 = () => {
         navigate("/login", { state: bookingDetails });
         return;
       }
+      
       setCarCategories([]);
     }
   };
@@ -296,6 +297,7 @@ const BookingStep2 = () => {
         navigate("/login", { state: bookingDetails });
         return;
       }
+      
       setParcelCategories([]);
     }
   };
@@ -407,6 +409,15 @@ const BookingStep2 = () => {
         navigate("/login", { state: bookingDetails });
         return;
       }
+      
+      // Handle 404 errors by clearing only calculation results
+      if (err.response?.status === 404) {
+        console.log('404 error - clearing calculation results and showing empty state');
+        setTotalAmountLocal([]);
+        dispatch(setTotalAmount([]));
+        setSelectedCategoryLocal(null);
+      }
+      
       setLoading(false);
     } finally {
       setIsCalculating(false);
@@ -431,35 +442,45 @@ const BookingStep2 = () => {
       // Fetch car categories and set default for cab bookings
       let defaultCarCategory = null;
       if (categoryName === 'cab') {
-        const token = localStorage.getItem("RiderToken");
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/car-categories`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        });
-        const activeCategories = res.data.filter(category => category.status === true);
-        setCarCategories(activeCategories);
+        try {
+          const token = localStorage.getItem("RiderToken");
+          const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/car-categories`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          });
+          const activeCategories = res.data.filter(category => category.status === true);
+          setCarCategories(activeCategories);
 
-        // Find and set Classic as default
-        const classicCategory = activeCategories.find(cat => cat.name.toLowerCase() === 'classic');
-        if (classicCategory) {
-          setSelectedCarCategory(classicCategory);
-          defaultCarCategory = classicCategory;
+          // Find and set Classic as default
+          const classicCategory = activeCategories.find(cat => cat.name.toLowerCase() === 'classic');
+          if (classicCategory) {
+            setSelectedCarCategory(classicCategory);
+            defaultCarCategory = classicCategory;
+          }
+        } catch (error) {
+          console.error('Failed to fetch car categories in initialization:', error);
+          setCarCategories([]);
         }
       }
 
       // Fetch parcel categories and set default for parcel bookings
       let defaultParcelCategory = null;
       if (categoryName === 'parcel') {
-        const token = localStorage.getItem("RiderToken");
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/parcel-categories`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        });
-        setParcelCategories(res.data);
+        try {
+          const token = localStorage.getItem("RiderToken");
+          const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/parcel-categories`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          });
+          setParcelCategories(res.data);
 
-        // Find and set Classic as default
-        const classicCategory = res.data.find(cat => cat.categoryName.toLowerCase() === 'classic');
-        if (classicCategory) {
-          setSelectedParcelCategory(classicCategory);
-          defaultParcelCategory = classicCategory;
+          // Find and set Classic as default
+          const classicCategory = res.data.find(cat => cat.categoryName.toLowerCase() === 'classic');
+          if (classicCategory) {
+            setSelectedParcelCategory(classicCategory);
+            defaultParcelCategory = classicCategory;
+          }
+        } catch (error) {
+          console.error('Failed to fetch parcel categories in initialization:', error);
+          setParcelCategories([]);
         }
       }
 
@@ -619,8 +640,6 @@ const BookingStep2 = () => {
   // Trigger calculation API when car category changes for cab bookings
   useEffect(() => {
     if (selectedCarCategory && bookingData?.categoryName?.toLowerCase() === 'cab' && (selectedUsage || customUsage) && !isCalculating) {
-      // Clear Redux store when car category changes
-      dispatch(clearStep2Data());
       callCalculationAPI(selectedUsage || customUsage);
     }
   }, [selectedCarCategory]);
@@ -628,8 +647,6 @@ const BookingStep2 = () => {
   // Trigger calculation API when parcel category changes for parcel bookings
   useEffect(() => {
     if (selectedParcelCategory && bookingData?.categoryName?.toLowerCase() === 'parcel' && (selectedUsage || customUsage) && !isCalculating) {
-      // Clear Redux store when parcel category changes
-      dispatch(clearStep2Data());
       callCalculationAPI(selectedUsage || customUsage, durationType, durationValue, null, selectedParcelCategory);
     }
   }, [selectedParcelCategory]);
