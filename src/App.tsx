@@ -24,6 +24,7 @@ import Subcategory from './pages/Subcategory';
 import SubSubcategory from './pages/SubSubcategory';
 import WalletPage from './pages/Wallet';
 import ReferAndEarnPage from './pages/ReferAndEarnPage';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 const queryClient = new QueryClient();
 
@@ -62,7 +63,7 @@ const AppWithSidebar = () => {
         <Route path="/allBookings" element={<AllBookedServices />} />
 
         <Route path="/detailView/:id" element={<BookingDetailView />} />
-
+        <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
 
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
