@@ -1121,8 +1121,8 @@ const BookingStep2 = () => {
 
   const bookRideDirectly = async (bookingDetails) => {
     try {
-      // console.log('selectedCategoryId:', selectedCategory?.categoryId);
       const token = localStorage.getItem("RiderToken");
+      
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rides/book`, {
         method: "POST",
         headers: {
@@ -1136,6 +1136,11 @@ const BookingStep2 = () => {
           referralEarning: useReferral ? true : false,
           referralBalance: useReferral ? referralBalance : 0,
           selectedCategoryId: selectedCategory?.categoryId,
+          totalAmount: selectedCategory,
+          ...(bookingData?.carTypeId && { carTypeId: bookingData.carTypeId }),
+          ...(bookingData?.transmissionTypeId && { transmissionTypeId: bookingData.transmissionTypeId }),
+          ...(bookingData?.categoryName?.toLowerCase() === 'cab' && selectedCarCategory && { selectedCarCategory: selectedCarCategory._id }),
+          ...(bookingData?.categoryName?.toLowerCase() === 'parcel' && selectedParcelCategory && { selectedParcelCategory: selectedParcelCategory._id }),
           ...(bookingData?.categoryName?.toLowerCase() === 'parcel' && {
             senderMobile: bookingData.senderMobile || '',
             senderName: bookingData.senderName || '',
