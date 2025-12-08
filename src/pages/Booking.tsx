@@ -21,6 +21,7 @@ const Booking = () => {
   const [toLocationData, setToLocationData] = useState(bookingData.toLocationData || null);
   const [carType, setCarType] = useState(bookingData.carType || '');
   const [transmissionType, setTransmissionType] = useState(bookingData.transmissionType || '');
+  const [selectedTransmissionId, setSelectedTransmissionId] = useState('');
   const [selectedDate, setSelectedDate] = useState(bookingData.selectedDate || '');
   const [selectedTime, setSelectedTime] = useState(bookingData.selectedTime || '');
   const [startTime, setStartTime] = useState(bookingData.startTime || '');
@@ -85,7 +86,7 @@ const Booking = () => {
       try {
         const requests = [
           axios.get(`${import.meta.env.VITE_API_URL}/api/subcategories/${subcategoryId}`),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/vehiclecategories`)
+          axios.get(`${import.meta.env.VITE_API_URL}/api/drivervehicletypes/active`)
         ];
         
         // Add sub-subcategory request if subSubcategoryId exists
@@ -94,22 +95,20 @@ const Booking = () => {
         }
         
         const responses = await Promise.all(requests);
-        const [subcategoryRes, vehicleRes, subSubcategoryRes] = responses;
+        const [subcategoryRes, transmissionRes, subSubcategoryRes] = responses;
 
         setSubcategoryName(subcategoryRes.data.name);
         setCategoryName(subcategoryRes.data?.categoryId?.name || '');
-        setVehicleCategories(vehicleRes.data?.data || []);
+        setTransmissionOptions(transmissionRes.data?.data || []);
         
         // Set sub-subcategory name if available
         if (subSubcategoryRes) {
           setSubSubcategoryName(subSubcategoryRes.data.name);
         }
 
-        if (!carType && vehicleRes.data?.data?.length > 0) {
-          setCarType(vehicleRes.data.data[0].vehicleName.toLowerCase());
-        }
-        if (!transmissionType) {
-          setTransmissionType('automatic');
+        if (!transmissionType && transmissionRes.data?.data?.length > 0) {
+          setTransmissionType(transmissionRes.data.data[0].name.toLowerCase());
+          setSelectedTransmissionId(transmissionRes.data.data[0]._id);
         }
       } catch (error) {
         console.error('Failed to fetch data', error);
@@ -127,6 +126,28 @@ const Booking = () => {
       }
     }
   }, [categoryId, subcategoryId, subSubcategoryId, selectedCity]);
+
+  useEffect(() => {
+    const fetchVehiclesByType = async () => {
+      if (!selectedTransmissionId) return;
+      
+      try {
+        const response = await axios.post(
+          `${import.meta.env.VITE_API_URL}/api/vehiclecategories/by-type`,
+          { driverVehicleTypeId: selectedTransmissionId }
+        );
+        setVehicleCategories(response.data?.data || []);
+        
+        if (!carType && response.data?.data?.length > 0) {
+          setCarType(response.data.data[0].vehicleName.toLowerCase());
+        }
+      } catch (error) {
+        console.error('Failed to fetch vehicles by type', error);
+      }
+    };
+
+    fetchVehiclesByType();
+  }, [selectedTransmissionId]);
 
   useEffect(() => {
     dispatch(updateField({ field: 'fromLocation', value: fromLocation }));
@@ -237,7 +258,7 @@ const Booking = () => {
     }
   }, [receiverType, riderData]);
 
-  const transmissionOptions = ['Manual', 'Automatic'];
+  const [transmissionOptions, setTransmissionOptions] = useState([]);
 
   const handleBackClick = () => {
     setShowBackConfirmation(true);
@@ -399,6 +420,7 @@ const Booking = () => {
                     transmissionType={transmissionType}
                     vehicleCategories={vehicleCategories}
                     transmissionOptions={transmissionOptions}
+                    onTransmissionChange={(id) => setSelectedTransmissionId(id)}
                     showToLocation={!subcategoryName.toLowerCase().includes('hourly')}
                     showTimeDuration={subcategoryName?.toLowerCase().includes('monthly') || subcategoryName?.toLowerCase().includes('weekly')}
                     showVehicleFields={categoryName.toLowerCase() !== 'cab' && categoryName.toLowerCase() !== 'parcel'}

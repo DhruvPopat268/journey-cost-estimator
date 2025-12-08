@@ -34,7 +34,8 @@ interface CommonFieldsProps {
   receiverType?: string;
   receiverMobile?: string;
   vehicleCategories: any[];
-  transmissionOptions: string[];
+  transmissionOptions: any[];
+  onTransmissionChange?: (id: string) => void;
   showToLocation: boolean;
   showTimeDuration?: boolean;
   showVehicleFields?: boolean;
@@ -67,6 +68,7 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
   receiverMobile = '',
   vehicleCategories,
   transmissionOptions,
+  onTransmissionChange,
   showToLocation,
   showTimeDuration = false,
   showVehicleFields = true,
@@ -165,13 +167,19 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
 
             <div>
               <Label>Transmission</Label>
-              <Select value={transmissionType} onValueChange={(value) => onFieldChange('transmissionType', value)}>
+              <Select value={transmissionType} onValueChange={(value) => {
+                const selected = transmissionOptions.find(t => t.name.toLowerCase() === value);
+                onFieldChange('transmissionType', value);
+                if (selected && onTransmissionChange) {
+                  onTransmissionChange(selected._id);
+                }
+              }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {transmissionOptions.map((trans) => (
-                    <SelectItem key={trans} value={trans.toLowerCase()}>{trans}</SelectItem>
+                    <SelectItem key={trans._id} value={trans.name.toLowerCase()}>{trans.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
