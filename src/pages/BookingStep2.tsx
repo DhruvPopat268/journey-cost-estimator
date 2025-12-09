@@ -235,72 +235,9 @@ const BookingStep2 = () => {
     }
   };
 
-  const fetchCarCategories = async () => {
-    try {
-      const token = localStorage.getItem("RiderToken");
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/car-categories`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
-      const activeCategories = res.data.filter(category => category.status === true);
-      setCarCategories(activeCategories);
-    } catch (error) {
-      console.error('Failed to fetch car categories:', error);
-      if (error.response?.status === 401) {
-        localStorage.removeItem("RiderToken");
-        const bookingDetails = {
-          ...bookingData,
-          selectedUsage: selectedUsage || customUsage,
-          selectedCategory: selectedCategory?.category,
-          insuranceCharges: selectedCategory?.insuranceCharges,
-          subtotal: selectedCategory?.subtotal,
-          gstCharges: selectedCategory?.gstCharges,
-          totalPayable: selectedCategory?.totalPayable,
-          notes: notes,
-          includeInsurance: includeInsurance,
-          receiverName: receiverName,
-          receiverPhone: receiverPhone,
-          selectedDates: selectedDates
-        };
-        navigate("/login", { state: bookingDetails });
-        return;
-      }
-      
-      setCarCategories([]);
-    }
-  };
 
-  const fetchParcelCategories = async () => {
-    try {
-      const token = localStorage.getItem("RiderToken");
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/parcel-categories`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
-      setParcelCategories(res.data);
-    } catch (error) {
-      console.error('Failed to fetch parcel categories:', error);
-      if (error.response?.status === 401) {
-        localStorage.removeItem("RiderToken");
-        const bookingDetails = {
-          ...bookingData,
-          selectedUsage: selectedUsage || customUsage,
-          selectedCategory: selectedCategory?.category,
-          insuranceCharges: selectedCategory?.insuranceCharges,
-          subtotal: selectedCategory?.subtotal,
-          gstCharges: selectedCategory?.gstCharges,
-          totalPayable: selectedCategory?.totalPayable,
-          notes: notes,
-          includeInsurance: includeInsurance,
-          receiverName: receiverName,
-          receiverPhone: receiverPhone,
-          selectedDates: selectedDates
-        };
-        navigate("/login", { state: bookingDetails });
-        return;
-      }
-      
-      setParcelCategories([]);
-    }
-  };
+
+
 
   const callCalculationAPI = async (defaultUsage, currentDurationType = durationType, currentDurationValue = durationValue, carCategory = null, parcelCategory = null) => {
     // Prevent multiple simultaneous calls
