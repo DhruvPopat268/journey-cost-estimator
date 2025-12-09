@@ -29,13 +29,11 @@ const ReferAndEarnPage = () => {
                     setUserData({
                         referralCode: rider.referralCode,
                         referralLink: `${window.location.origin}/ref/${rider.referralCode}`,
-                        totalEarnings: rider.referralEarning?.totalEarnings || 0,
-                        totalReferrals: rider.referrals?.length || 0,
-                        thisMonthEarnings: rider.referralEarning?.currentBalance || 0,
+                        totalEarnings: rider.totalEarnings || 0,
+                        totalReferrals: rider.totalReferrals || 0,
+                        thisMonthEarnings: rider.currentBalance || 0,
                     });
 
-                    // If backend sends these
-                    setEarningsHistory(rider.earningsHistory || []);
                     setAllReferrals(rider.referrals || []);
                 }
             } catch (err) {
@@ -86,11 +84,11 @@ const ReferAndEarnPage = () => {
         );
     }
 
-    // --- Earnings History Modal ---
+    // --- Referral Earnings Modal ---
     const EarningsHistoryModal = () => (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl w-full max-w-md max-h-[80vh] overflow-hidden">
-                <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <div className="bg-white rounded-xl w-full max-w-md max-h-[80vh] flex flex-col">
+                <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
                     <div className="flex items-center space-x-3">
                         <button
                             onClick={() => setActiveModal(null)}
@@ -98,50 +96,36 @@ const ReferAndEarnPage = () => {
                         >
                             <ArrowLeft className="w-5 h-5 text-gray-600" />
                         </button>
-                        <h2 className="text-lg font-bold text-gray-800">Earnings History</h2>
+                        <h2 className="text-lg font-bold text-gray-800">Referral Earnings</h2>
                     </div>
-                    <div className="text-lg font-bold text-green-600">{userData.totalEarnings}</div>
+                    <div className="text-lg font-bold text-green-600">₹{userData.totalEarnings}</div>
                 </div>
 
-                <div className="overflow-y-auto max-h-96 p-4">
+                <div className="overflow-y-auto flex-1 p-4">
                     <div className="space-y-3">
-                        {earningsHistory.length === 0 ? (
+                        {allReferrals.length === 0 ? (
                             <p className="text-gray-500 text-sm">No earnings yet</p>
                         ) : (
-                            earningsHistory.map((transaction) => (
+                            allReferrals.map((referral) => (
                                 <div
-                                    key={transaction._id}
+                                    key={referral._id}
                                     className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
                                 >
                                     <div className="flex items-center space-x-3">
-                                        <div
-                                            className={`p-2 rounded-full ${transaction.type === 'credit'
-                                                ? 'bg-green-100 text-green-600'
-                                                : 'bg-red-100 text-red-600'
-                                                }`}
-                                        >
-                                            {transaction.type === 'credit' ? (
-                                                <TrendingUp className="w-4 h-4" />
-                                            ) : (
-                                                <TrendingDown className="w-4 h-4" />
-                                            )}
+                                        <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                            {referral.riderId?.name?.charAt(0).toUpperCase() || 'R'}
                                         </div>
                                         <div>
                                             <div className="font-semibold text-sm text-gray-800">
-                                                {transaction.description}
+                                                {referral.riderId?.name || 'Unknown'}
                                             </div>
-                                            <div className="text-xs text-gray-500 flex items-center space-x-1">
-                                                <Calendar className="w-3 h-3" />
-                                                <span>{formatDate(transaction.date)}</span>
+                                            <div className="text-xs text-gray-500">
+                                                Referral Earning
                                             </div>
                                         </div>
                                     </div>
-                                    <div
-                                        className={`font-bold text-sm ${transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'
-                                            }`}
-                                    >
-                                        {transaction.type === 'credit' ? '+' : '-'}
-                                        {Math.abs(transaction.amount)}
+                                    <div className="font-bold text-sm text-green-600">
+                                        ₹{referral.totalEarned || 0}
                                     </div>
                                 </div>
                             ))
@@ -155,8 +139,8 @@ const ReferAndEarnPage = () => {
     // --- Referrals List Modal ---
     const ReferralsListModal = () => (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl w-full max-w-md max-h-[80vh] overflow-hidden">
-                <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <div className="bg-white rounded-xl w-full max-w-md max-h-[80vh] flex flex-col">
+                <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
                     <div className="flex items-center space-x-3">
                         <button
                             onClick={() => setActiveModal(null)}
@@ -169,7 +153,7 @@ const ReferAndEarnPage = () => {
                     <div className="text-lg font-bold text-blue-600">{userData.totalReferrals}</div>
                 </div>
 
-                <div className="overflow-y-auto max-h-96 p-4">
+                <div className="overflow-y-auto flex-1 p-4">
                     <div className="space-y-3">
                         {allReferrals.length === 0 ? (
                             <p className="text-gray-500 text-sm">No referrals yet</p>
@@ -181,29 +165,19 @@ const ReferAndEarnPage = () => {
                                 >
                                     <div className="flex items-center space-x-3">
                                         <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                            {referral.name?.split(' ').map(n => n[0]).join('')}
+                                            {referral.riderId?.name?.charAt(0).toUpperCase() || 'R'}
                                         </div>
                                         <div>
                                             <div className="font-semibold text-sm text-gray-800">
-                                                {referral.name}
+                                                {referral.riderId?.name || 'Unknown'}
                                             </div>
                                             <div className="text-xs text-gray-500">
-                                                Joined {formatDate(referral.createdAt)} • {referral.rides || 0} rides
+                                                Referred User
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <div className="text-green-600 font-bold text-sm">
-                                            {referral.totalEarnings || 0}
-                                        </div>
-                                        <div
-                                            className={`text-xs px-2 py-1 rounded-full ${referral.status === 'active'
-                                                ? 'bg-green-100 text-green-600'
-                                                : 'bg-gray-100 text-gray-600'
-                                                }`}
-                                        >
-                                            {referral.status || 'active'}
-                                        </div>
+                                    <div className="text-xs text-gray-500">
+                                        Earned: ₹{referral.totalEarned || 0}
                                     </div>
                                 </div>
                             ))
