@@ -37,7 +37,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
   onDurationValueChange,
 }) => {
   const normalizedSubcategory = subcategoryName.toLowerCase();
-  console.log('Rendering form for subcategory:', normalizedSubcategory);
+
   const normalizedCategory = categoryName.toLowerCase();
   const normalizedSubSubcategory = subSubcategoryName.toLowerCase();
 

@@ -21,7 +21,7 @@ const Booking = () => {
   const [toLocationData, setToLocationData] = useState(bookingData.toLocationData || null);
   const [carType, setCarType] = useState(bookingData.carType || '');
   const [transmissionType, setTransmissionType] = useState(bookingData.transmissionType || '');
-  const [selectedTransmissionId, setSelectedTransmissionId] = useState('');
+  const [selectedTransmissionId, setSelectedTransmissionId] = useState(bookingData.transmissionTypeId || '');
   const [selectedDate, setSelectedDate] = useState(bookingData.selectedDate || '');
   const [selectedTime, setSelectedTime] = useState(bookingData.selectedTime || '');
   const [startTime, setStartTime] = useState(bookingData.startTime || '');
@@ -109,6 +109,8 @@ const Booking = () => {
         if (!transmissionType && transmissionRes.data?.data?.length > 0) {
           setTransmissionType(transmissionRes.data.data[0].name.toLowerCase());
           setSelectedTransmissionId(transmissionRes.data.data[0]._id);
+        } else if (transmissionType && bookingData.transmissionTypeId) {
+          setSelectedTransmissionId(bookingData.transmissionTypeId);
         }
       } catch (error) {
         console.error('Failed to fetch data', error);
@@ -164,6 +166,19 @@ const Booking = () => {
   useEffect(() => {
     dispatch(updateField({ field: 'transmissionType', value: transmissionType }));
   }, [transmissionType]);
+
+  useEffect(() => {
+    const selectedVehicle = vehicleCategories.find(v => v.vehicleName.toLowerCase() === carType.toLowerCase());
+    if (selectedVehicle?._id) {
+      dispatch(updateField({ field: 'carTypeId', value: selectedVehicle._id }));
+    }
+  }, [carType, vehicleCategories]);
+
+  useEffect(() => {
+    if (selectedTransmissionId) {
+      dispatch(updateField({ field: 'transmissionTypeId', value: selectedTransmissionId }));
+    }
+  }, [selectedTransmissionId]);
 
   useEffect(() => {
     dispatch(updateField({ field: 'selectedDate', value: selectedDate }));
@@ -283,10 +298,6 @@ const Booking = () => {
       toLocation,
       fromLocationData,
       toLocationData,
-      ...(categoryName.toLowerCase() === 'driver' && {
-        carType,
-        transmissionType,
-      }),
       selectedDate,
       selectedTime,
       startTime,
@@ -299,8 +310,14 @@ const Booking = () => {
       receiverMobile
     };
 
+    if (categoryName.toLowerCase() === 'driver') {
+      const selectedVehicle = vehicleCategories.find(v => v.vehicleName.toLowerCase() === carType.toLowerCase());
+      bookingData.carType = carType;
+      bookingData.transmissionType = transmissionType;
+      bookingData.carTypeId = selectedVehicle?._id || null;
+      bookingData.transmissionTypeId = selectedTransmissionId || null;
+    }
     dispatch(setBookingStep1(bookingData));
-    // console.log('Booking Data:', bookingData);
     navigate('/booking-step2', { state: bookingData });
   };
 

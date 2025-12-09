@@ -29,7 +29,6 @@ const BookingStep2 = () => {
   const bookingData = bookingDataFromStore && Object.keys(bookingDataFromStore).length > 0
     ? bookingDataFromStore
     : location.state;
-  // console.log("booking data", bookingData)
 
   const [selectedUsage, setSelectedUsage] = useState(bookingData?.selectedUsage || '');
   const [customUsage, setCustomUsage] = useState(bookingData?.customUsage || '');
@@ -482,7 +481,7 @@ const BookingStep2 = () => {
                 rawKm: item.includedKm
               };
             }).filter(option => option.value !== ''); // Remove empty options
-            console.log('Combined Duration Options:', combinedOptions);
+            
 
             setDurationOptions(combinedOptions);
             setRawIncludedData(dataArray); // Store raw data for calculation API
@@ -1059,6 +1058,7 @@ const BookingStep2 = () => {
   const bookRideDirectly = async (bookingDetails) => {
     try {
       const token = localStorage.getItem("RiderToken");
+      const { categoryName, subcategoryName, subSubcategoryName, carType, transmissionType, totalAmount, selectedCarCategory, selectedParcelCategory, ...cleanedDetails } = bookingDetails;
       
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rides/book`, {
         method: "POST",
@@ -1067,17 +1067,16 @@ const BookingStep2 = () => {
           "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
-          ...bookingDetails,
+          ...cleanedDetails,
           selectedDate: (bookingData?.subcategoryName?.toLowerCase().includes('weekly') || bookingData?.subcategoryName?.toLowerCase().includes('monthly')) && selectedDates.length > 0 ? selectedDates[0] : bookingDetails.selectedDate,
           paymentType: selectedPaymentMethod,
           referralEarning: useReferral ? true : false,
           referralBalance: useReferral ? referralBalance : 0,
           selectedCategoryId: selectedCategory?.categoryId,
-          totalAmount: selectedCategory,
           ...(bookingData?.carTypeId && { carTypeId: bookingData.carTypeId }),
           ...(bookingData?.transmissionTypeId && { transmissionTypeId: bookingData.transmissionTypeId }),
-          ...(bookingData?.categoryName?.toLowerCase() === 'cab' && selectedCarCategory && { selectedCarCategory: selectedCarCategory._id }),
-          ...(bookingData?.categoryName?.toLowerCase() === 'parcel' && selectedParcelCategory && { selectedParcelCategory: selectedParcelCategory._id }),
+          ...(bookingData?.categoryName?.toLowerCase() === 'cab' && selectedCarCategory && { selectedCarCategoryId: selectedCarCategory._id }),
+          ...(bookingData?.categoryName?.toLowerCase() === 'parcel' && selectedParcelCategory && { selectedParcelCategoryId: selectedParcelCategory._id }),
           ...(bookingData?.categoryName?.toLowerCase() === 'parcel' && {
             senderMobile: bookingData.senderMobile || '',
             senderName: bookingData.senderName || '',

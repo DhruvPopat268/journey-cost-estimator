@@ -16,7 +16,7 @@ export const HourlyForm: React.FC<HourlyFormProps> = ({
   onUsageChange,
 }) => {
   // Handle both new object format and legacy string array
-  console.log('Duration Options:', durationOptions);
+
   const usageOptions = Array.isArray(durationOptions) && durationOptions.length > 0 && typeof durationOptions[0] === 'object'
     ? durationOptions as Array<{value: string; hours: string; km: string}>
     : durationOptions.length > 0 

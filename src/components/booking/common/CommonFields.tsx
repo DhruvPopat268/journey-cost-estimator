@@ -89,7 +89,7 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
   };
 
   const isOutstation = subcategoryName?.toLowerCase() === 'outstation' || subcategoryName?.toLowerCase() === 'out-station';
-  console.log('isOutstation:', isOutstation);
+
   return (
     <Card className="bg-white shadow-lg">
       <CardHeader />
