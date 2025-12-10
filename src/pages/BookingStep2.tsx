@@ -46,7 +46,9 @@ const BookingStep2 = () => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cash');
   const [instructionsLoading, setInstructionsLoading] = useState(false);
   const [useReferral, setUseReferral] = useState(false);
-  const [referralBalance, setReferralBalance] = useState(0);
+  const [currentBalance, setCurrentBalance] = useState(0);
+  const [referralError, setReferralError] = useState('');
+  const [referralAllowedAmount, setReferralAllowedAmount] = useState(0);
   const [showBackConfirmation, setShowBackConfirmation] = useState(false);
 
   const [receiverName, setReceiverName] = useState(bookingData?.receiverName || '');
@@ -238,7 +240,7 @@ const BookingStep2 = () => {
 
 
 
-  const callCalculationAPI = async (defaultUsage, currentDurationType = durationType, currentDurationValue = durationValue, carCategory = null, parcelCategory = null) => {
+  const callCalculationAPI = async (defaultUsage, currentDurationType = durationType, currentDurationValue = durationValue, carCategory = null, parcelCategory = null, referralUsed = useReferral) => {
     // Prevent multiple simultaneous calls
     if (isCalculating || !defaultUsage || !bookingData || !bookingData.categoryId) return;
 
@@ -311,6 +313,8 @@ const BookingStep2 = () => {
           includeInsurance: includeInsurance,
           durationType: finalDurationType,
           durationValue: finalDurationValue,
+          isReferralEarningUsed: referralUsed,
+          referralEarningUsedAmount: referralUsed ? (selectedCategory?.referralCommissionAllowToUsed || 0) : 0,
           ...(bookingData.subSubcategoryId && { subSubcategoryId: bookingData.subSubcategoryId }),
           ...(categoryName === 'cab' && (carCategory || selectedCarCategory) && { carCategoryId: (carCategory || selectedCarCategory)._id }),
           ...(categoryName === 'parcel' && (parcelCategory || selectedParcelCategory) && { parcelCategoryId: (parcelCategory || selectedParcelCategory)._id })
@@ -323,6 +327,10 @@ const BookingStep2 = () => {
       const responseData = res.data.success ? res.data.result : res.data;
       setTotalAmountLocal(responseData);
       dispatch(setTotalAmount(responseData));
+      // Store referral allowed amount from first category
+      if (responseData && responseData.length > 0 && responseData[0].referralCommissionAllowToUsed) {
+        setReferralAllowedAmount(responseData[0].referralCommissionAllowToUsed);
+      }
       setLoading(false);
     } catch (err) {
       console.error('API error:', err);
@@ -610,6 +618,17 @@ const BookingStep2 = () => {
     }
   }, [includeInsurance]);
 
+  useEffect(() => {
+    // Only recalculate if we have usage data and booking data
+    if ((selectedUsage || customUsage) && bookingData && !isCalculating) {
+      setReferralError('');
+      callCalculationAPI(selectedUsage || customUsage, durationType, durationValue, null, null, useReferral)
+        .catch(() => {
+          setReferralError('Failed to update referral calculation. Please try again.');
+        });
+    }
+  }, [useReferral]);
+
   const handleDurationTypeChange = (type) => {
     setDurationType(type);
     // Recalculate immediately with new type and current value
@@ -763,7 +782,7 @@ const BookingStep2 = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (res.data?.success && res.data.rider) {
-          setReferralBalance(res.data.rider.referralEarning?.currentBalance || 0);
+          setCurrentBalance(res.data.rider.referralEarning?.currentBalance || 0);
         }
       } catch (err) {
         console.error("Error fetching rider:", err);
@@ -775,6 +794,8 @@ const BookingStep2 = () => {
 
     fetchRider();
   }, []);
+
+
 
   useEffect(() => {
     const fetchWalletBalance = async () => {
@@ -859,12 +880,8 @@ const BookingStep2 = () => {
 
   const finalPayable = React.useMemo(() => {
     if (!selectedCategory) return 0;
-    const baseTotal = selectedCategory.totalPayable || 0;
-    if (useReferral && referralBalance > 0) {
-      return Math.max(0, baseTotal - Math.min(referralBalance, baseTotal));
-    }
-    return baseTotal;
-  }, [selectedCategory, useReferral, referralBalance]);
+    return selectedCategory.totalPayable || 0;
+  }, [selectedCategory]);
 
   const handleBackClick = () => {
     setShowBackConfirmation(true);
@@ -1070,8 +1087,8 @@ const BookingStep2 = () => {
           ...cleanedDetails,
           selectedDate: (bookingData?.subcategoryName?.toLowerCase().includes('weekly') || bookingData?.subcategoryName?.toLowerCase().includes('monthly')) && selectedDates.length > 0 ? selectedDates[0] : bookingDetails.selectedDate,
           paymentType: selectedPaymentMethod,
-          referralEarning: useReferral ? true : false,
-          referralBalance: useReferral ? referralBalance : 0,
+          isReferralEarningUsed: useReferral,
+          referralEarningUsedAmount: useReferral ? (selectedCategory?.referralCommissionUsed || 0) : 0,
           selectedCategoryId: selectedCategory?.categoryId,
           ...(bookingData?.carTypeId && { carTypeId: bookingData.carTypeId }),
           ...(bookingData?.transmissionTypeId && { transmissionTypeId: bookingData.transmissionTypeId }),
@@ -1665,17 +1682,28 @@ const BookingStep2 = () => {
 
 
               {/* Referral Earning Section */}
-              {referralBalance > 0 && (
+              {currentBalance > 0 && (
                 <div className="bg-green-50 p-4 rounded-lg">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-gray-800">
-                      Use Referral Balance (₹{referralBalance})
-                    </h4>
-                    <label className="relative inline-flex items-center cursor-pointer">
+                    <div>
+                      <h4 className="font-semibold text-gray-800">
+                        Use Referral Balance 
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        Current Balance: {currentBalance}₹
+                      </p>
+                      {referralError && (
+                        <p className="text-sm text-red-600 mt-1">
+                          {referralError}
+                        </p>
+                      )}
+                    </div>
+                    <label className={`relative inline-flex items-center ${currentBalance < referralAllowedAmount ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
                       <input
                         type="checkbox"
                         checked={useReferral}
                         onChange={(e) => setUseReferral(e.target.checked)}
+                        disabled={currentBalance < referralAllowedAmount}
                         className="sr-only peer"
                       />
                       <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-green-300 peer-checked:bg-green-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
@@ -1723,11 +1751,13 @@ const BookingStep2 = () => {
                     <span className="font-medium">₹{selectedCategory.subtotal || 0}</span>
                   </div>
 
+                  {selectedCategory.discountApplied > 0 && (
                   <div className="flex justify-between">
                     <span className="font-medium">Discount:</span>
                     <span className="font-medium">-{selectedCategory.discountApplied || 0}</span>
                   </div>
-
+                  )}
+                  
                   <div className="flex justify-between">
                     <span className="font-medium">Taxes & Fees:</span>
                     <span className="font-medium">₹{selectedCategory.gstCharges || 0}</span>
@@ -1746,10 +1776,10 @@ const BookingStep2 = () => {
                       <span className="font-medium">₹{selectedCategory.cancellationCharges || 0}</span>
                     </div>}
 
-                  {useReferral && referralBalance > 0 && (
-                    <div className="flex justify-between text-green-600">
+                  {useReferral && currentBalance > 0 && (
+                    <div className="flex justify-between">
                       <span className="font-medium">Referral Discount:</span>
-                      <span className="font-medium">-₹{Math.min(referralBalance || 0, selectedCategory.totalPayable || 0)}</span>
+                      <span className="font-medium">-₹{selectedCategory.referralCommissionUsed}</span>
                     </div>
                   )}
                 </div>
@@ -1761,8 +1791,8 @@ const BookingStep2 = () => {
                   <span className="text-green-600">
                     ₹{Math.max(
                       0,
-                      (selectedCategory.totalPayable || 0) -
-                      (useReferral ? Math.min(referralBalance || 0, selectedCategory.totalPayable || 0) : 0)
+                      (selectedCategory.totalPayable || 0) 
+                      
                     )}
                   </span>
                 </div>
