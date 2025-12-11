@@ -90,6 +90,21 @@ const BookingStep2 = () => {
   // Add this state to store display dates
   const [displayDates, setDisplayDates] = useState([]);
 
+  // Helper function to format time display
+  const formatTimeDisplay = (minutes) => {
+    const totalMinutes = parseInt(minutes);
+    const hours = Math.floor(totalMinutes / 60);
+    const remainingMinutes = totalMinutes % 60;
+    
+    if (hours === 0) {
+      return `${totalMinutes}Min`;
+    } else if (remainingMinutes === 0) {
+      return `${hours}Hrs`;
+    } else {
+      return `${hours}Hrs ${remainingMinutes}Min`;
+    }
+  };
+
   // Initialize displayDates when durationValue changes
   useEffect(() => {
     if (durationValue && (bookingData?.subcategoryName?.toLowerCase().includes('weekly') ||
@@ -273,7 +288,7 @@ const BookingStep2 = () => {
         const minutes = parseInt(item.includedMinutes);
         const hours = Math.round(minutes / 60 * 100) / 100;
         const km = parseInt(item.includedKm);
-        const timeDisplay = hours < 1 ? `${minutes}Min` : `${hours}Hrs`;
+        const timeDisplay = formatTimeDisplay(minutes);
         
         const subcategoryLower = bookingData?.subcategoryName?.toLowerCase() || '';
         const isDistanceBased = subcategoryLower.includes('oneway') || 
@@ -297,8 +312,7 @@ const BookingStep2 = () => {
       let combinedSelectedUsage = defaultUsage;
       if (selectedRawData) {
         const minutes = parseInt(selectedRawData.includedMinutes);
-        const hours = Math.round(minutes / 60 * 100) / 100;
-        const timeDisplay = hours >= 1 ? `${hours}Hrs` : `${minutes}Min`;
+        const timeDisplay = formatTimeDisplay(minutes);
         combinedSelectedUsage = `${timeDisplay} & ${selectedRawData.includedKm}Km`;
       }
 
@@ -464,8 +478,8 @@ const BookingStep2 = () => {
               const hours = Math.round(minutes / 60 * 100) / 100;
               const km = parseInt(item.includedKm);
               
-              // Use minutes if less than 1 hour, otherwise use hours
-              const timeDisplay = hours < 1 ? `${minutes}Min` : `${hours}Hrs`;
+              // Format time display with hours and minutes
+              const timeDisplay = formatTimeDisplay(minutes);
               
               let displayValue = '';
               if (minutes > 0 && km > 0) {
