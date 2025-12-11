@@ -32,6 +32,8 @@ interface Booking {
     selectedCategory?: string;
     categoryId?: string;
     rideInfo?: any;
+    isReferralEarningUsed?: boolean;
+    referralEarningUsedAmount?: number;
 }
 
 interface BookingDetailViewProps {
@@ -253,6 +255,13 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                                 <div className="flex justify-between">
                                     <span className="text-gray-600">Cancellation Charges</span>
                                     <span className="font-medium">₹{booking.rideInfo.cancellationCharges}</span>
+                                </div>
+                            )}
+
+                            {booking.isReferralEarningUsed && booking.referralEarningUsedAmount && (
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Referral Earning Used</span>
+                                    <span className="font-medium ">-₹{booking.referralEarningUsedAmount}</span>
                                 </div>
                             )}
 

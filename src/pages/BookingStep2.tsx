@@ -45,11 +45,11 @@ const BookingStep2 = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cash');
   const [instructionsLoading, setInstructionsLoading] = useState(false);
-  const [useReferral, setUseReferral] = useState(false);
-  const [currentBalance, setCurrentBalance] = useState(0);
-  const [referralError, setReferralError] = useState('');
-  const [referralAllowedAmount, setReferralAllowedAmount] = useState(0);
+
   const [showBackConfirmation, setShowBackConfirmation] = useState(false);
+  const [showReferralSection, setShowReferralSection] = useState(false);
+  const [referralData, setReferralData] = useState(null);
+  const [useReferralEarning, setUseReferralEarning] = useState(false);
 
   const [receiverName, setReceiverName] = useState(bookingData?.receiverName || '');
   const [receiverPhone, setReceiverPhone] = useState(bookingData?.receiverPhone || '');
@@ -240,7 +240,7 @@ const BookingStep2 = () => {
 
 
 
-  const callCalculationAPI = async (defaultUsage, currentDurationType = durationType, currentDurationValue = durationValue, carCategory = null, parcelCategory = null, referralUsed = useReferral) => {
+  const callCalculationAPI = async (defaultUsage, currentDurationType = durationType, currentDurationValue = durationValue, carCategory = null, parcelCategory = null) => {
     // Prevent multiple simultaneous calls
     if (isCalculating || !defaultUsage || !bookingData || !bookingData.categoryId) return;
 
@@ -313,8 +313,7 @@ const BookingStep2 = () => {
           includeInsurance: includeInsurance,
           durationType: finalDurationType,
           durationValue: finalDurationValue,
-          isReferralEarningUsed: referralUsed,
-          referralEarningUsedAmount: referralUsed ? (selectedCategory?.referralCommissionAllowToUsed || 0) : 0,
+
           ...(bookingData.subSubcategoryId && { subSubcategoryId: bookingData.subSubcategoryId }),
           ...(categoryName === 'cab' && (carCategory || selectedCarCategory) && { carCategoryId: (carCategory || selectedCarCategory)._id }),
           ...(categoryName === 'parcel' && (parcelCategory || selectedParcelCategory) && { parcelCategoryId: (parcelCategory || selectedParcelCategory)._id })
@@ -327,10 +326,7 @@ const BookingStep2 = () => {
       const responseData = res.data.success ? res.data.result : res.data;
       setTotalAmountLocal(responseData);
       dispatch(setTotalAmount(responseData));
-      // Store referral allowed amount from first category
-      if (responseData && responseData.length > 0 && responseData[0].referralCommissionAllowToUsed) {
-        setReferralAllowedAmount(responseData[0].referralCommissionAllowToUsed);
-      }
+
       setLoading(false);
     } catch (err) {
       console.error('API error:', err);
@@ -618,16 +614,7 @@ const BookingStep2 = () => {
     }
   }, [includeInsurance]);
 
-  useEffect(() => {
-    // Only recalculate if we have usage data and booking data
-    if ((selectedUsage || customUsage) && bookingData && !isCalculating) {
-      setReferralError('');
-      callCalculationAPI(selectedUsage || customUsage, durationType, durationValue, null, null, useReferral)
-        .catch(() => {
-          setReferralError('Failed to update referral calculation. Please try again.');
-        });
-    }
-  }, [useReferral]);
+
 
   const handleDurationTypeChange = (type) => {
     setDurationType(type);
@@ -710,6 +697,10 @@ const BookingStep2 = () => {
       const categoryName = selectedCategory.category;
       if (categoryName) {
         fetchInstructions(categoryName);
+        // Call referral calculation API when category changes
+        if (termsAccepted) {
+          fetchReferralCalculation();
+        }
       }
     }
   }, [selectedCategory?.category]);
@@ -770,30 +761,7 @@ const BookingStep2 = () => {
     }
   }, [totalAmount, selectedCarCategory]);
 
-  useEffect(() => {
-    const token = localStorage.getItem("RiderToken");
-    if (!token) return;
 
-    const fetchRider = async () => {
-      try {
-        const res = await axios.post(
-          `${import.meta.env.VITE_API_URL}/api/rider-auth/find-rider`,
-          {},
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (res.data?.success && res.data.rider) {
-          setCurrentBalance(res.data.rider.referralEarning?.currentBalance || 0);
-        }
-      } catch (err) {
-        console.error("Error fetching rider:", err);
-        if (err.response?.status === 401) {
-          localStorage.removeItem("RiderToken");
-        }
-      }
-    };
-
-    fetchRider();
-  }, []);
 
 
 
@@ -880,8 +848,11 @@ const BookingStep2 = () => {
 
   const finalPayable = React.useMemo(() => {
     if (!selectedCategory) return 0;
+    if (useReferralEarning && referralData) {
+      return referralData.totalPayable || 0;
+    }
     return selectedCategory.totalPayable || 0;
-  }, [selectedCategory]);
+  }, [selectedCategory, useReferralEarning, referralData]);
 
   const handleBackClick = () => {
     setShowBackConfirmation(true);
@@ -1001,26 +972,64 @@ const BookingStep2 = () => {
     }
   };
 
-  const handleTermsAccept = () => {
+  const fetchReferralCalculation = async () => {
+    try {
+      const token = localStorage.getItem("RiderToken");
+      const payload = {
+        categoryId: bookingData.categoryId,
+        subcategoryId: bookingData.subcategoryId,
+        subSubcategoryId: bookingData.subSubcategoryId || null,
+        selectedDate: bookingData.selectedDate,
+        selectedTime: bookingData.selectedTime,
+        includeInsurance: includeInsurance,
+        selectedUsage: selectedUsage || customUsage,
+        durationType: durationType,
+        durationValue: durationValue,
+        selectedCategoryId: selectedCategory?.categoryId
+      };
+
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/referral-rules/calculate-ride`,
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data) {
+        setReferralData(response.data);
+      }
+    } catch (error) {
+      console.error('Referral calculation failed:', error);
+    }
+  };
+
+  const handleTermsAccept = async () => {
     setTermsAccepted(true);
     setShowTermsModal(false);
+    
+    // Call referral calculation API
+    await fetchReferralCalculation();
+    setShowReferralSection(true);
   };
 
   const handleFinalBooking = async () => {
+    const finalAmount = useReferralEarning && referralData ? referralData.totalPayable : finalPayable;
+    
     const bookingDetails = {
       ...bookingData,
       selectedUsage: selectedUsage || customUsage,
       selectedCategory: selectedCategory.category,
-      insuranceCharges: selectedCategory.insuranceCharges,
-      subtotal: selectedCategory.subtotal,
-      gstCharges: selectedCategory.gstCharges,
-      totalPayable: finalPayable,
+      insuranceCharges: useReferralEarning && referralData ? referralData.insuranceCharges : selectedCategory.insuranceCharges,
+      subtotal: useReferralEarning && referralData ? referralData.subtotal : selectedCategory.subtotal,
+      gstCharges: useReferralEarning && referralData ? referralData.gstCharges : selectedCategory.gstCharges,
+      totalPayable: finalAmount,
       notes: notes,
       includeInsurance: includeInsurance,
       paymentMethod: selectedPaymentMethod,
       receiverName: receiverName,
       receiverPhone: receiverPhone,
-      selectedDates: selectedDates
+      selectedDates: selectedDates,
+      isReferralEarningUsed: useReferralEarning,
+      referralEarningUsedAmount: useReferralEarning && referralData ? referralData.referralCommissionUsed : 0
     };
 
     dispatch(setUsage({ selectedUsage: selectedUsage || '', customUsage: customUsage || '' }));
@@ -1041,11 +1050,13 @@ const BookingStep2 = () => {
     try {
       const token = localStorage.getItem("RiderToken");
 
+      const finalAmount = useReferralEarning && referralData ? referralData.totalPayable : finalPayable;
+      
       // First deduct money from wallet
       const deductRes = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/payments/deduct`,
         {
-          amount: finalPayable,
+          amount: finalAmount,
           description: `Ride payment for ${bookingData.subcategoryName}`
         },
         {
@@ -1087,8 +1098,7 @@ const BookingStep2 = () => {
           ...cleanedDetails,
           selectedDate: (bookingData?.subcategoryName?.toLowerCase().includes('weekly') || bookingData?.subcategoryName?.toLowerCase().includes('monthly')) && selectedDates.length > 0 ? selectedDates[0] : bookingDetails.selectedDate,
           paymentType: selectedPaymentMethod,
-          isReferralEarningUsed: useReferral,
-          referralEarningUsedAmount: useReferral ? (selectedCategory?.referralCommissionUsed || 0) : 0,
+
           selectedCategoryId: selectedCategory?.categoryId,
           ...(bookingData?.carTypeId && { carTypeId: bookingData.carTypeId }),
           ...(bookingData?.transmissionTypeId && { transmissionTypeId: bookingData.transmissionTypeId }),
@@ -1505,6 +1515,31 @@ const BookingStep2 = () => {
 
 
 
+          {/* Referral Earning Section */}
+          {showReferralSection && referralData && referralData.referralCommissionUsed > 0 && (
+            <Card className="bg-white shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold flex items-center">
+                  💰 Use Referral Earnings
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id="useReferral"
+                    checked={useReferralEarning}
+                    onChange={(e) => setUseReferralEarning(e.target.checked)}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <label htmlFor="useReferral" className="text-sm font-medium">
+                    Use ₹{referralData.referralCommissionUsed} from referral earnings
+                  </label>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Payment Method Selection */}
           {termsAccepted && (
             <div className="p-4">
@@ -1681,36 +1716,7 @@ const BookingStep2 = () => {
             <div className="p-6 space-y-4">
 
 
-              {/* Referral Earning Section */}
-              {currentBalance > 0 && (
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold text-gray-800">
-                        Use Referral Balance 
-                      </h4>
-                      <p className="text-sm text-gray-600">
-                        Current Balance: {currentBalance}₹
-                      </p>
-                      {referralError && (
-                        <p className="text-sm text-red-600 mt-1">
-                          {referralError}
-                        </p>
-                      )}
-                    </div>
-                    <label className={`relative inline-flex items-center ${currentBalance < referralAllowedAmount ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
-                      <input
-                        type="checkbox"
-                        checked={useReferral}
-                        onChange={(e) => setUseReferral(e.target.checked)}
-                        disabled={currentBalance < referralAllowedAmount}
-                        className="sr-only peer"
-                      />
-                      <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-green-300 peer-checked:bg-green-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
-                    </label>
-                  </div>
-                </div>
-              )}
+
 
               {/* Fare Details */}
               <div className="space-y-4">
@@ -1776,12 +1782,7 @@ const BookingStep2 = () => {
                       <span className="font-medium">₹{selectedCategory.cancellationCharges || 0}</span>
                     </div>}
 
-                  {useReferral && currentBalance > 0 && (
-                    <div className="flex justify-between">
-                      <span className="font-medium">Referral Discount:</span>
-                      <span className="font-medium">-₹{selectedCategory.referralCommissionUsed}</span>
-                    </div>
-                  )}
+
                 </div>
 
                 <Separator className="my-3" />
