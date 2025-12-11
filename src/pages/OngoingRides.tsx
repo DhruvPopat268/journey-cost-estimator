@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Phone, Clock, Eye, MapPin, CreditCard } from "lucide-react";
+import { Phone, Clock, Eye, MapPin, CreditCard, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from '../components/Sidebar';
 
@@ -64,6 +64,33 @@ const OngoingRides: React.FC = () => {
 
   const handleCallDriver = (driverMobile: string) => {
     window.open(`tel:${driverMobile}`, '_self');
+  };
+
+  const handleCancelBooking = async (bookingId: string) => {
+    try {
+      const confirmed = window.confirm("Are you sure you want to cancel this booking?");
+      if (!confirmed) return;
+
+      const token = localStorage.getItem("RiderToken");
+
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/rides/booking/cancel`,
+        { rideId : bookingId },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        fetchBookings();
+        alert("Booking cancelled successfully");
+      }
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      alert("Error cancelling booking");
+    }
   };
 
   const handleViewDetails = (booking: Booking) => {
@@ -195,6 +222,15 @@ const OngoingRides: React.FC = () => {
                         <Eye size={16} className="mr-2" />
                         View Details
                       </button>
+                      {booking.status === "REACHED" && (
+                        <button
+                          onClick={() => handleCancelBooking(booking._id)}
+                          className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center"
+                        >
+                          <X size={16} className="mr-2" />
+                          Cancel
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -18,9 +18,8 @@ const AllBookedServices = ({ onBack }) => {
 
       const token = localStorage.getItem("RiderToken");
 
-      const response = await axios.post(
+      const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/rides/my-rides`,
-        {},
         {
           headers: {
             Authorization: `Bearer ${token}`,

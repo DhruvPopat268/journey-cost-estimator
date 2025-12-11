@@ -107,7 +107,7 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
       // ✅ Send bookingId in body instead of URL
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/rides/booking/cancel`,
-        { bookingId }, // sending in body
+        { rideId : bookingId }, // sending in body
         {
           headers: {
             Authorization: `Bearer ${token}`,
