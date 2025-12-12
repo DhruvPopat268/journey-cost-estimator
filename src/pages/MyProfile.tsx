@@ -16,7 +16,7 @@ const MyProfile = ({ onBack }) => {
         if (!token) return;
 
         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/find-rider`, {
-          method: 'POST',
+          method: 'GET',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`, // ✅ send RiderToken in header
