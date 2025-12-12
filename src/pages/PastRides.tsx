@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Phone, Clock, Eye, MapPin, CreditCard, X } from "lucide-react";
+import { Clock, Eye, MapPin, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from '../components/Sidebar';
 
@@ -19,8 +19,8 @@ interface Booking {
   };
 }
 
-const ConfirmedRides: React.FC = () => {
-  const [confirmedBookings, setConfirmedBookings] = useState<Booking[]>([]);
+const PastRides: React.FC = () => {
+  const [pastBookings, setPastBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
 
@@ -39,7 +39,7 @@ const ConfirmedRides: React.FC = () => {
       }
 
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/rides/confirmed/my-rides`,
+        `${import.meta.env.VITE_API_URL}/api/rides/past/my-rides`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -48,47 +48,16 @@ const ConfirmedRides: React.FC = () => {
       );
 
       if (response.data && response.data.rides) {
-        setConfirmedBookings(response.data.rides);
+        setPastBookings(response.data.rides);
       } else {
-        setConfirmedBookings([]);
+        setPastBookings([]);
       }
 
     } catch (error) {
-      console.error("Error fetching confirmed rides:", error);
-      setConfirmedBookings([]);
+      console.error("Error fetching past rides:", error);
+      setPastBookings([]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleCallDriver = (driverMobile: string) => {
-    window.open(`tel:${driverMobile}`, '_self');
-  };
-
-  const handleCancelBooking = async (bookingId: string) => {
-    try {
-      const confirmed = window.confirm("Are you sure you want to cancel this booking?");
-      if (!confirmed) return;
-
-      const token = localStorage.getItem("RiderToken");
-
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/rides/booking/cancel`,
-        { rideId : bookingId },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.status === 200) {
-        fetchBookings();
-        alert("Booking cancelled successfully");
-      }
-    } catch (error) {
-      console.error("Error cancelling booking:", error);
-      alert("Error cancelling booking");
     }
   };
 
@@ -98,18 +67,18 @@ const ConfirmedRides: React.FC = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <Navbar title="Confirmed Rides" className="bg-black" />
+      <Navbar title="Past Rides" className="bg-black" />
 
       <div className="pt-4 p-6">
         <div className="max-w-md mx-auto">
           {loading ? (
             <div className="text-center py-12">
               <Clock size={48} className="mx-auto text-gray-400 mb-4 animate-spin" />
-              <p className="text-gray-500">Loading bookings...</p>
+              <p className="text-gray-500">Loading past rides...</p>
             </div>
-          ) : confirmedBookings.length > 0 ? (
+          ) : pastBookings.length > 0 ? (
             <div className="space-y-4">
-              {confirmedBookings.map((booking) => (
+              {pastBookings.map((booking) => (
                 <div
                   key={booking._id}
                   className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
@@ -118,7 +87,13 @@ const ConfirmedRides: React.FC = () => {
                     <h3 className="font-semibold text-lg">
                       {booking.rideInfo?.categoryName} - {booking.rideInfo?.subcategoryName}
                     </h3>
-                    <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      booking.status === "COMPLETED" 
+                        ? "bg-green-100 text-green-800"
+                        : booking.status === "CANCELLED"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-gray-100 text-gray-800"
+                    }`}>
                       {booking.status}
                     </span>
                   </div>
@@ -188,7 +163,7 @@ const ConfirmedRides: React.FC = () => {
                         </span>
                       ) : (
                         <span className="text-sm text-gray-500 italic">
-                          Driver not assigned yet
+                          Driver not assigned
                         </span>
                       )}
 
@@ -203,16 +178,6 @@ const ConfirmedRides: React.FC = () => {
                       </div>
                     </div>
 
-                    {booking.driverInfo && (
-                      <button 
-                        onClick={() => handleCallDriver(booking.driverInfo!.driverMobile)}
-                        className="w-full mb-3 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors"
-                      >
-                        <Phone size={16} className="inline mr-2" />
-                        Call Driver
-                      </button>
-                    )}
-
                     <div className="flex gap-3 mt-4">
                       <button
                         onClick={() => handleViewDetails(booking)}
@@ -220,13 +185,6 @@ const ConfirmedRides: React.FC = () => {
                       >
                         <Eye size={16} className="mr-2" />
                         View Details
-                      </button>
-                      <button
-                        onClick={() => handleCancelBooking(booking._id)}
-                        className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center"
-                      >
-                        <X size={16} className="mr-2" />
-                        Cancel
                       </button>
                     </div>
                   </div>
@@ -237,9 +195,9 @@ const ConfirmedRides: React.FC = () => {
             <div className="text-center py-12">
               <Clock size={48} className="mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                No Confirmed Rides
+                No Past Rides
               </h3>
-              <p className="text-gray-500">You don't have any confirmed rides.</p>
+              <p className="text-gray-500">You don't have any past rides.</p>
             </div>
           )}
         </div>
@@ -248,4 +206,4 @@ const ConfirmedRides: React.FC = () => {
   );
 };
 
-export default ConfirmedRides;
+export default PastRides;

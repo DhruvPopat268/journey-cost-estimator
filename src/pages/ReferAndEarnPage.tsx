@@ -9,6 +9,7 @@ const ReferAndEarnPage = () => {
     const [userData, setUserData] = useState(null); // dynamic user data
     const [earningsHistory, setEarningsHistory] = useState([]);
     const [allReferrals, setAllReferrals] = useState([]);
+    const [balanceHistory, setBalanceHistory] = useState([]);
 
     // ✅ Fetch rider + referral data
     useEffect(() => {
@@ -35,6 +36,8 @@ const ReferAndEarnPage = () => {
                     });
 
                     setAllReferrals(rider.referrals || []);
+                    const history = rider.referralEarning?.history || [];
+                    setBalanceHistory(history.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
                 }
             } catch (err) {
                 console.error("Error fetching referral data:", err);
@@ -76,6 +79,30 @@ const ReferAndEarnPage = () => {
         });
     };
 
+    const formatDateTime = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    const getTransactionTypeLabel = (type) => {
+        switch (type) {
+            case 'earning_used_for_book_ride':
+                return 'Used for Booking';
+            case 'refund':
+                return 'Refund';
+            case 'rider_completes_ride':
+                return 'Referral Completes Ride';
+            default:
+                return type;
+        }
+    };
+
     if (!userData) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -101,12 +128,12 @@ const ReferAndEarnPage = () => {
                     <div className="text-lg font-bold text-green-600">₹{userData.totalEarnings}</div>
                 </div>
 
-                <div className="overflow-y-auto flex-1 p-4">
+                <div className="overflow-y-auto flex-1 p-4" style={{maxHeight: '400px'}}>
                     <div className="space-y-3">
                         {allReferrals.length === 0 ? (
                             <p className="text-gray-500 text-sm">No earnings yet</p>
                         ) : (
-                            allReferrals.map((referral) => (
+                            allReferrals.slice(0, 10).map((referral) => (
                                 <div
                                     key={referral._id}
                                     className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
@@ -153,12 +180,12 @@ const ReferAndEarnPage = () => {
                     <div className="text-lg font-bold text-blue-600">{userData.totalReferrals}</div>
                 </div>
 
-                <div className="overflow-y-auto flex-1 p-4">
+                <div className="overflow-y-auto flex-1 p-4" style={{maxHeight: '400px'}}>
                     <div className="space-y-3">
                         {allReferrals.length === 0 ? (
                             <p className="text-gray-500 text-sm">No referrals yet</p>
                         ) : (
-                            allReferrals.map((referral) => (
+                            allReferrals.slice(0, 10).map((referral) => (
                                 <div
                                     key={referral._id}
                                     className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
@@ -178,6 +205,64 @@ const ReferAndEarnPage = () => {
                                     </div>
                                     <div className="text-xs text-gray-500">
                                         Earned: ₹{referral.totalEarned || 0}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    // --- Current Balance History Modal ---
+    const BalanceHistoryModal = () => (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl w-full max-w-md max-h-[80vh] flex flex-col">
+                <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
+                    <div className="flex items-center space-x-3">
+                        <button
+                            onClick={() => setActiveModal(null)}
+                            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                            <ArrowLeft className="w-5 h-5 text-gray-600" />
+                        </button>
+                        <h2 className="text-lg font-bold text-gray-800">Balance History</h2>
+                    </div>
+                    <div className="text-lg font-bold text-purple-600">₹{userData.thisMonthEarnings}</div>
+                </div>
+
+                <div className="overflow-y-auto flex-1 p-4" style={{maxHeight: '400px'}}>
+                    <div className="space-y-3">
+                        {balanceHistory.length === 0 ? (
+                            <p className="text-gray-500 text-sm">No transaction history</p>
+                        ) : (
+                            balanceHistory.slice(0, 10).map((transaction, index) => (
+                                <div
+                                    key={index}
+                                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                                >
+                                    <div className="flex items-center space-x-3">
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                                            transaction.amount > 0 
+                                                ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                                                : 'bg-gradient-to-r from-red-500 to-pink-500'
+                                        }`}>
+                                            {transaction.amount > 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                                        </div>
+                                        <div>
+                                            <div className="font-semibold text-sm text-gray-800">
+                                                {getTransactionTypeLabel(transaction.type)}
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                {formatDateTime(transaction.createdAt)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className={`font-bold text-sm ${
+                                        transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
+                                    }`}>
+                                        {transaction.amount > 0 ? '+' : ''}₹{transaction.amount}
                                     </div>
                                 </div>
                             ))
@@ -209,10 +294,13 @@ const ReferAndEarnPage = () => {
                         <div className="text-lg font-bold text-blue-600">{userData.totalReferrals}</div>
                         <div className="text-gray-500 text-xs">Referrals</div>
                     </button>
-                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 text-center shadow-sm">
+                    <button
+                        onClick={() => setActiveModal('balance')}
+                        className="bg-gray-50 rounded-xl p-4 border border-gray-200 text-center shadow-sm hover:bg-gray-100 transition-colors cursor-pointer"
+                    >
                         <div className="text-lg font-bold text-purple-600">{userData.thisMonthEarnings}</div>
                         <div className="text-gray-500 text-xs">Current Balance</div>
-                    </div>
+                    </button>
                 </div>
 
                 {/* Referral Code Section */}
@@ -271,6 +359,7 @@ const ReferAndEarnPage = () => {
             {/* Modals */}
             {activeModal === 'earnings' && <EarningsHistoryModal />}
             {activeModal === 'referrals' && <ReferralsListModal />}
+            {activeModal === 'balance' && <BalanceHistoryModal />}
         </div>
     );
 

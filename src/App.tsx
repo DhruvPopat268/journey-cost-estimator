@@ -11,10 +11,10 @@ import Login from "./pages/Login";
 import ConfirmPayment from "./pages/ConfirmPayment";
 import { SidebarProvider, Sidebar } from './components/Sidebar';
 import MyProfile from "./pages/MyProfile";
-import AllBookedServices from "./pages/AllBookedServices";
 import CurrentBookedService from "./pages/CurrentBookedService";
-import ConfirmedRides from './pages/ConfirmedRides';
+
 import OngoingRides from './pages/OngoingRides';
+import PastRides from './pages/PastRides';
 import BookingDetailView from "./pages/BookingDetailView";
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
@@ -56,11 +56,9 @@ const AppWithSidebar = () => {
         <Route path="/my-profile" element={<MyProfile />} />
 
         <Route path="/currentBookings" element={<CurrentBookedService />} />
-        <Route path="/confirmedRides" element={<ConfirmedRides />} />
+    
         <Route path="/ongoingRides" element={<OngoingRides />} />
-
-        
-        <Route path="/allBookings" element={<AllBookedServices />} />
+        <Route path="/pastRides" element={<PastRides />} />
 
         <Route path="/detailView/:id" element={<BookingDetailView />} />
         <Route path="/privacyPolicy" element={<PrivacyPolicy />} />

@@ -67,8 +67,8 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
             }
 
             const response = await axios.post(
-                `${import.meta.env.VITE_API_URL}/api/rides/booking/id`,
-                { bookingId },
+                `${import.meta.env.VITE_API_URL}/api/rides/bookingDetail`,
+                { rideId: bookingId },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -77,7 +77,7 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
             );
             
 
-            setBooking(response.data.booking || response.data);
+            setBooking(response.data.data);
         } catch (error: any) {
             console.error("Error fetching booking details:", error);
             setError(
@@ -480,13 +480,13 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                             Call Driver
                         </button>
                     </div>
-                ) : (
+                ) : booking.status === "BOOKED" ? (
                     <div className="bg-white rounded-lg shadow-sm p-5 mb-4 text-center">
                         <Clock size={32} className="mx-auto text-gray-400 mb-2" />
                         <h4 className="font-medium text-gray-600 mb-1 text-sm">Driver Not Assigned</h4>
                         <p className="text-xs text-gray-500">We'll notify you once a driver is assigned to your booking.</p>
                     </div>
-                )}
+                ) : null}
             </div>
         </div>
     );

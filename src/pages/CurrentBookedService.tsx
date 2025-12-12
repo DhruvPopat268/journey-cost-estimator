@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { ArrowLeft, Phone, Clock, Eye, X, CreditCard } from "lucide-react";
+import { ArrowLeft, Phone, Clock, Eye, X, CreditCard, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
 import { Navbar } from '../components/Sidebar';
 
@@ -34,6 +34,11 @@ interface Booking {
   notes?: string;
   selectedCategory?: string;
   categoryId?: string;
+  rideInfo?: any;
+  driverInfo?: {
+    driverName: string;
+    driverMobile: string;
+  };
 }
 
 
@@ -62,7 +67,7 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
       }
 
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/rides/booked/my-rides`,
+        `${import.meta.env.VITE_API_URL}/api/rides/current/my-rides`,
         {
           headers: {
             Authorization: `Bearer ${token}`, // 👈 send token in header
@@ -83,7 +88,10 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
           // flatten rideInfo
           ...ride.rideInfo,
           driver: ride.driver || undefined,
+          rideInfo: ride.rideInfo,
+          driverInfo: ride.driverInfo,
         }));
+        console.log('Formatted rides:', formatted);
         setCurrentBookings(formatted);
       } else {
         setCurrentBookings([]);
@@ -136,6 +144,10 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
     }
   };
 
+  const handleCallDriver = (driverMobile: string) => {
+    window.open(`tel:${driverMobile}`, '_self');
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen">
       <Navbar title="Current Booked Service" className="bg-black" />
@@ -157,7 +169,10 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
                 >
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-semibold text-lg">
-                      {booking.categoryName} - {booking.subcategoryName || booking.carType}
+                      {booking.status === "CONFIRMED" 
+                        ? `${booking.rideInfo?.categoryName || booking.categoryName} - ${booking.rideInfo?.subcategoryName || booking.subcategoryName || booking.carType}`
+                        : `${booking.categoryName} - ${booking.subcategoryName || booking.carType}`
+                      }
                     </h3>
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-medium ${booking.status === "BOOKED"
@@ -172,95 +187,161 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
                       {booking.status}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    {/* Pickup Location */}
-                    <div className="flex items-start">
-                      <div className="w-3 h-3 bg-green-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
-                      <div>
-                        <div className="font-medium text-sm">Pickup Location</div>
-                        <div className="text-gray-600 text-sm">{booking.fromLocation?.address}</div>
+                  {booking.status === "BOOKED" ? (
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      {/* Pickup Location */}
+                      <div className="flex items-start">
+                        <div className="w-3 h-3 bg-green-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                        <div>
+                          <div className="font-medium text-sm">Pickup Location</div>
+                          <div className="text-gray-600 text-sm">{booking.fromLocation?.address}</div>
+                        </div>
                       </div>
+
+                      {/* Drop Location */}
+                      {booking.toLocation && (
+                        <div className="flex items-start">
+                          <div className="w-3 h-3 bg-red-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                          <div>
+                            <div className="font-medium text-sm">Drop Location</div>
+                            <div className="text-gray-600 text-sm">{booking.toLocation?.address}</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Driver Category */}
+                      {booking.selectedCategory && (
+                        <div className="flex items-start">
+                          <div className="w-3 h-3 bg-orange-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                          <div>
+                            <div className="font-medium text-sm">Driver Category</div>
+                            <div className="text-gray-600 text-sm">{booking.selectedCategory}</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Usage */}
+                      {booking.selectedUsage && (
+                        <div className="flex items-start">
+                          <div className="w-3 h-3 bg-purple-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                          <div>
+                            <div className="font-medium text-sm">Usage</div>
+                            <div className="text-gray-600 text-sm">{booking.selectedUsage}</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Date */}
+                      {booking.selectedDate && (
+                        <div className="flex items-start">
+                          <div className="w-3 h-3 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                          <div>
+                            <div className="font-medium text-sm">{booking.subcategoryName?.toLowerCase().includes('weekly') || booking.subcategoryName?.toLowerCase().includes('monthly') ? 'Start Date' : 'Date'}</div>
+                            <div className="text-gray-600 text-sm">
+                              {new Date(booking.selectedDate).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Time */}
+                      {booking.selectedTime && (
+                        <div className="flex items-start">
+                          <div className="w-3 h-3 bg-yellow-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                          <div>
+                            <div className="font-medium text-sm">{booking.subcategoryName?.toLowerCase().includes('weekly') || booking.subcategoryName?.toLowerCase().includes('monthly') ? 'Start Time' : 'Time'}</div>
+                            <div className="text-gray-600 text-sm">{booking.selectedTime}</div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-
-                    {/* Drop Location */}
-                    {booking.toLocation && (
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      {/* Pickup Location */}
                       <div className="flex items-start">
-                        <div className="w-3 h-3 bg-red-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                        <MapPin className="w-4 h-4 text-green-500 flex-shrink-0 mt-1 mr-2" />
                         <div>
-                          <div className="font-medium text-sm">Drop Location</div>
-                          <div className="text-gray-600 text-sm">{booking.toLocation?.address}</div>
+                          <div className="font-medium text-sm">Pickup Location</div>
+                          <div className="text-gray-600 text-sm">{booking.rideInfo?.fromLocation?.address || booking.fromLocation?.address}</div>
                         </div>
                       </div>
-                    )}
 
-                     {/* Driver Category */}
-                    {booking.selectedCategory && (
-                      <div className="flex items-start">
-                        <div className="w-3 h-3 bg-orange-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
-                        <div>
-                          <div className="font-medium text-sm">Driver Category</div>
-                          <div className="text-gray-600 text-sm">{booking.selectedCategory}</div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Usage */}
-                    {booking.selectedUsage && (
-                      <div className="flex items-start">
-                        <div className="w-3 h-3 bg-purple-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
-                        <div>
-                          <div className="font-medium text-sm">Usage</div>
-                          <div className="text-gray-600 text-sm">
-                            {booking.selectedUsage}{" "}
-                            
+                      {/* Drop Location */}
+                      {(booking.rideInfo?.toLocation || booking.toLocation) && (
+                        <div className="flex items-start">
+                          <MapPin className="w-4 h-4 text-red-500 flex-shrink-0 mt-1 mr-2" />
+                          <div>
+                            <div className="font-medium text-sm">Drop Location</div>
+                            <div className="text-gray-600 text-sm">{booking.rideInfo?.toLocation?.address || booking.toLocation?.address}</div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Date */}
-                    {booking.selectedDate && (
-                      <div className="flex items-start">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
-                        <div>
-                          <div className="font-medium text-sm">{booking.subcategoryName?.toLowerCase().includes('weekly') || booking.subcategoryName?.toLowerCase().includes('monthly') ? 'Start Date' : 'Date'}</div>
-                          <div className="text-gray-600 text-sm">
-                            {new Date(booking.selectedDate).toLocaleDateString()}
+                      {/* Driver Category */}
+                      {(booking.rideInfo?.selectedCategory || booking.selectedCategory) && (
+                        <div className="flex items-start">
+                          <div className="w-3 h-3 bg-orange-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                          <div>
+                            <div className="font-medium text-sm">Driver Category</div>
+                            <div className="text-gray-600 text-sm">{booking.rideInfo?.selectedCategory || booking.selectedCategory}</div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Time */}
-                    {booking.selectedTime && (
-                      <div className="flex items-start">
-                        <div className="w-3 h-3 bg-yellow-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
-                        <div>
-                          <div className="font-medium text-sm">{booking.subcategoryName?.toLowerCase().includes('weekly') || booking.subcategoryName?.toLowerCase().includes('monthly') ? 'Start Time' : 'Time'}</div>
-                          <div className="text-gray-600 text-sm">{booking.selectedTime}</div>
+                      {/* Date */}
+                      {(booking.rideInfo?.selectedDate || booking.selectedDate) && (
+                        <div className="flex items-start">
+                          <div className="w-3 h-3 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                          <div>
+                            <div className="font-medium text-sm">{(booking.rideInfo?.subcategoryName || booking.subcategoryName)?.toLowerCase().includes('weekly') || (booking.rideInfo?.subcategoryName || booking.subcategoryName)?.toLowerCase().includes('monthly') ? 'Start Date' : 'Date'}</div>
+                            <div className="text-gray-600 text-sm">
+                              {new Date(booking.rideInfo?.selectedDate || booking.selectedDate).toLocaleDateString()}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
+                      )}
+
+                      {/* Time */}
+                      {(booking.rideInfo?.selectedTime || booking.selectedTime) && (
+                        <div className="flex items-start">
+                          <div className="w-3 h-3 bg-yellow-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                          <div>
+                            <div className="font-medium text-sm">{(booking.rideInfo?.subcategoryName || booking.subcategoryName)?.toLowerCase().includes('weekly') || (booking.rideInfo?.subcategoryName || booking.subcategoryName)?.toLowerCase().includes('monthly') ? 'Start Time' : 'Time'}</div>
+                            <div className="text-gray-600 text-sm">{booking.rideInfo?.selectedTime || booking.selectedTime}</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
 
 
                   <div className="border-t pt-4">
                     <div className="flex justify-between items-center mb-2">
-                      {/* 👇 conditionally show driver only if exists */}
-                      {booking.driver ? (
-                        <span className="text-sm text-gray-600">
-                          Driver: {booking.driver.name}
-                        </span>
+                      {booking.status === "CONFIRMED" ? (
+                        booking.driverInfo ? (
+                          <span className="text-sm text-gray-600">
+                            Driver: {booking.driverInfo.driverName}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-500 italic">
+                            Driver not assigned yet
+                          </span>
+                        )
                       ) : (
-                        <span className="text-sm text-gray-500 italic">
-                          Driver not assigned yet
-                        </span>
+                        booking.driver ? (
+                          <span className="text-sm text-gray-600">
+                            Driver: {booking.driver.name}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-500 italic">
+                            Driver not assigned yet
+                          </span>
+                        )
                       )}
 
                       <div className="text-right">
                         <span className="font-semibold text-lg">₹{booking.totalPayable}</span>
-                        {/* Payment Type Display */}
                         {booking.paymentType && (
                           <div className="text-xs text-gray-500 capitalize flex items-center justify-end mt-1">
                             <CreditCard size={12} className="mr-1" />
@@ -270,18 +351,32 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
                       </div>
                     </div>
 
-                    {/* 👇 Show vehicle & call button only if driver exists */}
-                    {booking.driver && (
+                    {/* Show vehicle & call button for BOOKED status */}
+                    {booking.status === "BOOKED" && booking.driver && (
                       <>
                         <div className="flex justify-between items-center text-sm text-gray-600 mb-3">
                           <span>Vehicle: {booking.driver.vehicle}</span>
                           <span>ETA: {booking.driver.estimatedArrival}</span>
                         </div>
-                        <button className="w-full mb-3 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        <button 
+                          onClick={() => handleCallDriver(booking.driver!.phone!)}
+                          className="w-full mb-3 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors"
+                        >
                           <Phone size={16} className="inline mr-2" />
                           Call Driver
                         </button>
                       </>
+                    )}
+
+                    {/* Show call button for CONFIRMED status */}
+                    {booking.status === "CONFIRMED" && booking.driverInfo && (
+                      <button 
+                        onClick={() => handleCallDriver(booking.driverInfo.driverMobile)}
+                        className="w-full mb-3 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        <Phone size={16} className="inline mr-2" />
+                        Call Driver
+                      </button>
                     )}
 
                     {/* Action Buttons */}
@@ -291,7 +386,7 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
                         className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
                       >
                         <Eye size={16} className="mr-2" />
-                        View
+                        {booking.status === "CONFIRMED" ? "View Details" : "View"}
                       </button>
                       <button
                         onClick={() => handleCancelBooking(booking._id)}

@@ -204,7 +204,7 @@ const OngoingRides: React.FC = () => {
                       </div>
                     </div>
 
-                    {booking.driverInfo && (
+                    {booking.driverInfo && booking.status === "REACHED" && (
                       <button 
                         onClick={() => handleCallDriver(booking.driverInfo!.driverMobile)}
                         className="w-full mb-3 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors"
