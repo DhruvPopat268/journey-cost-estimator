@@ -7,7 +7,7 @@ const MyProfile = ({ onBack }) => {
   const [editingField, setEditingField] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [profilePhoto, setProfilePhoto] = useState(null);
+  const [profilePhotoFile, setProfilePhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
 
   // 🔹 Fetch rider data on mount
@@ -118,18 +118,17 @@ const MyProfile = ({ onBack }) => {
         return;
       }
       
+      setProfilePhotoFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
-        const base64 = e.target.result;
-        setProfilePhoto(base64);
-        setPhotoPreview(base64);
+        setPhotoPreview(e.target.result);
       };
       reader.readAsDataURL(file);
     }
   };
 
   const handlePhotoSave = async () => {
-    if (!profilePhoto) return;
+    if (!profilePhotoFile) return;
 
     setIsLoading(true);
     try {
@@ -140,24 +139,24 @@ const MyProfile = ({ onBack }) => {
         return;
       }
 
+      const formData = new FormData();
+      formData.append('field', 'profilePhoto');
+      formData.append('profilePhoto', profilePhotoFile);
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/update`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          field: 'profilePhoto',
-          value: profilePhoto,
-        }),
+        body: formData,
       });
 
       if (response.ok) {
         setUserProfile((prev) => ({
           ...prev,
-          profilePhoto: profilePhoto,
+          profilePhoto: photoPreview,
         }));
-        setProfilePhoto(null);
+        setProfilePhotoFile(null);
         alert('Profile photo updated successfully!');
       } else {
         const errorData = await response.json();
@@ -279,7 +278,7 @@ const MyProfile = ({ onBack }) => {
                 />
               </label>
             </div>
-            {profilePhoto && (
+            {profilePhotoFile && (
               <button
                 onClick={handlePhotoSave}
                 disabled={isLoading}

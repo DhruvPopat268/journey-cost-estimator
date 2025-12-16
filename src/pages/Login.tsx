@@ -14,7 +14,7 @@ export default function OtpLoginFlow() {
   const [mobileNumber, setMobileNumber] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const [profilePhoto, setProfilePhoto] = useState(null);
+  const [profilePhotoFile, setProfilePhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
 
   const location = useLocation();
@@ -140,11 +140,10 @@ export default function OtpLoginFlow() {
         return;
       }
       
+      setProfilePhotoFile(file);
       const reader = new FileReader();
       reader.onload = (e) => {
-        const base64 = e.target.result;
-        setProfilePhoto(base64);
-        setPhotoPreview(base64);
+        setPhotoPreview(e.target.result);
       };
       reader.readAsDataURL(file);
     }
@@ -156,15 +155,17 @@ export default function OtpLoginFlow() {
     if (!token) return;
     setLoading(true);
     try {
-      const profileData = { ...data };
-      if (profilePhoto) {
-        profileData.profilePhoto = profilePhoto;
-      }
+      const formData = new FormData();
+      formData.append('name', data.name);
+      formData.append('gender', data.gender);
+      if (data.email) formData.append('email', data.email);
+      if (data.referralCodeUsed) formData.append('referralCodeUsed', data.referralCodeUsed);
+      if (profilePhotoFile) formData.append('profilePhoto', profilePhotoFile);
       
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/save-profile`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" , "Authorization": `Bearer ${token}` },
-        body: JSON.stringify(profileData),
+        headers: { "Authorization": `Bearer ${token}` },
+        body: formData,
       });
       const result = await res.json();
       if (result.success) {
@@ -187,7 +188,7 @@ export default function OtpLoginFlow() {
     setCountdown(0);
     loginForm.reset();
     profileForm.reset();
-    setProfilePhoto(null);
+    setProfilePhotoFile(null);
     setPhotoPreview(null);
   };
 
