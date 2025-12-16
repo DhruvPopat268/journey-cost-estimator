@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Mail, Phone, Edit2, Check, X, User, Users } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Edit2, Check, X, User, Users, Camera } from 'lucide-react';
 import { Navbar } from '@/components/Sidebar';
 
 const MyProfile = ({ onBack }) => {
@@ -7,6 +7,8 @@ const MyProfile = ({ onBack }) => {
   const [editingField, setEditingField] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
 
   // 🔹 Fetch rider data on mount
   useEffect(() => {
@@ -38,7 +40,9 @@ const MyProfile = ({ onBack }) => {
             mobile: rider.mobile,
             gender: rider.gender || '',
             memberSince,
+            profilePhoto: rider.profilePhoto || null,
           });
+          setPhotoPreview(rider.profilePhoto || null);
         } else {
           console.error('Failed to fetch rider');
         }
@@ -63,7 +67,7 @@ const MyProfile = ({ onBack }) => {
 
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('RiderToken'); // ✅ use RiderToken from localStorage
+      const token = localStorage.getItem('RiderToken');
       if (!token) {
         alert('No token found. Please login again.');
         setIsLoading(false);
@@ -74,7 +78,7 @@ const MyProfile = ({ onBack }) => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`, // ✅ attach RiderToken
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           field: editingField,
@@ -83,13 +87,11 @@ const MyProfile = ({ onBack }) => {
       });
 
       if (response.ok) {
-        // Update profile state
         setUserProfile((prev) => ({
           ...prev,
           [editingField]: editValue,
         }));
 
-        // ✅ Update localStorage if mobile was changed
         if (editingField === 'mobile') {
           localStorage.setItem('RiderMobile', editValue);
         }
@@ -103,6 +105,67 @@ const MyProfile = ({ onBack }) => {
     } catch (error) {
       console.error('Error updating profile:', error);
       alert('Error updating profile');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size should be less than 5MB');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target.result;
+        setProfilePhoto(base64);
+        setPhotoPreview(base64);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePhotoSave = async () => {
+    if (!profilePhoto) return;
+
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('RiderToken');
+      if (!token) {
+        alert('No token found. Please login again.');
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/update`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          field: 'profilePhoto',
+          value: profilePhoto,
+        }),
+      });
+
+      if (response.ok) {
+        setUserProfile((prev) => ({
+          ...prev,
+          profilePhoto: profilePhoto,
+        }));
+        setProfilePhoto(null);
+        alert('Profile photo updated successfully!');
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || 'Failed to update profile photo');
+      }
+    } catch (error) {
+      console.error('Error updating profile photo:', error);
+      alert('Error updating profile photo');
     } finally {
       setIsLoading(false);
     }
@@ -192,11 +255,39 @@ const MyProfile = ({ onBack }) => {
 
         <div className="bg-white rounded-lg shadow-sm p-6 mb-4">
           <div className="text-center mb-6">
-            <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-white font-bold text-2xl">
-                {userProfile.name?.split(' ').map(n => n[0]).join('')}
-              </span>
+            <div className="relative w-24 h-24 mx-auto mb-4">
+              {photoPreview ? (
+                <img 
+                  src={photoPreview} 
+                  alt="Profile" 
+                  className="w-24 h-24 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-2xl">
+                    {userProfile.name?.split(' ').map(n => n[0]).join('')}
+                  </span>
+                </div>
+              )}
+              <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer hover:bg-blue-700 transition-colors">
+                <Camera size={16} />
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+              </label>
             </div>
+            {profilePhoto && (
+              <button
+                onClick={handlePhotoSave}
+                disabled={isLoading}
+                className="mb-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+              >
+                {isLoading ? 'Saving...' : 'Save Photo'}
+              </button>
+            )}
             <h3 className="text-xl font-semibold">{userProfile.name}</h3>
             <p className="text-gray-600">Member since {userProfile.memberSince}</p>
           </div>

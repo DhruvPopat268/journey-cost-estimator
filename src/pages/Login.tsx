@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Camera, User } from 'lucide-react';
 
 export default function OtpLoginFlow() {
   const [step, setStep] = useState("login");
@@ -13,6 +14,8 @@ export default function OtpLoginFlow() {
   const [mobileNumber, setMobileNumber] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [profilePhoto, setProfilePhoto] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
 
   const location = useLocation();
   const bookingData = location.state;
@@ -129,14 +132,39 @@ export default function OtpLoginFlow() {
     await handleSendOtp(mobileNumber);
   };
 
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size should be less than 5MB');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target.result;
+        setProfilePhoto(base64);
+        setPhotoPreview(base64);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Save profile
   const handleSaveProfile = async (data) => {
+    const token = localStorage.getItem('RiderToken');
+    if (!token) return;
     setLoading(true);
     try {
+      const profileData = { ...data };
+      if (profilePhoto) {
+        profileData.profilePhoto = profilePhoto;
+      }
+      
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/save-profile`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, mobile: mobileNumber }),
+        headers: { "Content-Type": "application/json" , "Authorization": `Bearer ${token}` },
+        body: JSON.stringify(profileData),
       });
       const result = await res.json();
       if (result.success) {
@@ -159,6 +187,8 @@ export default function OtpLoginFlow() {
     setCountdown(0);
     loginForm.reset();
     profileForm.reset();
+    setProfilePhoto(null);
+    setPhotoPreview(null);
   };
 
   const handleChangeNumber = () => {
@@ -313,6 +343,32 @@ export default function OtpLoginFlow() {
 
           {step === "profile" && (
             <form onSubmit={profileForm.handleSubmit(handleSaveProfile)} className="space-y-4">
+              {/* Profile Photo */}
+              <div className="text-center mb-6">
+                <div className="relative w-24 h-24 mx-auto mb-4">
+                  {photoPreview ? (
+                    <img 
+                      src={photoPreview} 
+                      alt="Profile" 
+                      className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center border-2 border-gray-200">
+                      <User size={32} className="text-white" />
+                    </div>
+                  )}
+                  <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer hover:bg-blue-700 transition-colors">
+                    <Camera size={16} />
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handlePhotoChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                <p className="text-sm text-gray-600">Add a profile photo (optional)</p>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Full Name *
