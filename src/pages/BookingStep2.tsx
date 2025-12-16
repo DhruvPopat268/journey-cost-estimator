@@ -1061,40 +1061,8 @@ const BookingStep2 = () => {
   };
 
   const handleWalletPayment = async (bookingDetails) => {
-    try {
-      const token = localStorage.getItem("RiderToken");
-
-      const finalAmount = useReferralEarning && referralData ? referralData.totalPayable : finalPayable;
-      
-      // First deduct money from wallet
-      const deductRes = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/payments/deduct`,
-        {
-          amount: finalAmount,
-          description: `Ride payment for ${bookingData.subcategoryName}`
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
-      if (deductRes.data.success) {
-        // If wallet deduction successful, book the ride
-        await bookRideDirectly({
-          ...bookingDetails,
-          walletTransactionId: deductRes.data.transactionId
-        });
-      } else {
-        alert("Wallet payment failed. Please try again.");
-      }
-    } catch (error) {
-      console.error("Wallet payment error:", error);
-      if (error.response?.data?.error === 'Insufficient balance') {
-        alert("Insufficient wallet balance. Please add money to your wallet.");
-      } else {
-        alert("Wallet payment failed. Please try again.");
-      }
-    }
+    // Directly book the ride - wallet deduction will be handled in /book route
+    await bookRideDirectly(bookingDetails);
   };
 
   const bookRideDirectly = async (bookingDetails) => {
