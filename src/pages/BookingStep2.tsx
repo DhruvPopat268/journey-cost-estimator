@@ -95,7 +95,7 @@ const BookingStep2 = () => {
     const totalMinutes = parseInt(minutes);
     const hours = Math.floor(totalMinutes / 60);
     const remainingMinutes = totalMinutes % 60;
-    
+
     if (hours === 0) {
       return `${totalMinutes}Min`;
     } else if (remainingMinutes === 0) {
@@ -289,13 +289,13 @@ const BookingStep2 = () => {
         const hours = Math.round(minutes / 60 * 100) / 100;
         const km = parseInt(item.includedKm);
         const timeDisplay = formatTimeDisplay(minutes);
-        
+
         const subcategoryLower = bookingData?.subcategoryName?.toLowerCase() || '';
-        const isDistanceBased = subcategoryLower.includes('oneway') || 
-                               subcategoryLower.includes('one-way') || 
-                               subcategoryLower.includes('out-station') || 
-                               subcategoryLower.includes('in-city');
-        
+        const isDistanceBased = subcategoryLower.includes('oneway') ||
+          subcategoryLower.includes('one-way') ||
+          subcategoryLower.includes('out-station') ||
+          subcategoryLower.includes('in-city');
+
         let displayValue = '';
         if (minutes > 0 && km > 0) {
           displayValue = isDistanceBased ? `${km}Km & ${timeDisplay}` : `${timeDisplay} & ${km}Km`;
@@ -304,7 +304,7 @@ const BookingStep2 = () => {
         } else if (km > 0) {
           displayValue = `${km}Km`;
         }
-        
+
         return displayValue === defaultUsage;
       });
 
@@ -318,7 +318,7 @@ const BookingStep2 = () => {
 
       // Create payload without sender/receiver fields for calculation
       const { senderMobile, senderName, senderType, receiverMobile, receiverName, receiverType, senderDetails, receiverDetails, ...calculationData } = bookingData;
-      
+
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}${apiEndpoint}`,
         {
@@ -363,7 +363,7 @@ const BookingStep2 = () => {
         navigate("/login", { state: bookingDetails });
         return;
       }
-      
+
       // Handle 404 errors by clearing only calculation results
       if (err.response?.status === 404) {
         console.log('404 error - clearing calculation results and showing empty state');
@@ -371,7 +371,7 @@ const BookingStep2 = () => {
         dispatch(setTotalAmount([]));
         setSelectedCategoryLocal(null);
       }
-      
+
       setLoading(false);
     } finally {
       setIsCalculating(false);
@@ -463,24 +463,24 @@ const BookingStep2 = () => {
         );
         if (res.data) {
           const dataArray = Array.isArray(res.data) ? res.data : [];
-          
+
           if (dataArray.length > 0) {
             // Check if subcategory is distance-based
             const subcategoryLower = bookingData?.subcategoryName?.toLowerCase() || '';
-            const isDistanceBased = subcategoryLower.includes('oneway') || 
-                                   subcategoryLower.includes('one-way') || 
-                                   subcategoryLower.includes('out-station') || 
-                                   subcategoryLower.includes('in-city');
-            
+            const isDistanceBased = subcategoryLower.includes('oneway') ||
+              subcategoryLower.includes('one-way') ||
+              subcategoryLower.includes('out-station') ||
+              subcategoryLower.includes('in-city');
+
             // Create combined options showing only non-zero values
             const combinedOptions = dataArray.map(item => {
               const minutes = parseInt(item.includedMinutes);
               const hours = Math.round(minutes / 60 * 100) / 100;
               const km = parseInt(item.includedKm);
-              
+
               // Format time display with hours and minutes
               const timeDisplay = formatTimeDisplay(minutes);
-              
+
               let displayValue = '';
               if (minutes > 0 && km > 0) {
                 // Show Km first for distance-based services, time first for time-based
@@ -490,7 +490,7 @@ const BookingStep2 = () => {
               } else if (km > 0) {
                 displayValue = `${km}Km`;
               }
-              
+
               return {
                 value: displayValue,
                 hours: hours.toString(),
@@ -499,7 +499,7 @@ const BookingStep2 = () => {
                 rawKm: item.includedKm
               };
             }).filter(option => option.value !== ''); // Remove empty options
-            
+
 
             setDurationOptions(combinedOptions);
             setRawIncludedData(dataArray); // Store raw data for calculation API
@@ -1019,7 +1019,7 @@ const BookingStep2 = () => {
   const handleTermsAccept = async () => {
     setTermsAccepted(true);
     setShowTermsModal(false);
-    
+
     // Call referral calculation API
     await fetchReferralCalculation();
     setShowReferralSection(true);
@@ -1027,7 +1027,7 @@ const BookingStep2 = () => {
 
   const handleFinalBooking = async () => {
     const finalAmount = useReferralEarning && referralData ? referralData.totalPayable : finalPayable;
-    
+
     const bookingDetails = {
       ...bookingData,
       selectedUsage: selectedUsage || customUsage,
@@ -1069,7 +1069,7 @@ const BookingStep2 = () => {
     try {
       const token = localStorage.getItem("RiderToken");
       const { categoryName, subcategoryName, subSubcategoryName, carType, transmissionType, totalAmount, selectedCarCategory, selectedParcelCategory, ...cleanedDetails } = bookingDetails;
-      
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rides/book`, {
         method: "POST",
         headers: {
@@ -1718,141 +1718,147 @@ const BookingStep2 = () => {
 
                 <Separator className="my-3" />
 
-                {/* Insurance Section - Above Trip Summary */}
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium">Insurance Coverage</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={includeInsurance}
-                      onChange={(e) => setIncludeInsurance(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
-                  </label>
+                {selectedCategory.insuranceCharges > 0 && (
+
+                  <div className="flex justify-between text-sm">
+                    {/* Insurance Section - Above Trip Summary */}
+                    <span className="font-medium">Insurance Coverage</span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                    type="checkbox"
+                    checked={includeInsurance}
+                    onChange={(e) => setIncludeInsurance(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                </label>
+              </div>
+                )}
+
+
+
+
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="font-medium">Base Fare:</span>
+                  <span className="font-medium">₹{selectedCategory.subtotal || 0}</span>
                 </div>
 
-
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="font-medium">Base Fare:</span>
-                    <span className="font-medium">₹{selectedCategory.subtotal || 0}</span>
-                  </div>
-
-                  {selectedCategory.discountApplied > 0 && (
+                {selectedCategory.discountApplied > 0 && (
                   <div className="flex justify-between">
                     <span className="font-medium">Discount:</span>
                     <span className="font-medium">-{selectedCategory.discountApplied || 0}</span>
                   </div>
-                  )}
-                  
+                )}
+
+                <div className="flex justify-between">
+                  <span className="font-medium">Taxes & Fees:</span>
+                  <span className="font-medium">₹{selectedCategory.gstCharges || 0}</span>
+                </div>
+
+                {selectedCategory.insuranceCharges > 0 && (
                   <div className="flex justify-between">
-                    <span className="font-medium">Taxes & Fees:</span>
-                    <span className="font-medium">₹{selectedCategory.gstCharges || 0}</span>
+                    <span className="font-medium">Secure Fee:</span>
+                    <span className="font-medium">₹{selectedCategory.insuranceCharges || 0}</span>
                   </div>
+                )}
 
-                  {selectedCategory.insuranceCharges > 0 && (
-                    <div className="flex justify-between">
-                      <span className="font-medium">Secure Fee:</span>
-                      <span className="font-medium">₹{selectedCategory.insuranceCharges || 0}</span>
-                    </div>
+                {selectedCategory.cancellationCharges > 0 &&
+                  <div className="flex justify-between">
+                    <span className="font-medium">Cancellation Fee:</span>
+                    <span className="font-medium">₹{selectedCategory.cancellationCharges || 0}</span>
+                  </div>}
+
+
+              </div>
+
+              <Separator className="my-3" />
+
+              <div className="flex justify-between text-lg font-bold">
+                <span>Estimated Total:</span>
+                <span className="text-green-600">
+                  ₹{Math.max(
+                    0,
+                    (selectedCategory.totalPayable || 0)
+
                   )}
-
-                  {selectedCategory.cancellationCharges > 0 &&
-                    <div className="flex justify-between">
-                      <span className="font-medium">Cancellation Fee:</span>
-                      <span className="font-medium">₹{selectedCategory.cancellationCharges || 0}</span>
-                    </div>}
-
-
-                </div>
-
-                <Separator className="my-3" />
-
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Estimated Total:</span>
-                  <span className="text-green-600">
-                    ₹{Math.max(
-                      0,
-                      (selectedCategory.totalPayable || 0) 
-                      
-                    )}
-                  </span>
-                </div>
+                </span>
               </div>
+            </div>
 
-              {/* Instructions Section without Horizontal Scroll */}
-              {instructions && instructions.length > 0 ? (
-                <div className="pt-4">
-                  <h4 className="font-semibold text-gray-800 mb-2">Important Instructions</h4>
-                  <ul className="space-y-2 list-decimal list-inside">
-                    {instructions.map((instruction, index) => (
-                      <li
-                        key={index}
-                        className="  text-sm text-gray-700 leading-relaxed"
-                      >
-                        {instruction}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                !instructionsLoading && (
-                  <div className="text-center py-4 text-gray-500">
-                    No special instructions for this category.
-                  </div>
-                )
-              )}
-
-
-              {/* Loading state */}
-              {instructionsLoading && (
-                <div className="flex justify-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                </div>
-              )}
-
-
-
-              {/* Modal Actions */}
-              <div className="flex space-x-3 pt-4">
-                <Button
-                  onClick={() => setShowPriceBreakdown(false)}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => {
-                    setShowPriceBreakdown(false);
-                    handleConfirmBooking();
-                  }}
-                  disabled={durationError}
-                  className={`flex-1 ${durationError
-                    ? 'bg-gray-400 hover:bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                    } text-white`}
-                >
-                  {durationError ? 'Fix Duration Error' : 'Confirm & Pay'}
-                </Button>
+            {/* Instructions Section without Horizontal Scroll */}
+            {instructions && instructions.length > 0 ? (
+              <div className="pt-4">
+                <h4 className="font-semibold text-gray-800 mb-2">Important Instructions</h4>
+                <ul className="space-y-2 list-decimal list-inside">
+                  {instructions.map((instruction, index) => (
+                    <li
+                      key={index}
+                      className="  text-sm text-gray-700 leading-relaxed"
+                    >
+                      {instruction}
+                    </li>
+                  ))}
+                </ul>
               </div>
+            ) : (
+              !instructionsLoading && (
+                <div className="text-center py-4 text-gray-500">
+                  No special instructions for this category.
+                </div>
+              )
+            )}
+
+
+            {/* Loading state */}
+            {instructionsLoading && (
+              <div className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              </div>
+            )}
+
+
+
+            {/* Modal Actions */}
+            <div className="flex space-x-3 pt-4">
+              <Button
+                onClick={() => setShowPriceBreakdown(false)}
+                variant="outline"
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowPriceBreakdown(false);
+                  handleConfirmBooking();
+                }}
+                disabled={durationError}
+                className={`flex-1 ${durationError
+                  ? 'bg-gray-400 hover:bg-gray-400 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700'
+                  } text-white`}
+              >
+                {durationError ? 'Fix Duration Error' : 'Confirm & Pay'}
+              </Button>
             </div>
           </div>
         </div>
-      )}
+        </div>
+  )
+}
 
-      {/* Back Confirmation Dialog */}
-      <ConfirmationDialog
-        isOpen={showBackConfirmation}
-        onClose={() => setShowBackConfirmation(false)}
-        onConfirm={handleConfirmBack}
-        title="Discard Changes?"
-        description="Going back will clear all your selections on this page. Are you sure you want to continue?"
-        confirmText="Yes, Go Back"
-        cancelText="Stay Here"
-      />
-    </div>
+{/* Back Confirmation Dialog */ }
+<ConfirmationDialog
+  isOpen={showBackConfirmation}
+  onClose={() => setShowBackConfirmation(false)}
+  onConfirm={handleConfirmBack}
+  title="Discard Changes?"
+  description="Going back will clear all your selections on this page. Are you sure you want to continue?"
+  confirmText="Yes, Go Back"
+  cancelText="Stay Here"
+/>
+    </div >
   );
 };
 
