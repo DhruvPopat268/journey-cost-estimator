@@ -1125,27 +1125,7 @@ const BookingStep2 = () => {
     }
   };
 
-  const getIcon = (category) => {
-    const categoryLower = category.toLowerCase();
-    const isParcel = bookingData?.categoryName?.toLowerCase() === 'parcel';
 
-    if (isParcel) {
-      // For parcel bookings, show bike for "bike" category, car for others
-      return categoryLower === 'bike' ? '🏍️' : '🚗';
-    }
-
-    // For non-parcel bookings, use existing logic
-    switch (categoryLower) {
-      case "prime":
-        return "👑";
-      case "normal":
-        return "⭐";
-      case "classic":
-        return "🧍";
-      default:
-        return "🚗";
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-4 px-4">
@@ -1421,14 +1401,16 @@ const BookingStep2 = () => {
               `}
               >
                 <div className="flex items-center gap-4">
-                  <div className="text-2xl">
-                    {getIcon(item.category)}
-                  </div>
+             
                   <div>
                     <h3 className="text-lg font-semibold text-gray-800">{item.category}</h3>
                     <p className="text-sm text-gray-500">
-                      {item.category === "Classic" && "Qualified, Verified, Trained & Tested"}
-                      {item.category === "Prime" && "Highly-Rated Veterans"}
+                      {bookingData?.categoryName?.toLowerCase() === 'cab' && item.seatCapacity 
+                        ? `${item.description} - ${item.seatCapacity} Seats`
+                        : bookingData?.categoryName?.toLowerCase() === 'parcel' && item.weightAllowed
+                        ? `${item.description} - upto ${item.weightAllowed} allowed`
+                        : item.description
+                      }
                     </p>
                   </div>
                 </div>
