@@ -3,7 +3,6 @@ import { X, Clock, User, LogOut, Trash2, Bike, AlertTriangle, House, LogIn , Gif
 import { useSidebar } from './SidebarContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { clearAllCookies, performLogout } from '../../lib/cookieUtils';
 
 const Sidebar = ({ onNavigate }) => {
   const {
@@ -58,6 +57,25 @@ const Sidebar = ({ onNavigate }) => {
     fetchRider();
   }, [navigate]);
 
+  const handleLogout = async () => {
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/web/logout`, {
+        method: "POST",
+        credentials: 'include'
+      });
+      
+      // Clear localStorage and update state
+      localStorage.clear();
+      setIsLoggedIn(false);
+      navigate('/login');
+    } catch (error) {
+      console.error("Error during logout:", error);
+      // Even if API fails, clear local state
+      localStorage.clear();
+      setIsLoggedIn(false);
+      navigate('/login');
+    }
+  };
   const deleteRider = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/delete-rider`, {
@@ -70,8 +88,8 @@ const Sidebar = ({ onNavigate }) => {
       });
 
       if (res.status === 200) {
-        // Use utility function to clear everything
-        performLogout();
+        // Clear localStorage and update state
+        localStorage.clear();
         setIsLoggedIn(false);
         navigate("/login");
       } else {
@@ -200,10 +218,8 @@ const menuItems = [
           <button
             onClick={() => {
               setShowLogoutDialog(false);
-              closeSidebar(); // Close sidebar before navigation
-              performLogout();
-              setIsLoggedIn(false);
-              navigate('/login');
+              closeSidebar();
+              handleLogout();
             }}
             className="flex-1 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
           >
