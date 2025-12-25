@@ -59,19 +59,11 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("RiderToken");
-      if (!token) {
-        console.error("No token found in localStorage");
-        setLoading(false);
-        return;
-      }
 
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/rides/current/my-rides`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`, // 👈 send token in header
-          },
+          withCredentials: true
         }
       );
 
@@ -110,16 +102,12 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
       const confirmed = window.confirm("Are you sure you want to cancel this booking?");
       if (!confirmed) return;
 
-      const token = localStorage.getItem("RiderToken");
-
       // ✅ Send bookingId in body instead of URL
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/rides/booking/cancel`,
         { rideId : bookingId }, // sending in body
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          withCredentials: true
         }
       );
 

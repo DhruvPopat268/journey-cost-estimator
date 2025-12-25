@@ -3,6 +3,7 @@ import { X, Clock, User, LogOut, Trash2, Bike, AlertTriangle, House, LogIn , Gif
 import { useSidebar } from './SidebarContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { clearAllCookies, performLogout } from '../../lib/cookieUtils';
 
 const Sidebar = ({ onNavigate }) => {
   const {
@@ -18,25 +19,18 @@ const Sidebar = ({ onNavigate }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if RiderToken exists in localStorage
-    const token = localStorage.getItem("RiderToken");
-    setIsLoggedIn(!!token);
-    
-    if (!token) return; // Skip fetching rider data if not logged in
-
     const fetchRider = async () => {
       try {
         const res = await axios.get(
           `${import.meta.env.VITE_API_URL}/api/rider-auth/find-rider`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            withCredentials: true
           }
         );
 
         if (res.data?.success && res.data.rider) {
           const rider = res.data.rider;
+          setIsLoggedIn(true);
 
           setName(rider.name || "");
           setMobile(rider.mobile || "");
@@ -56,7 +50,6 @@ const Sidebar = ({ onNavigate }) => {
       } catch (err) {
         console.error("Error fetching rider:", err);
         if (err.response?.status === 401) {
-          localStorage.removeItem("RiderToken");
           setIsLoggedIn(false);
         }
       }
@@ -67,24 +60,18 @@ const Sidebar = ({ onNavigate }) => {
 
   const deleteRider = async () => {
     try {
-      const mobile = localStorage.getItem("RiderMobile");
-
-      if (!mobile) {
-        console.warn("No RiderMobile found in localStorage");
-        return;
-      }
-
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/delete-rider`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ mobile }),
+        credentials: 'include',
+        body: JSON.stringify({}),
       });
 
       if (res.status === 200) {
-        // ✅ Clear localStorage and redirect
-        localStorage.clear();
+        // Use utility function to clear everything
+        performLogout();
         setIsLoggedIn(false);
         navigate("/login");
       } else {
@@ -214,7 +201,7 @@ const menuItems = [
             onClick={() => {
               setShowLogoutDialog(false);
               closeSidebar(); // Close sidebar before navigation
-              localStorage.clear();
+              performLogout();
               setIsLoggedIn(false);
               navigate('/login');
             }}

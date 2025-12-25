@@ -104,19 +104,16 @@ const WalletPage = () => {
 
   // Get RiderToken from localStorage - memoized
   const getRiderToken = useCallback(() => {
-    const token = localStorage.getItem('RiderToken');
-    console.log('RiderToken from localStorage:', token);
-    return token;
+    // Token is now handled via cookies, no need to get from localStorage
+    return null;
   }, []);
 
   // Create headers with authorization - memoized
   const getAuthHeaders = useCallback(() => {
-    const token = getRiderToken();
     return {
-      'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` })
+      'Content-Type': 'application/json'
     };
-  }, [getRiderToken]);
+  }, []);
 
   // Load Razorpay script - memoized
   const loadRazorpayScript = useCallback(() => {
@@ -155,6 +152,7 @@ const WalletPage = () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/wallet`, {
         method: 'GET',
         headers: getAuthHeaders(),
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -184,6 +182,7 @@ const WalletPage = () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/history`, {
         method: 'GET',
         headers: getAuthHeaders(),
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -228,6 +227,7 @@ const WalletPage = () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/create-order`, {
         method: 'POST',
         headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify({
           amount: amount,
           currency: 'INR'
@@ -281,6 +281,7 @@ const WalletPage = () => {
             const verifyResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/verify`, {
               method: 'POST',
               headers: getAuthHeaders(),
+              credentials: 'include',
               body: JSON.stringify({
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,

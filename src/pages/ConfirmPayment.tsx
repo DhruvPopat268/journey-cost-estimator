@@ -30,20 +30,12 @@ export default function PaymentComponent() {
     setIsProcessing(true);
 
     try {
-      const token = localStorage.getItem("RiderToken"); // 👈 get token from localStorage
-      if (!token) {
-        alert("You must be logged in to book a ride");
-        setIsProcessing(false);
-        navigate("/login");
-        return;
-      }
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rides/book`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`, // 👈 send token in header
         },
+        credentials: 'include',
         body: JSON.stringify({
           ...paymentData,
           paymentType: selectedPaymentType,
@@ -53,8 +45,7 @@ export default function PaymentComponent() {
       // Check if unauthorized
       if (response.status === 401) {
         alert("Your session has expired. Please login again.");
-        localStorage.removeItem("RiderToken"); // Clear invalid token
-        navigate("/login"); // 👈 redirect to login
+        navigate("/login");
         return;
       }
 

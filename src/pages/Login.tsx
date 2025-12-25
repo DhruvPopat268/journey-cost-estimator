@@ -63,6 +63,7 @@ export default function OtpLoginFlow() {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/send-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify({ mobile }),
       });
       const result = await res.json();
@@ -99,18 +100,15 @@ export default function OtpLoginFlow() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/verify-otp`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/web/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify({ mobile: data.mobile, otp: data.otp }),
       });
 
       const result = await res.json();
       if (result.success) {
-        // ✅ Save JWT token in localStorage
-        localStorage.setItem("RiderToken", result.token);
-        localStorage.setItem("RiderMobile", result.rider.mobile || "");
-
         if (result.isNew) {
           setStep("profile");
         } else {
@@ -151,8 +149,6 @@ export default function OtpLoginFlow() {
 
   // Save profile
   const handleSaveProfile = async (data) => {
-    const token = localStorage.getItem('RiderToken');
-    if (!token) return;
     setLoading(true);
     try {
       const formData = new FormData();
@@ -164,7 +160,7 @@ export default function OtpLoginFlow() {
       
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/save-profile`, {
         method: "POST",
-        headers: { "Authorization": `Bearer ${token}` },
+        credentials: 'include',
         body: formData,
       });
       const result = await res.json();

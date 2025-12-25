@@ -31,19 +31,11 @@ const PastRides: React.FC = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("RiderToken");
-      if (!token) {
-        console.error("No token found in localStorage");
-        setLoading(false);
-        return;
-      }
 
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/rides/past/my-rides`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          withCredentials: true
         }
       );
 

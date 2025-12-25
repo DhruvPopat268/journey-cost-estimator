@@ -14,15 +14,12 @@ const MyProfile = ({ onBack }) => {
   useEffect(() => {
     const fetchRider = async () => {
       try {
-        const token = localStorage.getItem('RiderToken');
-        if (!token) return;
-
         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/find-rider`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`, // ✅ send RiderToken in header
           },
+          credentials: 'include'
         });
 
 
@@ -67,19 +64,12 @@ const MyProfile = ({ onBack }) => {
 
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('RiderToken');
-      if (!token) {
-        alert('No token found. Please login again.');
-        setIsLoading(false);
-        return;
-      }
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/update`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
+        credentials: 'include',
         body: JSON.stringify({
           field: editingField,
           value: editValue,
@@ -91,10 +81,6 @@ const MyProfile = ({ onBack }) => {
           ...prev,
           [editingField]: editValue,
         }));
-
-        if (editingField === 'mobile') {
-          localStorage.setItem('RiderMobile', editValue);
-        }
 
         setEditingField(null);
         setEditValue('');
@@ -132,22 +118,13 @@ const MyProfile = ({ onBack }) => {
 
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('RiderToken');
-      if (!token) {
-        alert('No token found. Please login again.');
-        setIsLoading(false);
-        return;
-      }
-
       const formData = new FormData();
       formData.append('field', 'profilePhoto');
       formData.append('profilePhoto', profilePhotoFile);
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rider-auth/update`, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include',
         body: formData,
       });
 

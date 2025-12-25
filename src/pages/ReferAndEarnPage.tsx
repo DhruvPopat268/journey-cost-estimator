@@ -13,15 +13,11 @@ const ReferAndEarnPage = () => {
 
     // ✅ Fetch rider + referral data
     useEffect(() => {
-        const token = localStorage.getItem("RiderToken");
-        if (!token) return;
-
         const fetchData = async () => {
             try {
                 const res = await axios.get(
                     `${import.meta.env.VITE_API_URL}/api/rider-auth/find-rider`,
-                    
-                    { headers: { Authorization: `Bearer ${token}` } }
+                    { withCredentials: true }
                 );
 
                 if (res.data?.success && res.data.rider) {

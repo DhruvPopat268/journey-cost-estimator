@@ -61,18 +61,11 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
             setLoading(true);
             setError(null);
 
-            const token = localStorage.getItem("RiderToken");
-            if (!token) {
-                throw new Error("No authentication token found");
-            }
-
             const response = await axios.post(
                 `${import.meta.env.VITE_API_URL}/api/rides/bookingDetail`,
                 { rideId: bookingId },
                 {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
+                    withCredentials: true
                 }
             );
             
@@ -95,15 +88,11 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
             const confirmed = window.confirm('Are you sure you want to cancel this booking?');
             if (!confirmed) return;
 
-            const token = localStorage.getItem("RiderToken");
-
             const response = await axios.post(
                 `${import.meta.env.VITE_API_URL}/api/rides/booking/cancel`,
                 { bookingId },
                 {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
+                    withCredentials: true
                 }
             );
 

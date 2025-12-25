@@ -194,7 +194,6 @@ const BookingStep2 = () => {
 
     setInstructionsLoading(true);
     try {
-      const token = localStorage.getItem("RiderToken");
       const categoryType = bookingData?.categoryName?.toLowerCase();
 
       const requestBody = {
@@ -218,7 +217,7 @@ const BookingStep2 = () => {
         `${import.meta.env.VITE_API_URL}/api/instructions/getInstructions`,
         requestBody,
         {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
+          withCredentials: true
         }
       );
       const instructionTexts = res.data.data || [];
@@ -227,7 +226,6 @@ const BookingStep2 = () => {
     } catch (error) {
       console.error('Failed to fetch instructions', error);
       if (error.response?.status === 401) {
-        localStorage.removeItem("RiderToken");
         const bookingDetails = {
           ...bookingData,
           selectedUsage: selectedUsage || customUsage,
@@ -282,7 +280,6 @@ const BookingStep2 = () => {
     }
 
     try {
-      const token = localStorage.getItem("RiderToken");
       // Find the raw data for the selected usage and create combined selectedUsage
       const selectedRawData = rawIncludedData.find(item => {
         const minutes = parseInt(item.includedMinutes);
@@ -333,7 +330,7 @@ const BookingStep2 = () => {
           ...(categoryName === 'parcel' && (parcelCategory || selectedParcelCategory) && { parcelCategoryId: (parcelCategory || selectedParcelCategory)._id })
         },
         {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
+          withCredentials: true
         }
       );
 
@@ -345,7 +342,6 @@ const BookingStep2 = () => {
     } catch (err) {
       console.error('API error:', err);
       if (err.response?.status === 401) {
-        localStorage.removeItem("RiderToken");
         const bookingDetails = {
           ...bookingData,
           selectedUsage: defaultUsage,
@@ -397,9 +393,8 @@ const BookingStep2 = () => {
       let defaultCarCategory = null;
       if (categoryName === 'cab') {
         try {
-          const token = localStorage.getItem("RiderToken");
           const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/car-categories`, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
+            withCredentials: true
           });
           const activeCategories = res.data.filter(category => category.status === true);
           setCarCategories(activeCategories);
@@ -420,9 +415,8 @@ const BookingStep2 = () => {
       let defaultParcelCategory = null;
       if (categoryName === 'parcel') {
         try {
-          const token = localStorage.getItem("RiderToken");
           const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/parcel-categories`, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
+            withCredentials: true
           });
           setParcelCategories(res.data);
 
@@ -449,7 +443,6 @@ const BookingStep2 = () => {
       }
 
       try {
-        const token = localStorage.getItem("RiderToken");
         const res = await axios.post(
           `${import.meta.env.VITE_API_URL}${apiEndpoint}`,
           {
@@ -458,7 +451,7 @@ const BookingStep2 = () => {
             ...(bookingData.subSubcategoryId && { subSubcategoryId: bookingData.subSubcategoryId })
           },
           {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
+            withCredentials: true
           }
         );
         if (res.data) {
@@ -536,7 +529,6 @@ const BookingStep2 = () => {
         setDurationOptions([]);
         setLoading(false);
         if (error.response?.status === 401) {
-          localStorage.removeItem("RiderToken");
           const bookingDetails = {
             ...bookingData,
             selectedUsage: selectedUsage || customUsage,
@@ -781,22 +773,20 @@ const BookingStep2 = () => {
 
   useEffect(() => {
     const fetchWalletBalance = async () => {
-      const token = localStorage.getItem("RiderToken");
-      if (!token || selectedPaymentMethod !== 'wallet') return;
+      if (selectedPaymentMethod !== 'wallet') return;
 
       setWalletLoading(true);
       try {
         const res = await axios.get(
           `${import.meta.env.VITE_API_URL}/api/payments/wallet`,
           {
-            headers: { Authorization: `Bearer ${token}` }
+            withCredentials: true
           }
         );
         setWalletBalance(res.data.balance || 0);
       } catch (error) {
         console.error("Failed to fetch wallet balance:", error);
         if (error.response?.status === 401) {
-          localStorage.removeItem("RiderToken");
           const bookingDetails = {
             ...bookingData,
             selectedUsage: selectedUsage || customUsage,
@@ -923,29 +913,9 @@ const BookingStep2 = () => {
     }
 
     try {
-      const token = localStorage.getItem("RiderToken");
-      if (!token) {
-        const bookingDetails = {
-          ...bookingData,
-          selectedUsage: selectedUsage || customUsage,
-          selectedCategory: selectedCategory.category,
-          insuranceCharges: selectedCategory.insuranceCharges,
-          subtotal: selectedCategory.subtotal,
-          gstCharges: selectedCategory.gstCharges,
-          totalPayable: finalPayable,
-          notes: notes,
-          includeInsurance: includeInsurance,
-          receiverName: receiverName,
-          receiverPhone: receiverPhone,
-          selectedDates: selectedDates
-        };
-        navigate("/login", { state: bookingDetails });
-        return;
-      }
-
       const res = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/rider-auth/auth/check`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { withCredentials: true }
       );
 
       if (!res.data.loggedIn) {
@@ -988,7 +958,6 @@ const BookingStep2 = () => {
 
   const fetchReferralCalculation = async () => {
     try {
-      const token = localStorage.getItem("RiderToken");
       const payload = {
         categoryId: bookingData.categoryId,
         subcategoryId: bookingData.subcategoryId,
@@ -1005,7 +974,7 @@ const BookingStep2 = () => {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/referral-rules/calculate-ride`,
         payload,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { withCredentials: true }
       );
 
       if (response.data) {
@@ -1067,15 +1036,14 @@ const BookingStep2 = () => {
 
   const bookRideDirectly = async (bookingDetails) => {
     try {
-      const token = localStorage.getItem("RiderToken");
       const { categoryName, subcategoryName, subSubcategoryName, carType, transmissionType, totalAmount, selectedCarCategory, selectedParcelCategory, ...cleanedDetails } = bookingDetails;
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rides/book`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
         },
+        credentials: 'include',
         body: JSON.stringify({
           ...cleanedDetails,
           selectedDate: (bookingData?.subcategoryName?.toLowerCase().includes('weekly') || bookingData?.subcategoryName?.toLowerCase().includes('monthly')) && selectedDates.length > 0 ? selectedDates[0] : bookingDetails.selectedDate,
@@ -1107,7 +1075,6 @@ const BookingStep2 = () => {
 
       if (response.status === 401) {
         alert("Your session has expired. Please login again.");
-        localStorage.removeItem("RiderToken");
         navigate("/login");
         return;
       }
@@ -1401,7 +1368,7 @@ const BookingStep2 = () => {
               `}
               >
                 <div className="flex items-center gap-4">
-             
+
                   <div>
                     <h3 className="text-lg font-semibold text-gray-800">{item.category}</h3>
                     <p className="text-sm text-gray-500">
@@ -1707,139 +1674,139 @@ const BookingStep2 = () => {
                     <span className="font-medium">Insurance Coverage</span>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
-                    type="checkbox"
-                    checked={includeInsurance}
-                    onChange={(e) => setIncludeInsurance(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
-                </label>
-              </div>
-                )}
-
-
-
-
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="font-medium">Base Fare:</span>
-                  <span className="font-medium">₹{selectedCategory.subtotal || 0}</span>
-                </div>
-
-                {selectedCategory.discountApplied > 0 && (
-                  <div className="flex justify-between">
-                    <span className="font-medium">Discount:</span>
-                    <span className="font-medium">-{selectedCategory.discountApplied || 0}</span>
+                        type="checkbox"
+                        checked={includeInsurance}
+                        onChange={(e) => setIncludeInsurance(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                    </label>
                   </div>
                 )}
 
-                <div className="flex justify-between">
-                  <span className="font-medium">Taxes & Fees:</span>
-                  <span className="font-medium">₹{selectedCategory.gstCharges || 0}</span>
-                </div>
 
-                {selectedCategory.insuranceCharges > 0 && (
+
+
+                <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="font-medium">Secure Fee:</span>
-                    <span className="font-medium">₹{selectedCategory.insuranceCharges || 0}</span>
+                    <span className="font-medium">Base Fare:</span>
+                    <span className="font-medium">₹{selectedCategory.subtotal || 0}</span>
                   </div>
-                )}
 
-                {selectedCategory.cancellationCharges > 0 &&
-                  <div className="flex justify-between">
-                    <span className="font-medium">Cancellation Fee:</span>
-                    <span className="font-medium">₹{selectedCategory.cancellationCharges || 0}</span>
-                  </div>}
-
-
-              </div>
-
-              <Separator className="my-3" />
-
-              <div className="flex justify-between text-lg font-bold">
-                <span>Estimated Total:</span>
-                <span className="text-green-600">
-                  ₹{Math.max(
-                    0,
-                    (selectedCategory.totalPayable || 0)
-
+                  {selectedCategory.discountApplied > 0 && (
+                    <div className="flex justify-between">
+                      <span className="font-medium">Discount:</span>
+                      <span className="font-medium">-{selectedCategory.discountApplied || 0}</span>
+                    </div>
                   )}
-                </span>
-              </div>
-            </div>
 
-            {/* Instructions Section without Horizontal Scroll */}
-            {instructions && instructions.length > 0 ? (
-              <div className="pt-4">
-                <h4 className="font-semibold text-gray-800 mb-2">Important Instructions</h4>
-                <ul className="space-y-2 list-decimal list-inside">
-                  {instructions.map((instruction, index) => (
-                    <li
-                      key={index}
-                      className="  text-sm text-gray-700 leading-relaxed"
-                    >
-                      {instruction}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              !instructionsLoading && (
-                <div className="text-center py-4 text-gray-500">
-                  No special instructions for this category.
+                  <div className="flex justify-between">
+                    <span className="font-medium">Taxes & Fees:</span>
+                    <span className="font-medium">₹{selectedCategory.gstCharges || 0}</span>
+                  </div>
+
+                  {selectedCategory.insuranceCharges > 0 && (
+                    <div className="flex justify-between">
+                      <span className="font-medium">Secure Fee:</span>
+                      <span className="font-medium">₹{selectedCategory.insuranceCharges || 0}</span>
+                    </div>
+                  )}
+
+                  {selectedCategory.cancellationCharges > 0 &&
+                    <div className="flex justify-between">
+                      <span className="font-medium">Cancellation Fee:</span>
+                      <span className="font-medium">₹{selectedCategory.cancellationCharges || 0}</span>
+                    </div>}
+
+
                 </div>
-              )
-            )}
 
+                <Separator className="my-3" />
 
-            {/* Loading state */}
-            {instructionsLoading && (
-              <div className="flex justify-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Estimated Total:</span>
+                  <span className="text-green-600">
+                    ₹{Math.max(
+                      0,
+                      (selectedCategory.totalPayable || 0)
+
+                    )}
+                  </span>
+                </div>
               </div>
-            )}
+
+              {/* Instructions Section without Horizontal Scroll */}
+              {instructions && instructions.length > 0 ? (
+                <div className="pt-4">
+                  <h4 className="font-semibold text-gray-800 mb-2">Important Instructions</h4>
+                  <ul className="space-y-2 list-decimal list-inside">
+                    {instructions.map((instruction, index) => (
+                      <li
+                        key={index}
+                        className="  text-sm text-gray-700 leading-relaxed"
+                      >
+                        {instruction}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                !instructionsLoading && (
+                  <div className="text-center py-4 text-gray-500">
+                    No special instructions for this category.
+                  </div>
+                )
+              )}
+
+
+              {/* Loading state */}
+              {instructionsLoading && (
+                <div className="flex justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                </div>
+              )}
 
 
 
-            {/* Modal Actions */}
-            <div className="flex space-x-3 pt-4">
-              <Button
-                onClick={() => setShowPriceBreakdown(false)}
-                variant="outline"
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  setShowPriceBreakdown(false);
-                  handleConfirmBooking();
-                }}
-                disabled={durationError}
-                className={`flex-1 ${durationError
-                  ? 'bg-gray-400 hover:bg-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700'
-                  } text-white`}
-              >
-                {durationError ? 'Fix Duration Error' : 'Confirm & Pay'}
-              </Button>
+              {/* Modal Actions */}
+              <div className="flex space-x-3 pt-4">
+                <Button
+                  onClick={() => setShowPriceBreakdown(false)}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowPriceBreakdown(false);
+                    handleConfirmBooking();
+                  }}
+                  disabled={durationError}
+                  className={`flex-1 ${durationError
+                    ? 'bg-gray-400 hover:bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                    } text-white`}
+                >
+                  {durationError ? 'Fix Duration Error' : 'Confirm & Pay'}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
-        </div>
-  )
-}
+      )
+      }
 
-{/* Back Confirmation Dialog */ }
-<ConfirmationDialog
-  isOpen={showBackConfirmation}
-  onClose={() => setShowBackConfirmation(false)}
-  onConfirm={handleConfirmBack}
-  title="Discard Changes?"
-  description="Going back will clear all your selections on this page. Are you sure you want to continue?"
-  confirmText="Yes, Go Back"
-  cancelText="Stay Here"
-/>
+      {/* Back Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showBackConfirmation}
+        onClose={() => setShowBackConfirmation(false)}
+        onConfirm={handleConfirmBack}
+        title="Discard Changes?"
+        description="Going back will clear all your selections on this page. Are you sure you want to continue?"
+        confirmText="Yes, Go Back"
+        cancelText="Stay Here"
+      />
     </div >
   );
 };

@@ -57,7 +57,9 @@ const Booking = () => {
   useEffect(() => {
     const fetchCities = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/cities`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/cities`, {
+          withCredentials: true
+        });
         const activeCities = response.data.filter(city => city.status === true);
         setCities(activeCities);
       } catch (error) {
@@ -85,13 +87,13 @@ const Booking = () => {
     const fetchData = async () => {
       try {
         const requests = [
-          axios.get(`${import.meta.env.VITE_API_URL}/api/subcategories/${subcategoryId}`),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/drivervehicletypes/active`)
+          axios.get(`${import.meta.env.VITE_API_URL}/api/subcategories/${subcategoryId}`, { withCredentials: true }),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/drivervehicletypes/active`, { withCredentials: true })
         ];
         
         // Add sub-subcategory request if subSubcategoryId exists
         if (subSubcategoryId) {
-          requests.push(axios.get(`${import.meta.env.VITE_API_URL}/api/subsubcategories/${subSubcategoryId}`));
+          requests.push(axios.get(`${import.meta.env.VITE_API_URL}/api/subsubcategories/${subSubcategoryId}`, { withCredentials: true }));
         }
         
         const responses = await Promise.all(requests);
@@ -136,7 +138,8 @@ const Booking = () => {
       try {
         const response = await axios.post(
           `${import.meta.env.VITE_API_URL}/api/vehiclecategories/by-type`,
-          { driverVehicleTypeId: selectedTransmissionId }
+          { driverVehicleTypeId: selectedTransmissionId },
+          { withCredentials: true }
         );
         setVehicleCategories(response.data?.data || []);
         
@@ -223,13 +226,10 @@ const Booking = () => {
 
   useEffect(() => {
     const fetchRider = async () => {
-      const token = localStorage.getItem("RiderToken");
-      if (!token) return;
-
       try {
         const res = await axios.get(
           `${import.meta.env.VITE_API_URL}/api/rider-auth/find-rider`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { withCredentials: true }
         );
         if (res.data?.success && res.data.rider) {
           setRiderData(res.data.rider);
@@ -241,9 +241,6 @@ const Booking = () => {
         }
       } catch (err) {
         console.error("Error fetching rider:", err);
-        if (err.response?.status === 401) {
-          localStorage.removeItem("RiderToken");
-        }
       }
     };
 

@@ -31,20 +31,11 @@ const OngoingRides: React.FC = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("RiderToken");
-      if (!token) {
-        console.error("No token found in localStorage");
-        setLoading(false);
-        return;
-      }
 
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/rides/ongoing/my-rides`,
-   
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          withCredentials: true
         }
       );
 
@@ -71,15 +62,11 @@ const OngoingRides: React.FC = () => {
       const confirmed = window.confirm("Are you sure you want to cancel this booking?");
       if (!confirmed) return;
 
-      const token = localStorage.getItem("RiderToken");
-
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/rides/booking/cancel`,
         { rideId : bookingId },
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          withCredentials: true
         }
       );
 
