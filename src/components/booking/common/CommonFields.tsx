@@ -109,7 +109,7 @@ export const CommonFields: React.FC<CommonFieldsProps> = ({
                   onLocationChange?.('fromLocation', locationData);
                 }}
                 className="pl-10"
-                selectedCityName={selectedCityName}
+                selectedCityName={isOutstation ? undefined : selectedCityName}
               />
             </div>
           </div>

@@ -86,6 +86,7 @@ const BookingStep2 = () => {
   const [parcelCategories, setParcelCategories] = useState([]);
   const [selectedParcelCategory, setSelectedParcelCategory] = useState(null);
   const [rawIncludedData, setRawIncludedData] = useState([]); // Store raw API data
+  const [packagesNotFound, setPackagesNotFound] = useState(false); // Track 404 state
 
   // Add this state to store display dates
   const [displayDates, setDisplayDates] = useState([]);
@@ -455,6 +456,7 @@ const BookingStep2 = () => {
           }
         );
         if (res.data) {
+          setPackagesNotFound(false); // Reset error state on success
           const dataArray = Array.isArray(res.data) ? res.data : [];
 
           if (dataArray.length > 0) {
@@ -517,6 +519,7 @@ const BookingStep2 = () => {
           }
         } else {
           // Set empty options if API call unsuccessful
+          setPackagesNotFound(false); // Reset error state
           setDurationOptions([]);
           setRawIncludedData([]);
         }
@@ -525,7 +528,15 @@ const BookingStep2 = () => {
         setLoading(false);
       } catch (error) {
         console.error('Failed to fetch included data:', error);
-        // Set empty options on error
+        // Handle 404 - packages not found
+        if (error.response?.status === 404) {
+          setPackagesNotFound(true);
+          setDurationOptions([]);
+          setRawIncludedData([]);
+          setLoading(false);
+          return;
+        }
+        // Set empty options on other errors
         setDurationOptions([]);
         setLoading(false);
         if (error.response?.status === 401) {
@@ -1111,24 +1122,48 @@ const BookingStep2 = () => {
         </div>
 
         <div className="space-y-6">
-          <FormRenderer
-            subcategoryName={bookingData.subcategoryName}
-            subSubcategoryName={bookingData.subSubcategoryName}
-            categoryName={bookingData.categoryName}
-            selectedUsage={selectedUsage}
-            customUsage={customUsage}
-            durationType={durationType}
-            durationValue={durationValue}
-            durationOptions={durationOptions}
-            durationError={durationError}
-            onUsageChange={handleUsageChange}
-            onCustomUsageChange={(value) => {
-              setCustomUsage(value);
-              setSelectedUsage('');
-            }}
-            onDurationTypeChange={handleDurationTypeChange}
-            onDurationValueChange={handleDurationValueChange}
-          />
+          {/* Packages Not Found UI */}
+          {packagesNotFound ? (
+            <Card className="bg-white shadow-lg">
+              <CardContent className="p-8">
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 mx-auto bg-red-100 rounded-full flex items-center justify-center">
+                    <X className="w-8 h-8 text-red-500" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-800">Packages Not Found</h3>
+                  <p className="text-gray-600">
+                    No packages are available for this service combination. Please try a different option or contact support.
+                  </p>
+                  <Button
+                    onClick={handleBackClick}
+                    variant="outline"
+                    className="mt-4"
+                  >
+                    Go Back
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <FormRenderer
+              subcategoryName={bookingData.subcategoryName}
+              subSubcategoryName={bookingData.subSubcategoryName}
+              categoryName={bookingData.categoryName}
+              selectedUsage={selectedUsage}
+              customUsage={customUsage}
+              durationType={durationType}
+              durationValue={durationValue}
+              durationOptions={durationOptions}
+              durationError={durationError}
+              onUsageChange={handleUsageChange}
+              onCustomUsageChange={(value) => {
+                setCustomUsage(value);
+                setSelectedUsage('');
+              }}
+              onDurationTypeChange={handleDurationTypeChange}
+              onDurationValueChange={handleDurationValueChange}
+            />
+          )}
 
           {/* Date Selection for Weekly/Monthly */}
           {(bookingData?.subcategoryName?.toLowerCase().includes('weekly') ||
@@ -1275,7 +1310,7 @@ const BookingStep2 = () => {
 
 
           {/* Car Categories for Cab */}
-          {bookingData?.categoryName?.toLowerCase() === 'cab' && carCategories.length > 0 && (
+          {!packagesNotFound && bookingData?.categoryName?.toLowerCase() === 'cab' && carCategories.length > 0 && (
             <Card className="bg-white shadow-lg">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">Select Car Category</CardTitle>
@@ -1310,7 +1345,7 @@ const BookingStep2 = () => {
           )}
 
           {/* Parcel Categories for Parcel */}
-          {bookingData?.categoryName?.toLowerCase() === 'parcel' && parcelCategories.length > 0 && (
+          {!packagesNotFound && bookingData?.categoryName?.toLowerCase() === 'parcel' && parcelCategories.length > 0 && (
             <Card className="bg-white shadow-lg">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">Select Parcel Category</CardTitle>
@@ -1344,7 +1379,7 @@ const BookingStep2 = () => {
           )}
 
           {/* Price Categories */}
-          {isCalculating && (bookingData?.categoryName?.toLowerCase() === 'cab' || bookingData?.categoryName?.toLowerCase() === 'parcel') ? (
+          {!packagesNotFound && isCalculating && (bookingData?.categoryName?.toLowerCase() === 'cab' || bookingData?.categoryName?.toLowerCase() === 'parcel') ? (
             <Card className="bg-white shadow-lg">
               <CardContent className="p-8">
                 <div className="flex flex-col items-center justify-center space-y-4">
@@ -1358,7 +1393,7 @@ const BookingStep2 = () => {
               </CardContent>
             </Card>
           ) : (
-            totalAmount.map((item, index) => (
+            !packagesNotFound && totalAmount.map((item, index) => (
               <button
                 key={index}
                 type="button"
@@ -1403,6 +1438,7 @@ const BookingStep2 = () => {
           )}
 
           {/* Instructions section with cancel button */}
+          {!packagesNotFound && (
           <div>
             {/* Button to toggle instructions */}
             {!showInstructions && (
@@ -1443,11 +1479,12 @@ const BookingStep2 = () => {
               </Card>
             )}
           </div>
+          )}
 
 
 
           {/* Referral Earning Section */}
-          {showReferralSection && referralData && referralData.referralCommissionUsed > 0 && (
+          {!packagesNotFound && showReferralSection && referralData && referralData.referralCommissionUsed > 0 && (
             <Card className="bg-white shadow-lg">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold flex items-center">
@@ -1472,7 +1509,7 @@ const BookingStep2 = () => {
           )}
 
           {/* Payment Method Selection */}
-          {termsAccepted && (
+          {!packagesNotFound && termsAccepted && (
             <div className="p-4">
               <h3 className="font-semibold text-gray-800 mb-3">Choose Payment Method</h3>
               <div className="space-y-3">
@@ -1552,7 +1589,7 @@ const BookingStep2 = () => {
           )}
 
           {/* Total and Price Breakdown Section */}
-          {selectedCategory?.category && (
+          {!packagesNotFound && selectedCategory?.category && (
             <Button
               onClick={termsAccepted ? handleFinalBooking : handleConfirmBooking}
               disabled={(selectedPaymentMethod === 'wallet' && walletBalance < finalPayable) || durationError}

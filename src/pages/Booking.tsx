@@ -44,15 +44,26 @@ const Booking = () => {
     const today = new Date().toISOString().split('T')[0];
     if (!selectedDate) setSelectedDate(today);
 
-    const now = new Date();
-    const hours = now.getHours().toString().padStart(2, '0');
-    const minutes = now.getMinutes().toString().padStart(2, '0');
-    const formattedTime = `${hours}:${minutes}`;
-    
-    if (!selectedTime) setSelectedTime(formattedTime);
     if (!startTime) setStartTime('03:00');
     if (!endTime) setEndTime('05:00');
   }, []);
+
+  // Set default time based on subcategory
+  useEffect(() => {
+    if (!selectedTime && subcategoryName) {
+      const now = new Date();
+      const isOutstation = subcategoryName.toLowerCase() === 'outstation' || subcategoryName.toLowerCase() === 'out-station';
+      const minutesToAdd = isOutstation ? 60 : 30;
+      
+      now.setMinutes(now.getMinutes() + minutesToAdd);
+      
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const formattedTime = `${hours}:${minutes}`;
+      
+      setSelectedTime(formattedTime);
+    }
+  }, [subcategoryName]);
 
   useEffect(() => {
     const fetchCities = async () => {
@@ -322,10 +333,22 @@ const Booking = () => {
     
     if (categoryName.toLowerCase() === 'parcel') {
       const parcelValid = senderName.trim() && senderMobile.trim() && receiverName.trim() && receiverMobile.trim();
-      return basicValid && parcelValid;
+      return basicValid && parcelValid && isTimeValid();
     }
     
-    return basicValid;
+    return basicValid && isTimeValid();
+  };
+
+  const isTimeValid = () => {
+    if (!selectedTime || !selectedDate || !subcategoryName) return true;
+    
+    const now = new Date();
+    const selectedDateTime = new Date(`${selectedDate}T${selectedTime}`);
+    const isOutstation = subcategoryName.toLowerCase() === 'outstation' || subcategoryName.toLowerCase() === 'out-station';
+    const requiredMinutes = isOutstation ? 60 : 30;
+    
+    const minAllowedTime = new Date(now.getTime() + requiredMinutes * 60000);
+    return selectedDateTime >= minAllowedTime;
   };
 
   const getValidationError = () => {
@@ -335,6 +358,13 @@ const Booking = () => {
         return 'Please fill in all sender and receiver details for parcel booking';
       }
     }
+    
+    if (!isTimeValid()) {
+      const isOutstation = subcategoryName?.toLowerCase() === 'outstation' || subcategoryName?.toLowerCase() === 'out-station';
+      const requiredMinutes = isOutstation ? 60 : 30;
+      return `Please select a time at least ${requiredMinutes} minutes from now for ${isOutstation ? 'outstation' : 'local'} bookings`;
+    }
+    
     return '';
   };
 
