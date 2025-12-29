@@ -11,18 +11,18 @@ const PrivateCarDrivers = () => {
         {/* Header Section */}
         <div className="text-center mb-12">
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            Hire a Private Driver in Bangalore – DriveGo
+            Hire a Private Driver in Bangalore – Hire4Drive
           </h1>
           <p className="text-lg text-gray-600 max-w-4xl mx-auto">
-            Looking for a dedicated driver for your personal vehicle? Hire a private, background-verified chauffeur from DriveGo for your daily, weekly, or monthly needs.
+            Looking for a dedicated driver for your personal vehicle? Hire a private, background-verified chauffeur from Hire4Drive for your daily, weekly, or monthly needs.
           </p>
         </div>
 
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
-          {/* Why Choose DriveGo's Private Driver Service */}
+          {/* Why Choose Hire4Drive's Private Driver Service */}
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Why Choose DriveGo's Private Driver Service?</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Why Choose Hire4Drive's Private Driver Service?</h2>
             <div className="space-y-4">
               <div className="flex items-start space-x-3">
                 <Shield className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" />

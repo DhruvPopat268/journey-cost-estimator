@@ -40,6 +40,7 @@ import OnCallDriverService from './pages/OnCallDriverService';
 import LocalDriverHire from './pages/LocalDriverHire';
 import ProfessionalDrivers from './pages/ProfessionalDrivers';
 import AirportTransferDriver from './pages/AirportTransferDriver';
+import Reviews from './pages/Reviews';
 
 const queryClient = new QueryClient();
 
@@ -92,6 +93,7 @@ const AppWithSidebar = () => {
         <Route path="/local-driver-hire" element={<LocalDriverHire />} />
         <Route path="/professional-drivers" element={<ProfessionalDrivers />} />
         <Route path="/airport-transfer-driver" element={<AirportTransferDriver />} />
+        <Route path="/reviews" element={<Reviews />} />
 
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />

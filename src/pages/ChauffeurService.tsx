@@ -11,18 +11,18 @@ const ChauffeurService = () => {
         {/* Header Section */}
         <div className="text-center mb-12">
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            Hire Chauffeur Driver in Bangalore – DriveGo
+            Hire Chauffeur Driver in Bangalore – Hire4Drive
           </h1>
           <p className="text-lg text-gray-600 max-w-4xl mx-auto">
-            Looking for a trained, well-behaved chauffeur to drive your personal or company car? DriveGo offers professional chauffeur drivers in Bangalore for hourly, daily, or monthly needs.
+            Looking for a trained, well-behaved chauffeur to drive your personal or company car? Hire4Drive offers professional chauffeur drivers in Bangalore for hourly, daily, or monthly needs.
           </p>
         </div>
 
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
-          {/* Why Choose a Chauffeur from DriveGo */}
+          {/* Why Choose a Chauffeur from Hire4Drive */}
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Why Choose a Chauffeur from DriveGo?</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Why Choose a Chauffeur from Hire4Drive?</h2>
             <div className="space-y-4">
               <div className="flex items-start space-x-3">
                 <Shield className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" />

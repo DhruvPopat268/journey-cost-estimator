@@ -11,23 +11,23 @@ const OutstationDriver = () => {
         {/* Header Section */}
         <div className="text-center mb-12">
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            Outstation Driver Services from Bangalore – DriveGo
+            Outstation Driver Services from Bangalore – Hire4Drive
           </h1>
           <p className="text-lg text-gray-600 max-w-4xl mx-auto leading-relaxed">
-            Planning a long-distance journey outside Bangalore? Whether you're going for a family trip, a business meeting, a wedding, or a vacation, DriveGo offers experienced and background-verified outstation drivers you can trust. With DriveGo, you can now hire a trained driver for one-way, round trip, or multi-day journeys — all in the comfort of your own car.
+            Planning a long-distance journey outside Bangalore? Whether you're going for a family trip, a business meeting, a wedding, or a vacation, Hire4Drive offers experienced and background-verified outstation drivers you can trust. With Hire4Drive, you can now hire a trained driver for one-way, round trip, or multi-day journeys — all in the comfort of your own car.
           </p>
         </div>
 
         {/* Driver Experience Section */}
         <div className="mb-12">
           <p className="text-gray-700 text-center max-w-4xl mx-auto leading-relaxed mb-8">
-            Our drivers are well-versed with long-distance travel, national highways, state borders, and terrain driving. We ensure each driver is ID verified, experienced, and capable of handling city-to-city drives during both day and night. So, no matter your destination — be it Mysore, Coorg, Mangalore, Hyderabad, Chennai, or any city in India — DriveGo has the right driver for you.
+            Our drivers are well-versed with long-distance travel, national highways, state borders, and terrain driving. We ensure each driver is ID verified, experienced, and capable of handling city-to-city drives during both day and night. So, no matter your destination — be it Mysore, Coorg, Mangalore, Hyderabad, Chennai, or any city in India — Hire4Drive has the right driver for you.
           </p>
         </div>
 
-        {/* Why Choose DriveGo Section */}
+        {/* Why Choose Hire4Drive Section */}
         <div className="mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Why choose DriveGo for outstation trips?</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Why choose Hire4Drive for outstation trips?</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex items-start space-x-3">
               <Car className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" />
@@ -68,7 +68,7 @@ const OutstationDriver = () => {
           </p>
           
           <p className="text-gray-700 text-center max-w-4xl mx-auto leading-relaxed">
-            DriveGo is trusted by over 50,000 customers in Bangalore and has completed 1 lakh+ outstation trips successfully since 2017. Book online or call us directly, and we'll assign a professional driver based on your schedule and route.
+            Hire4Drive is trusted by over 50,000 customers in Bangalore and has completed 1 lakh+ outstation trips successfully since 2017. Book online or call us directly, and we'll assign a professional driver based on your schedule and route.
           </p>
         </div>
 
@@ -76,7 +76,7 @@ const OutstationDriver = () => {
         <div className="bg-white rounded-lg shadow-md p-8 text-center mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Need an Outstation Driver?</h2>
           <p className="text-gray-600 mb-6">
-            Call us now at <span className="text-blue-600 font-semibold">+91 88848 48098</span> – DriveGo is ready when you are!
+            Call us now at <span className="text-blue-600 font-semibold">+91 88848 48098</span> – Hire4Drive is ready when you are!
           </p>
           <a href="tel:+918884848098">
             <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-lg transition-colors inline-flex items-center space-x-2">
@@ -95,7 +95,7 @@ const OutstationDriver = () => {
           >
             <button className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-8 py-3 rounded-lg transition-colors inline-flex items-center space-x-2">
               <Car className="w-5 h-5" />
-              <span>Become Drivego Driver</span>
+              <span>Become Hire4Drive Driver</span>
             </button>
           </a>
         </div>

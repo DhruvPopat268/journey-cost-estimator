@@ -14,15 +14,15 @@ const ProfessionalDrivers = () => {
             Hire Professional Driver Services in Bangalore – Verified & Reliable
           </h1>
           <p className="text-lg text-gray-600 max-w-4xl mx-auto">
-            Looking for skilled, trained, and well-mannered drivers? DriveGo offers professional driver services in Bangalore with flexible booking options — by hour, day, or month.
+            Looking for skilled, trained, and well-mannered drivers? Hire4Drive offers professional driver services in Bangalore with flexible booking options — by hour, day, or month.
           </p>
         </div>
 
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
-          {/* Why Choose Professional Drivers from DriveGo */}
+          {/* Why Choose Professional Drivers from Hire4Drive */}
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Why Choose Professional Drivers from DriveGo?</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Why Choose Professional Drivers from Hire4Drive?</h2>
             <div className="space-y-4">
               <div className="flex items-start space-x-3">
                 <Shield className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" />

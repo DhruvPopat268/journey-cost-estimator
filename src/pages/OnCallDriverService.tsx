@@ -14,7 +14,7 @@ const OnCallDriverService = () => {
             On-Call Driver Service in Bangalore – Hire a Driver Anytime
           </h1>
           <p className="text-lg text-gray-600 max-w-4xl mx-auto">
-            Need a driver urgently? DriveGo provides fast, verified, and trained drivers on demand – available within 60 minutes across Bangalore.
+            Need a driver urgently? Hire4Drive provides fast, verified, and trained drivers on demand – available within 60 minutes across Bangalore.
           </p>
         </div>
 

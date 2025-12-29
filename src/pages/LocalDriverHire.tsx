@@ -14,15 +14,15 @@ const LocalDriverHire = () => {
             Hire Local Driver in Bangalore – Verified & Experienced Drivers Near You
           </h1>
           <p className="text-lg text-gray-600 max-w-4xl mx-auto">
-            Need a reliable local driver in your area? DriveGo offers trained, verified drivers available across Bangalore for personal or professional use — on call or scheduled.
+            Need a reliable local driver in your area? Hire4Drive offers trained, verified drivers available across Bangalore for personal or professional use — on call or scheduled.
           </p>
         </div>
 
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
-          {/* Why Hire a Local Driver with DriveGo */}
+          {/* Why Hire a Local Driver with Hire4Drive */}
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Why Hire a Local Driver with DriveGo?</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Why Hire a Local Driver with Hire4Drive?</h2>
             <div className="space-y-4">
               <div className="flex items-start space-x-3">
                 <MapPin className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" />

@@ -272,7 +272,7 @@ const WalletPage = () => {
         key: razorpayKey,
         amount: order.amount,
         currency: order.currency,
-        name: 'DriveGo',
+        name: 'Hire4Drive',
         description: 'Add money to wallet',
         order_id: order.id,
         handler: async function (response) {

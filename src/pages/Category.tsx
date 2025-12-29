@@ -11,6 +11,8 @@ const Category = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedFaq, setExpandedFaq] = useState(0);
+  const [ratings, setRatings] = useState([]);
+  const [ratingsLoading, setRatingsLoading] = useState(true);
 
   // Icon mappings
   const categoryIconMap = {
@@ -22,20 +24,20 @@ const Category = () => {
   // FAQ data
   const faqs = [
     {
-      question: "How do I book a ride on Drivego?",
-      answer: "Open the Drivego app or website, enter your pickup & drop-off locations, choose your ride type (e.g., on-demand, scheduled), confirm, and submit your booking. You'll immediately see driver details and real-time tracking."
+      question: "How do I book a ride on Hire4Drive?",
+      answer: "Open the Hire4Drive app or website, enter your pickup & drop-off locations, choose your ride type (e.g., on-demand, scheduled), confirm, and submit your booking. You'll immediately see driver details and real-time tracking."
     },
     {
       question: "What types of rides are available?",
-      answer: "Drivego offers various ride types including on-demand rides, scheduled bookings, hourly rentals, outstation trips, and more to suit your travel needs."
+      answer: "Hire4Drive offers various ride types including on-demand rides, scheduled bookings, hourly rentals, outstation trips, and more to suit your travel needs."
     },
     {
       question: "How much will my ride cost?",
       answer: "The ride cost depends on factors like distance, time, ride type, and demand. You'll see an estimated fare before confirming your booking."
     },
     {
-      question: "Is Drivego safe and reliable?",
-      answer: "Yes, Drivego prioritizes safety with verified drivers, real-time tracking, 24/7 support, and secure payment options to ensure a safe and reliable experience."
+      question: "Is Hire4Drive safe and reliable?",
+      answer: "Yes, Hire4Drive prioritizes safety with verified drivers, real-time tracking, 24/7 support, and secure payment options to ensure a safe and reliable experience."
     },
     {
       question: "Can I cancel or modify my booking?",
@@ -53,10 +55,10 @@ const Category = () => {
     name: "Ravi Mehta",
     location: "Delhi",
     date: "06 Apr, 2025",
-    review: "The driver arrived on time and the car was clean and well-maintained. Booking through Drivego was super easy and the entire ride was smooth. Highly recommended for city travel!"
+    review: "The driver arrived on time and the car was clean and well-maintained. Booking through Hire4Drive was super easy and the entire ride was smooth. Highly recommended for city travel!"
   };
 
-  // Fetch categories on component mount
+  // Fetch categories and ratings on component mount
   useEffect(() => {
     const fetchCategories = async () => {
       setLoading(true);
@@ -77,7 +79,23 @@ const Category = () => {
       }
     };
 
+    const fetchRatings = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/user-rating/high-ratings?limit=3`, {
+          withCredentials: true
+        });
+        if (res.data.success) {
+          setRatings(res.data.data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching ratings:', err);
+      } finally {
+        setRatingsLoading(false);
+      }
+    };
+
     fetchCategories();
+    fetchRatings();
   }, []);
 
   // Handle category selection
@@ -98,8 +116,34 @@ const Category = () => {
     }
   };
 
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  const renderStars = (rating) => {
+    return Array.from({ length: 5 }, (_, index) => (
+      <Star 
+        key={index} 
+        className={`w-5 h-5 ${
+          index < rating 
+            ? 'text-yellow-400 fill-yellow-400' 
+            : 'text-gray-300'
+        }`} 
+      />
+    ));
+  };
+
   const toggleFaq = (index) => {
     setExpandedFaq(expandedFaq === index ? -1 : index);
+  };
+
+  const handleViewAllReviews = () => {
+    navigate('/reviews');
   };
 
   if (loading) {
@@ -251,48 +295,60 @@ const Category = () => {
               Customer Ratings & Reviews
             </h2>
             <p className="text-sm sm:text-base text-gray-600">
-              Hear what our riders say about Drivego's professional drivers and smooth rides.
+              Hear what our riders say about Hire4Drive's professional drivers and smooth rides.
             </p>
           </div>
 
           <div className="max-w-3xl mx-auto">
-            <Card className="bg-white shadow-md border-0">
-              <CardContent className="p-6 sm:p-8">
-                <div className="flex items-center mb-4">
-                  {[1, 2, 3, 4].map((star) => (
-                    <Star key={star} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                  ))}
-                  <Star className="w-5 h-5 text-yellow-400" />
-                  <span className="ml-2 text-lg font-semibold text-gray-700">
-                    {sampleReview.rating} / 5.0
-                  </span>
-                </div>
+            {ratingsLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="w-8 h-8 border-4 border-gray-300 border-t-gray-800 rounded-full animate-spin" />
+              </div>
+            ) : ratings.length > 0 && (
+              <div className="space-y-4">
+                {ratings.map((rating) => (
+                  <Card key={rating._id} className="bg-white shadow-md border-0">
+                    <CardContent className="p-6 sm:p-8">
+                      <div className="flex items-center mb-4">
+                        {renderStars(rating.rating)}
+                        <span className="ml-2 text-lg font-semibold text-gray-700">
+                          {rating.rating} / 5.0
+                        </span>
+                      </div>
 
-                <p className="text-gray-700 text-sm sm:text-base mb-4 leading-relaxed">
-                  {sampleReview.review}
-                </p>
+                      <p className="text-gray-700 text-sm sm:text-base mb-4 leading-relaxed">
+                        {rating.comment}
+                      </p>
 
-                <div className="flex items-center justify-between text-sm text-gray-600">
-                  <span className="font-medium">
-                    {sampleReview.name} - {sampleReview.location}
-                  </span>
-                  <span>{sampleReview.date}</span>
-                </div>
-              </CardContent>
-            </Card>
+                      <div className="flex items-center justify-between text-sm text-gray-600">
+                        <span className="font-medium">
+                          {rating.userId?.name}
+                        </span>
+                        <span>{formatDate(rating.createdAt)}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
 
-            <div className="text-center mt-6">
-              <button className="bg-black text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors">
-                View All Reviews
-              </button>
-            </div>
+            {ratings.length > 0 && (
+              <div className="text-center mt-6">
+                <button 
+                  onClick={handleViewAllReviews}
+                  className="bg-black text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors"
+                >
+                  View All Reviews
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Become Driver Section */}
         <div className="bg-black rounded-xl shadow-lg p-8 sm:p-12 mb-12 text-center">
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
-            Interested in Become Drivego Driver?
+            Interested in Become Hire4Drive Driver?
           </h2>
           <p className="text-gray-300 mb-6 text-sm sm:text-base">
             Don't hesitate and just click below button.
@@ -365,7 +421,7 @@ const Category = () => {
         <div className="bg-black w-screen -ml-[50vw] left-1/2 relative p-6 sm:p-8 lg:p-12">
           <div className="max-w-7xl mx-auto px-8 lg:px-16">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12 text-white">
-            {/* Drivego Column - Takes 2 columns */}
+            {/* Hire4Drive Column - Takes 2 columns */}
             <div className="lg:col-span-2">
               <h3 className="font-bold text-lg mb-4">Hire4Drive</h3>
               <div className="space-y-2 text-lg text-gray-300">
@@ -379,10 +435,10 @@ const Category = () => {
                   <a href="https://wa.me/918884848098" target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center hover:bg-green-700 transition-colors">
                     <i className="fab fa-whatsapp text-white"></i>
                   </a>
-                  <a href="https://www.facebook.com/drivego2017/" target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
+                  <a href="https://www.facebook.com/Hire4Drive2017/" target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
                     <i className="fab fa-facebook-f text-white"></i>
                   </a>
-                  <a href="https://www.instagram.com/DriveGo8884848098/" target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-pink-600 rounded-full flex items-center justify-center hover:bg-pink-700 transition-colors">
+                  <a href="https://www.instagram.com/Hire4Drive8884848098/" target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-pink-600 rounded-full flex items-center justify-center hover:bg-pink-700 transition-colors">
                     <i className="fab fa-instagram text-white"></i>
                   </a>
                 </div>

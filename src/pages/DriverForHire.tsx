@@ -11,18 +11,18 @@ const DriverForHire = () => {
         {/* Header Section */}
         <div className="text-center mb-12">
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            Driver for Hire in Bangalore – DriveGo
+            Driver for Hire in Bangalore – Hire4Drive
           </h1>
           <p className="text-lg text-gray-600 max-w-4xl mx-auto">
-            Need a reliable driver for your car? Whether it's for a few hours, a full day, or a long-term requirement, DriveGo provides professional drivers on demand across Bangalore.
+            Need a reliable driver for your car? Whether it's for a few hours, a full day, or a long-term requirement, Hire4Drive provides professional drivers on demand across Bangalore.
           </p>
         </div>
 
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
-          {/* Why Hire a Driver from DriveGo */}
+          {/* Why Hire a Driver from Hire4Drive */}
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Why Hire a Driver from DriveGo?</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Why Hire a Driver from Hire4Drive?</h2>
             <div className="space-y-4">
               <div className="flex items-start space-x-3">
                 <Shield className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" />
@@ -153,7 +153,7 @@ const DriverForHire = () => {
         <div className="bg-white rounded-lg shadow-md p-8 text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Book a Driver Now</h2>
           <p className="text-gray-600 mb-6">
-            DriveGo makes it easy and safe to hire a professional driver whenever you need one.
+            Hire4Drive makes it easy and safe to hire a professional driver whenever you need one.
           </p>
           <a href="tel:+918884848098">
             <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-lg transition-colors inline-flex items-center space-x-2">

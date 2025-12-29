@@ -14,7 +14,7 @@ const MonthlyDriverService = () => {
             Hire a Monthly Driver in Bangalore – Full-Time Driver Service
           </h1>
           <p className="text-lg text-gray-600 max-w-4xl mx-auto">
-            Need a full-time driver for your car? DriveGo offers background-verified, experienced monthly drivers for your everyday travel needs in Bangalore.
+            Need a full-time driver for your car? Hire4Drive offers background-verified, experienced monthly drivers for your everyday travel needs in Bangalore.
           </p>
         </div>
 
@@ -143,7 +143,7 @@ const MonthlyDriverService = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">3. Start the Ride</h3>
               <p className="text-gray-600 text-sm">
-                Begin your hassle-free daily routine with DriveGo's monthly driver.
+                Begin your hassle-free daily routine with Hire4Drive's monthly driver.
               </p>
             </div>
           </div>

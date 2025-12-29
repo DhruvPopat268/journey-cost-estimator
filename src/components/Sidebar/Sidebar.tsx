@@ -277,7 +277,7 @@ const menuItems = [
               <Bike size={20} className="text-blue-600" />
             </div>
             <div>
-              <h2 className="text-white font-semibold text-lg">DriveGo</h2>
+              <h2 className="text-white font-semibold text-lg">Hire4Drive</h2>
               <p className="text-blue-100 text-sm">Welcome back!</p>
             </div>
           </div>
@@ -332,7 +332,7 @@ const menuItems = [
 
         <div className="absolute bottom-6 left-6 right-6">
           <div className="text-center text-xs text-gray-500">
-            <p>© 2025 DriveGo</p>
+            <p>© 2025 Hire4Drive</p>
           </div>
         </div>
       </div>

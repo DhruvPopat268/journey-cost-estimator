@@ -14,7 +14,7 @@ const WeeklyDriverService = () => {
             Hire a Weekly Driver in Bangalore – Flexible Part-Time Driver Service
           </h1>
           <p className="text-lg text-gray-600 max-w-4xl mx-auto">
-            Need a driver just a few days a week? DriveGo provides reliable and verified drivers for your car on a weekly schedule – ideal for office travel, shopping, or short trips.
+            Need a driver just a few days a week? Hire4Drive provides reliable and verified drivers for your car on a weekly schedule – ideal for office travel, shopping, or short trips.
           </p>
         </div>
 
@@ -153,7 +153,7 @@ const WeeklyDriverService = () => {
         <div className="bg-white rounded-lg shadow-md p-8 text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Want to Hire a Weekly Driver?</h2>
           <p className="text-gray-600 mb-6">
-            DriveGo is your trusted weekly driver partner in Bangalore. Comfort, safety, and reliability guaranteed.
+            Hire4Drive is your trusted weekly driver partner in Bangalore. Comfort, safety, and reliability guaranteed.
           </p>
           <a href="tel:+918884848098">
             <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-lg transition-colors inline-flex items-center space-x-2">

@@ -53,7 +53,7 @@ const Booking = () => {
     if (!selectedTime && subcategoryName) {
       const now = new Date();
       const isOutstation = subcategoryName.toLowerCase() === 'outstation' || subcategoryName.toLowerCase() === 'out-station';
-      const minutesToAdd = isOutstation ? 60 : 30;
+      const minutesToAdd = isOutstation ? 62 : 32;
       
       now.setMinutes(now.getMinutes() + minutesToAdd);
       
@@ -113,6 +113,22 @@ const Booking = () => {
         setSubcategoryName(subcategoryRes.data.name);
         setCategoryName(subcategoryRes.data?.categoryId?.name || '');
         setTransmissionOptions(transmissionRes.data?.data || []);
+        
+        // Debug logs for subcategory
+        const subcategoryNameLower = subcategoryRes.data.name?.toLowerCase();
+        const isOutstationDebug = subcategoryNameLower === 'outstation' || subcategoryNameLower === 'out-station';
+        console.log('🔍 Booking.tsx Debug:', {
+          originalSubcategoryName: subcategoryRes.data.name,
+          subcategoryNameLower,
+          categoryName: subcategoryRes.data?.categoryId?.name || '',
+          selectedCityName,
+          isOutstationCheck: isOutstationDebug,
+          cityNameThatWillBePassed: isOutstationDebug ? undefined : selectedCityName,
+          checkConditions: {
+            equalsOutstation: subcategoryNameLower === 'outstation',
+            equalsOutStation: subcategoryNameLower === 'out-station'
+          }
+        });
         
         // Set sub-subcategory name if available
         if (subSubcategoryRes) {
@@ -345,7 +361,7 @@ const Booking = () => {
     const now = new Date();
     const selectedDateTime = new Date(`${selectedDate}T${selectedTime}`);
     const isOutstation = subcategoryName.toLowerCase() === 'outstation' || subcategoryName.toLowerCase() === 'out-station';
-    const requiredMinutes = isOutstation ? 60 : 30;
+    const requiredMinutes = isOutstation ? 60 : 30; // Adding 1 extra minute to avoid edge cases
     
     const minAllowedTime = new Date(now.getTime() + requiredMinutes * 60000);
     return selectedDateTime >= minAllowedTime;
@@ -453,7 +469,7 @@ const Booking = () => {
                     toLocation={toLocation}
                     fromLocationData={fromLocationData}
                     toLocationData={toLocationData}
-                    selectedCityName={selectedCityName}
+                    selectedCityName={subcategoryName?.toLowerCase() === 'outstation' || subcategoryName?.toLowerCase() === 'out-station' ? undefined : selectedCityName}
                     subcategoryName={subcategoryName}
                     selectedDate={selectedDate}
                     selectedTime={selectedTime}

@@ -64,6 +64,7 @@ export const LocationInput: React.FC<LocationInputProps> = ({
     setLoading(true);
     try {
       const searchInput = selectedCityName ? `${input} ${selectedCityName}` : input;
+      
       const response = await fetch(
         `https://adminbackend.hire4drive.com/api/places/autocomplete?input=${encodeURIComponent(searchInput)}&sessiontoken=${Date.now()}`
       );
@@ -75,6 +76,8 @@ export const LocationInput: React.FC<LocationInputProps> = ({
               p.description.toLowerCase().includes(selectedCityName.toLowerCase())
             )
           : data.predictions;
+          
+
           
         setSuggestions(filteredPredictions.map(p => ({
           place_id: p.place_id,

@@ -11,18 +11,18 @@ const HourlyDriverService = () => {
         {/* Header Section */}
         <div className="text-center mb-12">
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            Hourly Driver Service in Bangalore – Hire Trained Drivers with DriveGo
+            Hourly Driver Service in Bangalore – Hire Trained Drivers with Hire4Drive
           </h1>
           <p className="text-lg text-gray-600 max-w-4xl mx-auto">
-            Need a driver for just a few hours? DriveGo offers flexible hourly driver services in Bangalore for your personal car. Fast, safe, and affordable.
+            Need a driver for just a few hours? Hire4Drive offers flexible hourly driver services in Bangalore for your personal car. Fast, safe, and affordable.
           </p>
         </div>
 
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
-          {/* Why Choose DriveGo's Hourly Driver Service */}
+          {/* Why Choose Hire4Drive's Hourly Driver Service */}
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Why Choose DriveGo's Hourly Driver Service?</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Why Choose Hire4Drive's Hourly Driver Service?</h2>
             <div className="space-y-4">
               <div className="flex items-start space-x-3">
                 <Clock className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" />
@@ -161,7 +161,7 @@ const HourlyDriverService = () => {
         <div className="bg-white rounded-lg shadow-md p-8 text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Call Now & Book an Hourly Driver</h2>
           <p className="text-gray-600 mb-6">
-            DriveGo brings convenience to your doorstep with trusted, verified hourly drivers.
+            Hire4Drive brings convenience to your doorstep with trusted, verified hourly drivers.
           </p>
           <a href="tel:+918884848098">
             <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-lg transition-colors inline-flex items-center space-x-2">

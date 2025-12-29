@@ -14,15 +14,15 @@ const AirportTransferDriver = () => {
             Hire Driver for Airport Drop & Pickup in Bangalore – On-Time Transfers
           </h1>
           <p className="text-lg text-gray-600 max-w-4xl mx-auto">
-            Traveling to or from the airport? DriveGo provides reliable, trained, and verified drivers to drive your car for airport drop or pickup — available 24/7 across Bangalore.
+            Traveling to or from the airport? Hire4Drive provides reliable, trained, and verified drivers to drive your car for airport drop or pickup — available 24/7 across Bangalore.
           </p>
         </div>
 
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
-          {/* Why Choose DriveGo for Airport Transfers */}
+          {/* Why Choose Hire4Drive for Airport Transfers */}
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Why Choose DriveGo for Airport Transfers?</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Why Choose Hire4Drive for Airport Transfers?</h2>
             <div className="space-y-4">
               <div className="flex items-start space-x-3">
                 <Clock className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" />
