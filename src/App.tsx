@@ -25,6 +25,21 @@ import SubSubcategory from './pages/SubSubcategory';
 import WalletPage from './pages/Wallet';
 import ReferAndEarnPage from './pages/ReferAndEarnPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import AboutUs from './pages/AboutUs';
+import ContactUs from './pages/ContactUs';
+import TermsAndConditions from './pages/TermsAndConditions';
+import HireADriver from './pages/HireADriver';
+import HourlyDriverService from './pages/HourlyDriverService';
+import OutstationDriver from './pages/OutstationDriver';
+import PrivateCarDrivers from './pages/PrivateCarDrivers';
+import DriverForHire from './pages/DriverForHire';
+import ChauffeurService from './pages/ChauffeurService';
+import MonthlyDriverService from './pages/MonthlyDriverService';
+import WeeklyDriverService from './pages/WeeklyDriverService';
+import OnCallDriverService from './pages/OnCallDriverService';
+import LocalDriverHire from './pages/LocalDriverHire';
+import ProfessionalDrivers from './pages/ProfessionalDrivers';
+import AirportTransferDriver from './pages/AirportTransferDriver';
 
 const queryClient = new QueryClient();
 
@@ -62,6 +77,21 @@ const AppWithSidebar = () => {
 
         <Route path="/detailView/:id" element={<BookingDetailView />} />
         <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
+        <Route path="/about-us" element={<AboutUs />} />
+        <Route path="/contact-us" element={<ContactUs />} />
+        <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+        <Route path="/hire-a-driver" element={<HireADriver />} />
+        <Route path="/hourly-driver-service" element={<HourlyDriverService />} />
+        <Route path="/outstation-driver" element={<OutstationDriver />} />
+        <Route path="/private-car-drivers" element={<PrivateCarDrivers />} />
+        <Route path="/driver-for-hire" element={<DriverForHire />} />
+        <Route path="/chauffeur-service" element={<ChauffeurService />} />
+        <Route path="/monthly-driver-service" element={<MonthlyDriverService />} />
+        <Route path="/weekly-driver-service" element={<WeeklyDriverService />} />
+        <Route path="/on-call-driver" element={<OnCallDriverService />} />
+        <Route path="/local-driver-hire" element={<LocalDriverHire />} />
+        <Route path="/professional-drivers" element={<ProfessionalDrivers />} />
+        <Route path="/airport-transfer-driver" element={<AirportTransferDriver />} />
 
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
