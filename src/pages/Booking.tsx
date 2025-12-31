@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import axios from 'axios';
+import apiClient from '@/lib/apiClient';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { CommonFields } from '../components/booking/common/CommonFields';
 import { setBookingStep1, updateField, purgeStore } from '../store/slices/bookingSlice';
 import { ConfirmationDialog } from '../components/ui/confirmation-dialog';
+import axios from 'axios';
 
 const Booking = () => {
   const navigate = useNavigate();
@@ -68,9 +69,7 @@ const Booking = () => {
   useEffect(() => {
     const fetchCities = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/cities`, {
-          withCredentials: true
-        });
+        const response = await apiClient.get('/api/cities');
         const activeCities = response.data.filter(city => city.status === true);
         setCities(activeCities);
       } catch (error) {
@@ -98,13 +97,13 @@ const Booking = () => {
     const fetchData = async () => {
       try {
         const requests = [
-          axios.get(`${import.meta.env.VITE_API_URL}/api/subcategories/${subcategoryId}`, { withCredentials: true }),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/drivervehicletypes/active`, { withCredentials: true })
+          apiClient.get(`/api/subcategories/${subcategoryId}`),
+          apiClient.get('/api/drivervehicletypes/active')
         ];
         
         // Add sub-subcategory request if subSubcategoryId exists
         if (subSubcategoryId) {
-          requests.push(axios.get(`${import.meta.env.VITE_API_URL}/api/subsubcategories/${subSubcategoryId}`, { withCredentials: true }));
+          requests.push(apiClient.get(`/api/subsubcategories/${subSubcategoryId}`));
         }
         
         const responses = await Promise.all(requests);
@@ -163,10 +162,9 @@ const Booking = () => {
       if (!selectedTransmissionId) return;
       
       try {
-        const response = await axios.post(
-          `${import.meta.env.VITE_API_URL}/api/vehiclecategories/by-type`,
-          { driverVehicleTypeId: selectedTransmissionId },
-          { withCredentials: true }
+        const response = await apiClient.post(
+          '/api/vehiclecategories/by-type',
+          { driverVehicleTypeId: selectedTransmissionId }
         );
         setVehicleCategories(response.data?.data || []);
         
@@ -254,10 +252,9 @@ const Booking = () => {
   useEffect(() => {
     const fetchRider = async () => {
       try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_URL}/api/rider-auth/find-rider`,
-          { withCredentials: true }
-        );
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/rider-auth/find-rider`, {
+            withCredentials: true
+          });
         if (res.data?.success && res.data.rider) {
           setRiderData(res.data.rider);
           // Auto-fill sender if 'myself' is selected

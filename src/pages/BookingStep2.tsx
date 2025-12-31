@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import axios from 'axios';
+import apiClient from '@/lib/apiClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,6 +19,7 @@ import {
   clearStep2Data
 } from '../store/slices/bookingSlice';
 import { ConfirmationDialog } from '../components/ui/confirmation-dialog'
+import axios from 'axios';
 
 const BookingStep2 = () => {
   const navigate = useNavigate();
@@ -87,6 +88,7 @@ const BookingStep2 = () => {
   const [selectedParcelCategory, setSelectedParcelCategory] = useState(null);
   const [rawIncludedData, setRawIncludedData] = useState([]); // Store raw API data
   const [packagesNotFound, setPackagesNotFound] = useState(false); // Track 404 state
+  const [profileError, setProfileError] = useState(''); // Track profile completion error
 
   // Add this state to store display dates
   const [displayDates, setDisplayDates] = useState([]);
@@ -214,12 +216,9 @@ const BookingStep2 = () => {
         requestBody.parcelCategoryId = selectedParcelCategory?._id;
       }
 
-      const res = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/instructions/getInstructions`,
-        requestBody,
-        {
-          withCredentials: true
-        }
+      const res = await apiClient.post(
+        '/api/instructions/getInstructions',
+        requestBody
       );
       const instructionTexts = res.data.data || [];
 
@@ -317,8 +316,8 @@ const BookingStep2 = () => {
       // Create payload without sender/receiver fields for calculation
       const { senderMobile, senderName, senderType, receiverMobile, receiverName, receiverType, senderDetails, receiverDetails, ...calculationData } = bookingData;
 
-      const res = await axios.post(
-        `${import.meta.env.VITE_API_URL}${apiEndpoint}`,
+      const res = await apiClient.post(
+        apiEndpoint,
         {
           ...calculationData,
           selectedUsage: combinedSelectedUsage,
@@ -329,9 +328,6 @@ const BookingStep2 = () => {
           ...(bookingData.subSubcategoryId && { subSubcategoryId: bookingData.subSubcategoryId }),
           ...(categoryName === 'cab' && (carCategory || selectedCarCategory) && { carCategoryId: (carCategory || selectedCarCategory)._id }),
           ...(categoryName === 'parcel' && (parcelCategory || selectedParcelCategory) && { parcelCategoryId: (parcelCategory || selectedParcelCategory)._id })
-        },
-        {
-          withCredentials: true
         }
       );
 
@@ -394,9 +390,7 @@ const BookingStep2 = () => {
       let defaultCarCategory = null;
       if (categoryName === 'cab') {
         try {
-          const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/car-categories`, {
-            withCredentials: true
-          });
+          const res = await apiClient.get('/api/car-categories');
           const activeCategories = res.data.filter(category => category.status === true);
           setCarCategories(activeCategories);
 
@@ -416,9 +410,7 @@ const BookingStep2 = () => {
       let defaultParcelCategory = null;
       if (categoryName === 'parcel') {
         try {
-          const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/parcel-categories`, {
-            withCredentials: true
-          });
+          const res = await apiClient.get('/api/parcel-categories');
           setParcelCategories(res.data);
 
           // Find and set Classic as default
@@ -444,15 +436,12 @@ const BookingStep2 = () => {
       }
 
       try {
-        const res = await axios.post(
-          `${import.meta.env.VITE_API_URL}${apiEndpoint}`,
+        const res = await apiClient.post(
+          apiEndpoint,
           {
             categoryId: bookingData.categoryId,
             subcategoryId: bookingData.subcategoryId,
             ...(bookingData.subSubcategoryId && { subSubcategoryId: bookingData.subSubcategoryId })
-          },
-          {
-            withCredentials: true
           }
         );
         if (res.data) {
@@ -788,12 +777,7 @@ const BookingStep2 = () => {
 
       setWalletLoading(true);
       try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_URL}/api/payments/wallet`,
-          {
-            withCredentials: true
-          }
-        );
+        const res = await apiClient.get('/api/payments/wallet');
         setWalletBalance(res.data.balance || 0);
       } catch (error) {
         console.error("Failed to fetch wallet balance:", error);
@@ -923,11 +907,10 @@ const BookingStep2 = () => {
       return;
     }
 
+    setProfileError(''); // Clear any previous error
+
     try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/rider-auth/auth/check`,
-        { withCredentials: true }
-      );
+      const res = await apiClient.get('/api/rider-auth/auth/check');
 
       if (!res.data.loggedIn) {
         const bookingDetails = {
@@ -948,9 +931,22 @@ const BookingStep2 = () => {
         return;
       }
 
+      // Call find rider API to check profile completeness
+      const riderRes = await apiClient.get('/api/rider-auth/find-rider');
+      
+      if (riderRes.data.success && riderRes.data.rider) {
+        const { name, mobile, gender } = riderRes.data.rider;
+        
+        // Check if profile is incomplete
+        if (!name || name === "" || !mobile || mobile === "" || !gender || gender === "") {
+          setProfileError("Please complete your profile first. Go to My Profile and fill in all required details (Name, Mobile, Gender).");
+          return;
+        }
+      }
+
       setShowTermsModal(true);
     } catch (error) {
-      console.error("Auth check failed:", error);
+      console.error("Auth check or rider profile check failed:", error);
       const bookingDetails = {
         ...bookingData,
         selectedUsage: selectedUsage || customUsage,
@@ -982,10 +978,9 @@ const BookingStep2 = () => {
         selectedCategoryId: selectedCategory?.categoryId
       };
 
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/referral-rules/calculate-ride`,
-        payload,
-        { withCredentials: true }
+      const response = await apiClient.post(
+        '/api/referral-rules/calculate-ride',
+        payload
       );
 
       if (response.data) {
@@ -1588,12 +1583,19 @@ const BookingStep2 = () => {
             </div>
           )}
 
+          {/* Profile Error Message */}
+          {profileError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+              <p className="text-red-600 text-sm font-medium">{profileError}</p>
+            </div>
+          )}
+
           {/* Total and Price Breakdown Section */}
           {!packagesNotFound && selectedCategory?.category && (
             <Button
               onClick={termsAccepted ? handleFinalBooking : handleConfirmBooking}
-              disabled={(selectedPaymentMethod === 'wallet' && walletBalance < finalPayable) || durationError}
-              className={`w-full py-3 text-lg font-semibold rounded-lg ${(selectedPaymentMethod === 'wallet' && walletBalance < finalPayable) || durationError
+              disabled={(selectedPaymentMethod === 'wallet' && walletBalance < finalPayable) || durationError || profileError}
+              className={`w-full py-3 text-lg font-semibold rounded-lg ${(selectedPaymentMethod === 'wallet' && walletBalance < finalPayable) || durationError || profileError
                 ? 'bg-gray-400 hover:bg-gray-400 cursor-not-allowed'
                 : 'bg-blue-600 hover:bg-blue-700'
                 } text-white`}
@@ -1603,11 +1605,15 @@ const BookingStep2 = () => {
                   'Insufficient Wallet Balance' :
                   durationError ?
                     'Fix Duration Error' :
-                    `Confirm Booking ₹${(finalPayable || 0).toFixed(2)}`
+                    profileError ?
+                      'Complete Profile First' :
+                      `Confirm Booking ₹${(finalPayable || 0).toFixed(2)}`
                 ) :
                 durationError ?
                   'Fix No Of Days Error' :
-                  `Book Ride ₹${(finalPayable || 0).toFixed(2)}`
+                  profileError ?
+                    'Complete Profile First' :
+                    `Book Ride ₹${(finalPayable || 0).toFixed(2)}`
               }
             </Button>
           )}

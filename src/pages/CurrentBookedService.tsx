@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import apiClient from '@/lib/apiClient';
 import { ArrowLeft, Phone, Clock, Eye, X, CreditCard, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
 import { Navbar } from '../components/Sidebar';
@@ -60,12 +60,7 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
     try {
       setLoading(true);
 
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/rides/current/my-rides`,
-        {
-          withCredentials: true
-        }
-      );
+      const response = await apiClient.get('/api/rides/current/my-rides');
 
       if (response.data && response.data.rides) {
         const formatted = response.data.rides.map((ride: any) => ({
@@ -103,12 +98,9 @@ const CurrentBookedService: React.FC<CurrentBookedServiceProps> = ({ onBack, onV
       if (!confirmed) return;
 
       // ✅ Send bookingId in body instead of URL
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/rides/booking/cancel`,
-        { rideId : bookingId }, // sending in body
-        {
-          withCredentials: true
-        }
+      const response = await apiClient.post(
+        '/api/rides/booking/cancel',
+        { rideId : bookingId }
       );
 
       if (response.status === 200) {

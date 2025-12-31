@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import apiClient from '@/lib/apiClient';
 import { Copy, Share2, CheckCircle, ArrowLeft, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
 import { Navbar } from '@/components/Sidebar';
+import axios from 'axios';
 
 const ReferAndEarnPage = () => {
     const [copied, setCopied] = useState(false);
@@ -15,10 +16,9 @@ const ReferAndEarnPage = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await axios.get(
-                    `${import.meta.env.VITE_API_URL}/api/rider-auth/find-rider`,
-                    { withCredentials: true }
-                );
+                const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/rider-auth/find-rider`,{
+            withCredentials: true
+          });
 
                 if (res.data?.success && res.data.rider) {
                     const rider = res.data.rider;

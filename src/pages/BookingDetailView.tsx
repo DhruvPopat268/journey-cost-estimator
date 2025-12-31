@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import apiClient from '@/lib/apiClient';
 import { ArrowLeft, Phone, Clock, MapPin, Calendar, CreditCard, User, Car, Navigation, X } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
@@ -61,12 +61,9 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
             setLoading(true);
             setError(null);
 
-            const response = await axios.post(
-                `${import.meta.env.VITE_API_URL}/api/rides/bookingDetail`,
-                { rideId: bookingId },
-                {
-                    withCredentials: true
-                }
+            const response = await apiClient.post(
+                '/api/rides/bookingDetail',
+                { rideId: bookingId }
             );
             
 
@@ -88,12 +85,9 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
             const confirmed = window.confirm('Are you sure you want to cancel this booking?');
             if (!confirmed) return;
 
-            const response = await axios.post(
-                `${import.meta.env.VITE_API_URL}/api/rides/booking/cancel`,
-                { bookingId },
-                {
-                    withCredentials: true
-                }
+            const response = await apiClient.post(
+                '/api/rides/booking/cancel',
+                { bookingId }
             );
 
             if (response.status === 200) {

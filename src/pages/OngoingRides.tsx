@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import apiClient from '@/lib/apiClient';
 import { Phone, Clock, Eye, MapPin, CreditCard, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from '../components/Sidebar';
@@ -32,12 +32,7 @@ const OngoingRides: React.FC = () => {
     try {
       setLoading(true);
 
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/rides/ongoing/my-rides`,
-        {
-          withCredentials: true
-        }
-      );
+      const response = await apiClient.get('/api/rides/ongoing/my-rides');
 
       if (response.data && response.data.rides) {
         setOngoingBookings(response.data.rides);
@@ -62,12 +57,9 @@ const OngoingRides: React.FC = () => {
       const confirmed = window.confirm("Are you sure you want to cancel this booking?");
       if (!confirmed) return;
 
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/rides/booking/cancel`,
-        { rideId : bookingId },
-        {
-          withCredentials: true
-        }
+      const response = await apiClient.post(
+        '/api/rides/booking/cancel',
+        { rideId : bookingId }
       );
 
       if (response.status === 200) {

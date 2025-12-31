@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import apiClient from '@/lib/apiClient';
 import { 
   Wallet, 
   ArrowLeft, 
@@ -108,13 +109,6 @@ const WalletPage = () => {
     return null;
   }, []);
 
-  // Create headers with authorization - memoized
-  const getAuthHeaders = useCallback(() => {
-    return {
-      'Content-Type': 'application/json'
-    };
-  }, []);
-
   // Load Razorpay script - memoized
   const loadRazorpayScript = useCallback(() => {
     return new Promise((resolve) => {
@@ -149,17 +143,8 @@ const WalletPage = () => {
 
     setLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/wallet`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const response = await apiClient.get('/api/payments/wallet');
+      const data = response.data;
       console.log('Wallet data:', data);
       setWalletData(data);
     } catch (error) {
@@ -168,7 +153,7 @@ const WalletPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [getAuthHeaders]);
+  }, []);
 
   // Fetch transaction history - memoized
   const fetchTransactionHistory = useCallback(async (page = 1) => {
@@ -179,17 +164,8 @@ const WalletPage = () => {
 
     setLoadingTransactions(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/history`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const response = await apiClient.get('/api/payments/history');
+      const data = response.data;
       console.log('Transaction history:', data);
       
       // Transform API data to match our component structure with safety checks
@@ -219,32 +195,21 @@ const WalletPage = () => {
     } finally {
       setLoadingTransactions(false);
     }
-  }, [getAuthHeaders]);
+  }, []);
 
   // Create Razorpay order
   const createRazorpayOrder = useCallback(async (amount) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/create-order`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify({
-          amount: amount,
-          currency: 'INR'
-        }),
+      const response = await apiClient.post('/api/payments/create-order', {
+        amount: amount,
+        currency: 'INR'
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create order');
-      }
-
-      return await response.json();
+      return response.data;
     } catch (error) {
       console.error('Error creating order:', error);
       throw error;
     }
-  }, [getAuthHeaders]);
+  }, []);
 
   // Handle Razorpay payment
   const handleRazorpayPayment = useCallback(async (amount) => {
@@ -278,19 +243,14 @@ const WalletPage = () => {
         handler: async function (response) {
           try {
             // Verify payment on backend
-            const verifyResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/verify`, {
-              method: 'POST',
-              headers: getAuthHeaders(),
-              credentials: 'include',
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                amount: amount
-              }),
+            const verifyResponse = await apiClient.post('/api/payments/verify', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              amount: amount
             });
 
-            if (verifyResponse.ok) {
+            if (verifyResponse.status === 200) {
               // Add delay to prevent multiple rapid calls
               setTimeout(() => {
                 fetchWalletData();
@@ -337,7 +297,7 @@ const WalletPage = () => {
       alert('Payment failed. Please try again.');
       setIsProcessing(false);
     }
-  }, [createRazorpayOrder, getAuthHeaders, fetchWalletData, fetchTransactionHistory]);
+  }, [createRazorpayOrder, fetchWalletData, fetchTransactionHistory]);
 
   // Initialize wallet data on component mount
   useEffect(() => {

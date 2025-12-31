@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import apiClient from '@/lib/apiClient';
 import { Clock, Eye, MapPin, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from '../components/Sidebar';
@@ -32,12 +32,7 @@ const PastRides: React.FC = () => {
     try {
       setLoading(true);
 
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/rides/past/my-rides`,
-        {
-          withCredentials: true
-        }
-      );
+      const response = await apiClient.get('/api/rides/past/my-rides');
 
       if (response.data && response.data.rides) {
         setPastBookings(response.data.rides);
