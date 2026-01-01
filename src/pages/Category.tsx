@@ -321,9 +321,16 @@ const Category = () => {
                       </p>
 
                       <div className="flex items-center justify-between text-sm text-gray-600">
-                        <span className="font-medium">
-                          {rating.userId?.name}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {rating.userId?.name}
+                          </span>
+                          {rating.city && (
+                            <span className="text-xs text-gray-500 mt-1">
+                              {rating.city}
+                            </span>
+                          )}
+                        </div>
                         <span>{formatDate(rating.createdAt)}</span>
                       </div>
                     </CardContent>

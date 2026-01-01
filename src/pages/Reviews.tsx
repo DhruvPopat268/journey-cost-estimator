@@ -231,13 +231,20 @@ const Reviews = () => {
                   )}
 
                   <div className="flex items-center justify-between text-sm text-gray-600">
-                    <div>
-                      <span className="font-medium">
-                        {rating.userId?.name}
-                      </span>
-                      {rating.driverId?.personalInformation?.fullName && (
-                        <span className="text-gray-500">
-                          {' '} • Driver: {rating.driverId.personalInformation.fullName}
+                    <div className="flex flex-col">
+                      <div>
+                        <span className="font-medium">
+                          {rating.userId?.name}
+                        </span>
+                        {rating.driverId?.personalInformation?.fullName && (
+                          <span className="text-gray-500">
+                            {' '} • Driver: {rating.driverId.personalInformation.fullName}
+                          </span>
+                        )}
+                      </div>
+                      {rating.city && (
+                        <span className="text-xs text-gray-500 mt-1">
+                          {rating.city}
                         </span>
                       )}
                     </div>
