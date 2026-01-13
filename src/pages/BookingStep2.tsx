@@ -947,6 +947,14 @@ const BookingStep2 = () => {
 
   const fetchReferralCalculation = async () => {
     try {
+      // Find the raw data for the selected usage (same as calculation API)
+      const selectedRawData = durationOptions.find(option => option.value === (selectedUsage || customUsage));
+      
+      // Create combined selectedUsage for API (always send both Km & Mins)
+      const combinedSelectedUsage = selectedRawData 
+        ? `${selectedRawData.rawKm}Km & ${selectedRawData.rawMinutes}Mins`
+        : (selectedUsage || customUsage);
+
       const payload = {
         categoryId: bookingData.categoryId,
         subcategoryId: bookingData.subcategoryId,
@@ -954,7 +962,7 @@ const BookingStep2 = () => {
         selectedDate: bookingData.selectedDate,
         selectedTime: bookingData.selectedTime,
         includeInsurance: includeInsurance,
-        selectedUsage: selectedUsage || customUsage,
+        selectedUsage: combinedSelectedUsage,
         durationType: durationType,
         durationValue: durationValue,
         selectedCategoryId: selectedCategory?.categoryId
@@ -1026,6 +1034,14 @@ const BookingStep2 = () => {
     try {
       const { categoryName, subcategoryName, subSubcategoryName, carType, transmissionType, totalAmount, selectedCarCategory, selectedParcelCategory, ...cleanedDetails } = bookingDetails;
 
+      // Find the raw data for the selected usage (same as calculation API)
+      const selectedRawData = durationOptions.find(option => option.value === (selectedUsage || customUsage));
+      
+      // Create combined selectedUsage for API (always send both Km & Mins)
+      const combinedSelectedUsage = selectedRawData 
+        ? `${selectedRawData.rawKm}Km & ${selectedRawData.rawMinutes}Mins`
+        : (selectedUsage || customUsage);
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/rides/book`, {
         method: "POST",
         headers: {
@@ -1034,6 +1050,7 @@ const BookingStep2 = () => {
         credentials: 'include',
         body: JSON.stringify({
           ...cleanedDetails,
+          selectedUsage: combinedSelectedUsage,
           selectedDate: (bookingData?.subcategoryName?.toLowerCase().includes('weekly') || bookingData?.subcategoryName?.toLowerCase().includes('monthly')) && selectedDates.length > 0 ? selectedDates[0] : bookingDetails.selectedDate,
           paymentType: selectedPaymentMethod,
 
