@@ -301,7 +301,11 @@ const Booking = () => {
 
   const handleConfirmBack = () => {
     dispatch(purgeStore());
-    navigate('/');
+    if (subSubcategoryId) {
+      navigate(`/subsubcategories/${categoryId}/${subcategoryId}`);
+    } else {
+      navigate(`/subcategories/${categoryId}`);
+    }
   };
 
   const handleNextPage = () => {

@@ -96,15 +96,29 @@ const BookingStep2 = () => {
   // Helper function to format time display
   const formatTimeDisplay = (minutes) => {
     const totalMinutes = parseInt(minutes);
-    const hours = Math.floor(totalMinutes / 60);
-    const remainingMinutes = totalMinutes % 60;
-
-    if (hours === 0) {
-      return `${totalMinutes}Min`;
-    } else if (remainingMinutes === 0) {
-      return `${hours}Hrs`;
+    
+    // Check if service is distance-based (contains 'oneway')
+    const isDistanceBased = bookingData?.subcategoryName?.toLowerCase().includes('oneway') || 
+                           bookingData?.subSubcategoryName?.toLowerCase().includes('oneway');
+    
+    if (isDistanceBased) {
+      return `${totalMinutes}Km`;
+    }
+    
+    // Time-based services
+    if (totalMinutes >= 1440) {
+      const days = Math.floor(totalMinutes / 1440);
+      return `${days} Days`;
+    } else if (totalMinutes >= 60) {
+      const hours = Math.floor(totalMinutes / 60);
+      const remainingMinutes = totalMinutes % 60;
+      if (remainingMinutes === 0) {
+        return `${hours} Hours`;
+      } else {
+        return `${hours} Hours ${remainingMinutes} Minutes`;
+      }
     } else {
-      return `${hours}Hrs ${remainingMinutes}Min`;
+      return `${totalMinutes} Minutes`;
     }
   };
 
@@ -249,11 +263,11 @@ const BookingStep2 = () => {
     }
   };
 
-
-
-
-
   const callCalculationAPI = async (defaultUsage, currentDurationType = durationType, currentDurationValue = durationValue, carCategory = null, parcelCategory = null) => {
+    return callCalculationAPIWithOptions(defaultUsage, durationOptions, currentDurationType, currentDurationValue, carCategory, parcelCategory);
+  };
+
+  const callCalculationAPIWithOptions = async (defaultUsage, options, currentDurationType = durationType, currentDurationValue = durationValue, carCategory = null, parcelCategory = null) => {
     // Prevent multiple simultaneous calls
     if (isCalculating || !defaultUsage || !bookingData || !bookingData.categoryId) return;
 
@@ -280,39 +294,14 @@ const BookingStep2 = () => {
     }
 
     try {
-      // Find the raw data for the selected usage and create combined selectedUsage
-      const selectedRawData = rawIncludedData.find(item => {
-        const minutes = parseInt(item.includedMinutes);
-        const hours = Math.round(minutes / 60 * 100) / 100;
-        const km = parseInt(item.includedKm);
-        const timeDisplay = formatTimeDisplay(minutes);
-
-        const subcategoryLower = bookingData?.subcategoryName?.toLowerCase() || '';
-        const isDistanceBased = subcategoryLower.includes('oneway') ||
-          subcategoryLower.includes('one-way') ||
-          subcategoryLower.includes('out-station') ||
-          subcategoryLower.includes('in-city');
-
-        let displayValue = '';
-        if (minutes > 0 && km > 0) {
-          displayValue = isDistanceBased ? `${km}Km & ${timeDisplay}` : `${timeDisplay} & ${km}Km`;
-        } else if (minutes > 0) {
-          displayValue = timeDisplay;
-        } else if (km > 0) {
-          displayValue = `${km}Km`;
-        }
-
-        return displayValue === defaultUsage;
-      });
-
-      // Create combined selectedUsage with converted time format
-      let combinedSelectedUsage = defaultUsage;
-      if (selectedRawData) {
-        const minutes = parseInt(selectedRawData.includedMinutes);
-        const timeDisplay = formatTimeDisplay(minutes);
-        combinedSelectedUsage = `${timeDisplay} & ${selectedRawData.includedKm}Km`;
-      }
-
+      // Find the raw data for the selected usage
+      const selectedRawData = options.find(option => option.value === defaultUsage);
+      
+      // Create combined selectedUsage for API (always send both Km & Mins)
+      const combinedSelectedUsage = selectedRawData 
+        ? `${selectedRawData.rawKm}Km & ${selectedRawData.rawMinutes}Mins`
+        : defaultUsage;
+      
       // Create payload without sender/receiver fields for calculation
       const { senderMobile, senderName, senderType, receiverMobile, receiverName, receiverType, senderDetails, receiverDetails, ...calculationData } = bookingData;
 
@@ -449,55 +438,48 @@ const BookingStep2 = () => {
           const dataArray = Array.isArray(res.data) ? res.data : [];
 
           if (dataArray.length > 0) {
-            // Check if subcategory is distance-based
-            const subcategoryLower = bookingData?.subcategoryName?.toLowerCase() || '';
-            const isDistanceBased = subcategoryLower.includes('oneway') ||
-              subcategoryLower.includes('one-way') ||
-              subcategoryLower.includes('out-station') ||
-              subcategoryLower.includes('in-city');
+            // Check if service is distance-based
+            const normalizeString = (str) => str?.toLowerCase().replace(/[\s-]/g, '') || '';
+            const isDistanceBased = normalizeString(bookingData?.subcategoryName).includes('oneway') || 
+                                   normalizeString(bookingData?.subSubcategoryName).includes('oneway');
 
-            // Create combined options showing only non-zero values
-            const combinedOptions = dataArray.map(item => {
+            // Create options based on service type
+            const options = dataArray.map(item => {
               const minutes = parseInt(item.includedMinutes);
-              const hours = Math.round(minutes / 60 * 100) / 100;
               const km = parseInt(item.includedKm);
 
-              // Format time display with hours and minutes
-              const timeDisplay = formatTimeDisplay(minutes);
-
-              let displayValue = '';
-              if (minutes > 0 && km > 0) {
-                // Show Km first for distance-based services, time first for time-based
-                displayValue = isDistanceBased ? `${km}Km & ${timeDisplay}` : `${timeDisplay} & ${km}Km`;
-              } else if (minutes > 0) {
-                displayValue = timeDisplay;
-              } else if (km > 0) {
-                displayValue = `${km}Km`;
+              if (isDistanceBased) {
+                // Distance-based: show only Km
+                return {
+                  value: `${km}Km`,
+                  rawMinutes: item.includedMinutes,
+                  rawKm: item.includedKm
+                };
+              } else {
+                // Time-based: show only time (Hours/Days)
+                const timeDisplay = formatTimeDisplay(minutes);
+                return {
+                  value: timeDisplay,
+                  rawMinutes: item.includedMinutes,
+                  rawKm: item.includedKm
+                };
               }
-
-              return {
-                value: displayValue,
-                hours: hours.toString(),
-                km: km.toString(),
-                rawMinutes: item.includedMinutes,
-                rawKm: item.includedKm
-              };
-            }).filter(option => option.value !== ''); // Remove empty options
+            }).filter(option => option.value !== '');
 
 
-            setDurationOptions(combinedOptions);
+            setDurationOptions(options);
             setRawIncludedData(dataArray); // Store raw data for calculation API
 
             // Set default usage
             if (!selectedUsage && !customUsage) {
-              const defaultUsage = combinedOptions[0].value;
+              const defaultUsage = options[0].value;
 
               setSelectedUsage(defaultUsage);
               dispatch(setUsage({ selectedUsage: defaultUsage, customUsage: '' }));
 
-              // Wait for next tick to ensure state is updated
+              // Wait for next tick to ensure state is updated, pass options directly
               setTimeout(() => {
-                callCalculationAPI(defaultUsage, durationType, durationValue, defaultCarCategory, defaultParcelCategory);
+                callCalculationAPIWithOptions(defaultUsage, options, durationType, durationValue, defaultCarCategory, defaultParcelCategory);
               }, 0);
               return;
             }
@@ -933,13 +915,13 @@ const BookingStep2 = () => {
 
       // Call find rider API to check profile completeness
       const riderRes = await apiClient.get('/api/rider-auth/find-rider');
-      
+
       if (riderRes.data.success && riderRes.data.rider) {
         const { name, mobile, gender } = riderRes.data.rider;
-        
+
         // Check if profile is incomplete
         if (!name || name === "" || !mobile || mobile === "" || !gender || gender === "") {
-          setProfileError("Please complete your profile first. Go to My Profile and fill in all required details (Name, Mobile, Gender).");
+          setProfileError("Please complete your profile first. Go to My Profile and fill all required details (Name, Mobile, Gender).");
           return;
         }
       }
@@ -1402,11 +1384,11 @@ const BookingStep2 = () => {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-800">{item.category}</h3>
                     <p className="text-sm text-gray-500">
-                      {bookingData?.categoryName?.toLowerCase() === 'cab' && item.seatCapacity 
+                      {bookingData?.categoryName?.toLowerCase() === 'cab' && item.seatCapacity
                         ? `${item.description} - ${item.seatCapacity} Seats`
                         : bookingData?.categoryName?.toLowerCase() === 'parcel' && item.weightAllowed
-                        ? `${item.description} - upto ${item.weightAllowed} allowed`
-                        : item.description
+                          ? `${item.description} - upto ${item.weightAllowed} allowed`
+                          : item.description
                       }
                     </p>
                   </div>
@@ -1434,46 +1416,46 @@ const BookingStep2 = () => {
 
           {/* Instructions section with cancel button */}
           {!packagesNotFound && (
-          <div>
-            {/* Button to toggle instructions */}
-            {!showInstructions && (
-              <Button
-                variant="outline"
-                onClick={() => setShowInstructions(true)}
-              >
-                + Add Instructions
-              </Button>
-            )}
+            <div>
+              {/* Button to toggle instructions */}
+              {!showInstructions && (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowInstructions(true)}
+                >
+                  + Add Instructions
+                </Button>
+              )}
 
-            {/* Conditionally show the card with cancel button */}
-            {showInstructions && (
-              <Card className="bg-white shadow-lg">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle>Instructions (Optional)</CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setShowInstructions(false);
-                      setNotesLocal(''); // Clear the notes when canceling
-                    }}
-                    className="p-2 hover:bg-gray-100 rounded-full"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <Textarea
-                    id="notes"
-                    placeholder="Enter any special instructions or requirements..."
-                    value={notes}
-                    onChange={(e) => setNotesLocal(e.target.value)}
-                    rows={3}
-                  />
-                </CardContent>
-              </Card>
-            )}
-          </div>
+              {/* Conditionally show the card with cancel button */}
+              {showInstructions && (
+                <Card className="bg-white shadow-lg">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle>Instructions (Optional)</CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setShowInstructions(false);
+                        setNotesLocal(''); // Clear the notes when canceling
+                      }}
+                      className="p-2 hover:bg-gray-100 rounded-full"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <Textarea
+                      id="notes"
+                      placeholder="Enter any special instructions or requirements..."
+                      value={notes}
+                      onChange={(e) => setNotesLocal(e.target.value)}
+                      rows={3}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           )}
 
 
