@@ -113,6 +113,30 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
         }
     };
 
+    const formatUsage = (usage: string, subcategoryName?: string) => {
+        const normalized = subcategoryName?.toLowerCase().replace(/[^a-z0-9]/g, '') || '';
+        
+        if (normalized.includes('oneway')) {
+            const kmMatch = usage.match(/(\d+)\s*km/i);
+            return kmMatch ? `${kmMatch[1]} Km` : usage;
+        }
+        
+        const minsMatch = usage.match(/(\d+)\s*mins?/i);
+        if (!minsMatch) return usage;
+        
+        const mins = parseInt(minsMatch[1]);
+        if (mins >= 1440) {
+            const days = Math.floor(mins / 1440);
+            const remainingMins = mins % 1440;
+            const hours = Math.floor(remainingMins / 60);
+            return `${days} Day${days > 1 ? 's' : ''}${hours > 0 ? ` ${hours} Hour${hours > 1 ? 's' : ''}` : ''}`;
+        }
+        
+        const hours = Math.floor(mins / 60);
+        const minutes = mins % 60;
+        return `${hours} Hour${hours > 1 ? 's' : ''}${minutes > 0 ? ` ${minutes} Minute${minutes > 1 ? 's' : ''}` : ''}`;
+    };
+
     if (loading) {
         return (
             <div className="p-6 bg-gray-50 min-h-screen">
@@ -385,8 +409,7 @@ const BookingDetailView: React.FC<BookingDetailViewProps> = ({ onBack }) => {
                         <div>
                             <div className="text-xs text-gray-500">Ride Duration</div>
                             <div className="text-sm font-medium">
-                                {booking.rideInfo?.selectedUsage}{" "}
-                                
+                                {formatUsage(booking.rideInfo?.selectedUsage, booking.rideInfo?.subcategoryName)}
                             </div>
                         </div>
 

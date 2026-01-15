@@ -52,6 +52,30 @@ const PastRides: React.FC = () => {
     navigate(`/detailView/${booking._id}`);
   };
 
+  const formatUsage = (usage: string, subcategoryName?: string) => {
+    const normalized = subcategoryName?.toLowerCase().replace(/[^a-z0-9]/g, '') || '';
+    
+    if (normalized.includes('oneway')) {
+      const kmMatch = usage.match(/(\d+)\s*km/i);
+      return kmMatch ? `${kmMatch[1]} Km` : usage;
+    }
+    
+    const minsMatch = usage.match(/(\d+)\s*mins?/i);
+    if (!minsMatch) return usage;
+    
+    const mins = parseInt(minsMatch[1]);
+    if (mins >= 1440) {
+      const days = Math.floor(mins / 1440);
+      const remainingMins = mins % 1440;
+      const hours = Math.floor(remainingMins / 60);
+      return `${days} Day${days > 1 ? 's' : ''}${hours > 0 ? ` ${hours} Hour${hours > 1 ? 's' : ''}` : ''}`;
+    }
+    
+    const hours = Math.floor(mins / 60);
+    const minutes = mins % 60;
+    return `${hours} Hour${hours > 1 ? 's' : ''}${minutes > 0 ? ` ${minutes} Minute${minutes > 1 ? 's' : ''}` : ''}`;
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen">
       <Navbar title="Past Rides" className="bg-black" />
@@ -113,6 +137,17 @@ const PastRides: React.FC = () => {
                         <div>
                           <div className="font-medium text-sm">Driver Category</div>
                           <div className="text-gray-600 text-sm">{booking.rideInfo?.selectedCategory}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Usage */}
+                    {booking.rideInfo?.selectedUsage && (
+                      <div className="flex items-start">
+                        <div className="w-3 h-3 bg-purple-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                        <div>
+                          <div className="font-medium text-sm">Usage</div>
+                          <div className="text-gray-600 text-sm">{formatUsage(booking.rideInfo?.selectedUsage, booking.rideInfo?.subcategoryName)}</div>
                         </div>
                       </div>
                     )}

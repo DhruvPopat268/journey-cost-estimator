@@ -102,15 +102,15 @@ const ReferAndEarnPage = () => {
     if (!userData) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <p>Loading...</p>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 border-4 border-gray-300 border-t-gray-800 rounded-full animate-spin" />
             </div>
         );
     }
 
     // --- Referral Earnings Modal ---
     const EarningsHistoryModal = () => (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl w-full max-w-md max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setActiveModal(null)}>
+            <div className="bg-white rounded-xl w-full max-w-md max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
                     <div className="flex items-center space-x-3">
                         <button
@@ -161,8 +161,8 @@ const ReferAndEarnPage = () => {
 
     // --- Referrals List Modal ---
     const ReferralsListModal = () => (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl w-full max-w-md max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setActiveModal(null)}>
+            <div className="bg-white rounded-xl w-full max-w-md max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
                     <div className="flex items-center space-x-3">
                         <button
@@ -213,8 +213,8 @@ const ReferAndEarnPage = () => {
 
     // --- Current Balance History Modal ---
     const BalanceHistoryModal = () => (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl w-full max-w-md max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setActiveModal(null)}>
+            <div className="bg-white rounded-xl w-full max-w-md max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
                     <div className="flex items-center space-x-3">
                         <button
@@ -270,9 +270,10 @@ const ReferAndEarnPage = () => {
     );
 
     return (
-        <div className="min-h-screen bg-white text-gray-800 p-4">
-            <div className="w-full max-w-md mx-auto">
-                <Navbar title="Refer & Earn" />
+        <div className="min-h-screen bg-white text-gray-800">
+            <Navbar title="Refer & Earn" />
+            
+            <div className="w-full max-w-md mx-auto p-4">
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-3 gap-3 mb-6 mt-4">
