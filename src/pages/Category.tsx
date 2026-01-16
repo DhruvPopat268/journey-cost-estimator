@@ -487,7 +487,8 @@ const Category = () => {
               
                 <li><a href="/terms-and-conditions" className="hover:text-white transition-colors">Terms & Conditions</a></li>
                 <li><a href="https://play.google.com/store/apps/details?id=com.hiredrive.app" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Partner Login</a></li>
-                <li><a href="https://sites.google.com/view/hire4drive/home" target="_blank" className="hover:text-white transition-colors">Privacy Policy</a></li>
+                <li><a href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</a></li>
+                <li><a href="/refund-policy" className="hover:text-white transition-colors">Refund Policy</a></li>
               </ul>
             </div>
 

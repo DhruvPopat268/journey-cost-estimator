@@ -41,6 +41,7 @@ import LocalDriverHire from './pages/LocalDriverHire';
 import ProfessionalDrivers from './pages/ProfessionalDrivers';
 import AirportTransferDriver from './pages/AirportTransferDriver';
 import Reviews from './pages/Reviews';
+import RefundPolicy from './pages/RefundPolicy';
 
 const queryClient = new QueryClient();
 
@@ -94,6 +95,7 @@ const AppWithSidebar = () => {
         <Route path="/professional-drivers" element={<ProfessionalDrivers />} />
         <Route path="/airport-transfer-driver" element={<AirportTransferDriver />} />
         <Route path="/reviews" element={<Reviews />} />
+        <Route path="/refund-policy" element={<RefundPolicy />} />
 
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
