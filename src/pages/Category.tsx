@@ -274,18 +274,32 @@ const Category = () => {
 
         {/* Google Play Buttons */}
         <div className="text-center mb-12">
-          <a 
-            href="https://play.google.com/store/apps/details?id=com.hiredriveuser.app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block"
-          >
-            <img 
-              src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" 
-              alt="Get it on Google Play" 
-              className="h-14 sm:h-16 hover:opacity-80 transition-opacity"
-            />
-          </a>
+          <div className="flex justify-center gap-4">
+            <a 
+              href="https://play.google.com/store/apps/details?id=com.hiredriveuser.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block"
+            >
+              <img 
+                src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" 
+                alt="Get it on Google Play" 
+                className="h-14 sm:h-16 hover:opacity-80 transition-opacity"
+              />
+            </a>
+            <a 
+              href="https://apps.apple.com/in/app/hire4drive-driver-cab-parcel/id6757386782"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block"
+            >
+              <img 
+                src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" 
+                alt="Download on the App Store" 
+                className="h-14 sm:h-16 hover:opacity-80 transition-opacity"
+              />
+            </a>
+          </div>
         </div>
 
         {/* Customer Ratings & Reviews Section */}
@@ -369,7 +383,7 @@ const Category = () => {
               Become Driver
             </button>
           </a>
-          <div className="mt-6">
+          <div className="mt-6 flex justify-center gap-4">
             <a 
               href="https://play.google.com/store/apps/details?id=com.hiredrive.app"
               target="_blank"
@@ -377,8 +391,20 @@ const Category = () => {
               className="inline-block"
             >
               <img 
-                src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" 
+                src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" 
                 alt="Get it on Google Play - Driver App" 
+                className="h-12 sm:h-14 hover:opacity-80 transition-opacity"
+              />
+            </a>
+            <a 
+              href="https://apps.apple.com/in/app/hire4drive-3-in-1-partners/id6757594831"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block"
+            >
+              <img 
+                src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" 
+                alt="Download on the App Store - Driver App" 
                 className="h-12 sm:h-14 hover:opacity-80 transition-opacity"
               />
             </a>

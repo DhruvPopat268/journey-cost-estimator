@@ -91,8 +91,8 @@ const WalletPage = () => {
   const [loading, setLoading] = useState(true);
   const [addMoneyAmount, setAddMoneyAmount] = useState('');
   const [showAddMoney, setShowAddMoney] = useState(false);
+  const [showWithdraw, setShowWithdraw] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState('deposit');
   const [transactions, setTransactions] = useState([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
   const [pagination, setPagination] = useState({
@@ -164,30 +164,20 @@ const WalletPage = () => {
 
     setLoadingTransactions(true);
     try {
-      const response = await apiClient.get('/api/payments/history');
+      const response = await apiClient.get(`/api/payments/history?page=${page}&limit=10`);
       const data = response.data;
       console.log('Transaction history:', data);
       
-      // Transform API data to match our component structure with safety checks
-      const transformedTransactions = (data.payments || []).map(payment => ({
-        id: payment.id,
-        amount: payment.amount,
-        type: 'deposit',
-        description: payment.description || 'Wallet recharge',
-        date: payment.date,
-        status: payment.status === 'paid' ? 'completed' : payment.status,
-        paymentMethod: payment.paymentMethod,
-        razorpayPaymentId: payment.razorpayPaymentId,
-        paidAt: payment.paidAt
-      }));
-
-      setTransactions(transformedTransactions);
-      setPagination(data.pagination || {
-        currentPage: 1,
-        totalPages: 1,
-        totalItems: 0,
-        hasNext: false,
-        hasPrev: false
+      const allTransactions = data.transactions || [];
+      const totalPages = Math.ceil(data.totalItems / 10);
+      
+      setTransactions(allTransactions);
+      setPagination({
+        currentPage: page,
+        totalPages: totalPages,
+        totalItems: data.totalItems || 0,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
       });
     } catch (error) {
       console.error('Error fetching transaction history:', error);
@@ -200,9 +190,13 @@ const WalletPage = () => {
   // Create Razorpay order
   const createRazorpayOrder = useCallback(async (amount) => {
     try {
-      const response = await apiClient.post('/api/payments/create-order', {
+      const response = await apiClient.post('/api/rider-auth/create-order', {
         amount: amount,
-        currency: 'INR'
+        currency: 'INR',
+        receipt: `rcpt_${Date.now()}`,
+        notes: {
+          type: 'user_deposit'
+        }
       });
       return response.data;
     } catch (error) {
@@ -239,15 +233,13 @@ const WalletPage = () => {
         currency: order.currency,
         name: 'Hire4Drive',
         description: 'Add money to wallet',
-        order_id: order.id,
+        order_id: order.orderId,
         handler: async function (response) {
           try {
             // Verify payment on backend
-            const verifyResponse = await apiClient.post('/api/payments/verify', {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              amount: amount
+            const verifyResponse = await apiClient.post('/api/payments/deposit', {
+              amount: amount,
+              paymentId: response.razorpay_payment_id
             });
 
             if (verifyResponse.status === 200) {
@@ -368,6 +360,7 @@ const WalletPage = () => {
     const statusConfig = {
       'paid': { color: 'green', text: 'Completed' },
       'completed': { color: 'green', text: 'Completed' },
+      'pending': { color: 'yellow', text: 'Pending' },
       'created': { color: 'yellow', text: 'Pending' },
       'failed': { color: 'red', text: 'Failed' }
     };
@@ -384,6 +377,54 @@ const WalletPage = () => {
         {config.text}
       </span>
     );
+  };
+
+  const getTransactionIcon = (type) => {
+    switch(type) {
+      case 'deposit':
+        return <ArrowDownLeft className="w-4 h-4 text-green-600" />;
+      case 'spend':
+        return <ArrowUpRight className="w-4 h-4 text-red-600" />;
+      case 'withdraw':
+        return <ArrowUpRight className="w-4 h-4 text-orange-600" />;
+      case 'refund':
+        return <ArrowDownLeft className="w-4 h-4 text-blue-600" />;
+      case 'cancellation_charges':
+        return <ArrowUpRight className="w-4 h-4 text-purple-600" />;
+      default:
+        return <History className="w-4 h-4 text-gray-600" />;
+    }
+  };
+
+  const getTransactionColor = (type) => {
+    switch(type) {
+      case 'deposit':
+      case 'refund':
+        return { bg: 'bg-green-100', text: 'text-green-600', sign: '+' };
+      case 'spend':
+      case 'withdraw':
+      case 'cancellation_charges':
+        return { bg: 'bg-red-100', text: 'text-red-600', sign: '-' };
+      default:
+        return { bg: 'bg-gray-100', text: 'text-gray-600', sign: '' };
+    }
+  };
+
+  const getTransactionTypeLabel = (type) => {
+    switch(type) {
+      case 'deposit':
+        return 'Deposit';
+      case 'spend':
+        return 'Spend';
+      case 'withdraw':
+        return 'Withdraw';
+      case 'refund':
+        return 'Refund';
+      case 'cancellation_charges':
+        return 'Cancellation Charges';
+      default:
+        return type;
+    }
   };
 
   const quickAddAmounts = [100, 200, 500, 1000];
@@ -460,13 +501,20 @@ const WalletPage = () => {
           </CardHeader>
           <CardContent>
             {!showAddMoney ? (
-              <div className="text-center py-2 flex justify-center">
+              <div className="text-center py-2 flex justify-center gap-3">
                 <Button
                   onClick={() => setShowAddMoney(true)}
                   className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-4 px-8 rounded-xl shadow-lg font-medium transition-all duration-200"
                 >
                   <Plus className="w-5 h-5 mr-2" />
                   Add Money
+                </Button>
+                <Button
+                  onClick={() => setShowWithdraw(true)}
+                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-4 px-8 rounded-xl shadow-lg font-medium transition-all duration-200"
+                >
+                  <ArrowUpRight className="w-5 h-5 mr-2" />
+                  Withdraw
                 </Button>
               </div>
             ) : (
@@ -548,6 +596,54 @@ const WalletPage = () => {
           </CardContent>
         </Card>
 
+        {/* Withdraw Modal */}
+        {showWithdraw && (
+          <Card className="bg-white/80 backdrop-blur-sm shadow-xl border-0">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                <div className="p-4 bg-orange-100 rounded-full w-20 h-20 mx-auto flex items-center justify-center">
+                  <ArrowUpRight className="w-10 h-10 text-orange-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-800">Withdraw Money</h3>
+                <p className="text-gray-600">You can only withdraw from our mobile app</p>
+                <div className="flex justify-center gap-4">
+                  <a
+                    href="https://play.google.com/store/apps/details?id=com.hiredriveuser.app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block"
+                  >
+                    <img
+                      src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
+                      alt="Get it on Google Play"
+                      className="h-14 hover:scale-105 transition-transform"
+                    />
+                  </a>
+                  <a
+                    href="https://apps.apple.com/in/app/hire4drive-driver-cab-parcel/id6757386782"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block"
+                  >
+                    <img
+                      src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg"
+                      alt="Download on the App Store"
+                      className="h-14 hover:scale-105 transition-transform"
+                    />
+                  </a>
+                </div>
+                <Button
+                  onClick={() => setShowWithdraw(false)}
+                  variant="outline"
+                  className="mt-4 px-6 py-2"
+                >
+                  Close
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Transaction History Section */}
         <Card className="bg-white/80 backdrop-blur-sm shadow-xl border-0">
           <CardHeader className="pb-4">
@@ -562,36 +658,8 @@ const WalletPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {/* Toggle Tabs - Only deposits available from API */}
-            <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
-              <button
-                onClick={() => setActiveTab('deposit')}
-                className={`flex-1 flex items-center justify-center py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
-                  activeTab === 'deposit'
-                    ? 'bg-white text-green-600 shadow-md'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                <ArrowDownLeft className="w-4 h-4 mr-2" />
-                Deposits
-              </button>
-              <button
-                onClick={() => setActiveTab('spend')}
-                className={`flex-1 flex items-center justify-center py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
-                  activeTab === 'spend'
-                    ? 'bg-white text-red-600 shadow-md'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-                disabled
-                title="Spending history not available"
-              >
-                <ArrowUpRight className="w-4 h-4 mr-2" />
-                Spending (Coming Soon)
-              </button>
-            </div>
-
             {/* Transaction List */}
-            <div className="space-y-3 max-h-80 overflow-y-auto">
+            <div className="space-y-3 max-h-100 overflow-y-auto">
               {loadingTransactions ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
@@ -599,47 +667,41 @@ const WalletPage = () => {
                 </div>
               ) : transactions.length > 0 ? (
                 <>
-                  {transactions.map((transaction) => (
-                    <div
-                      key={transaction.id}
-                      className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 rounded-full bg-green-100">
-                          <ArrowDownLeft className="w-4 h-4 text-green-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-800">{transaction.description}</p>
-                          <div className="flex items-center space-x-2 text-sm text-gray-500">
-                            <Calendar className="w-3 h-3" />
-                            <span>{formatDate(transaction.date)}</span>
-                            {transaction.paymentMethod && (
-                              <>
-                                <span>•</span>
-                                <span>{transaction.paymentMethod}</span>
-                              </>
-                            )}
+                  {transactions.map((transaction, index) => {
+                    const colors = getTransactionColor(transaction.type);
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className={`p-2 rounded-full ${colors.bg}`}>
+                            {getTransactionIcon(transaction.type)}
                           </div>
-                          {transaction.razorpayPaymentId && (
-                            <p className="text-xs text-gray-400 mt-1">
-                              ID: {transaction.razorpayPaymentId}
-                            </p>
-                          )}
+                          <div>
+                            <p className="font-medium text-gray-800">{getTransactionTypeLabel(transaction.type)}</p>
+                            <div className="flex items-center space-x-2 text-sm text-gray-500">
+                              <Calendar className="w-3 h-3" />
+                              <span>{formatDate(transaction.date)}</span>
+                              {transaction.paymentMethod && (
+                                <>
+                                  <span>•</span>
+                                  <span>{transaction.paymentMethod}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className={`font-bold ${colors.text}`}>
+                            {colors.sign}₹{transaction.amount}
+                          </p>
+                          {getStatusBadge(transaction.status)}
+                  
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-green-600">
-                          +₹{transaction.amount}
-                        </p>
-                        {getStatusBadge(transaction.status)}
-                        {transaction.paidAt && (
-                          <p className="text-xs text-gray-400 mt-1">
-                            Paid: {formatDate(transaction.paidAt)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   
                   {/* Pagination Controls */}
                   {pagination.totalPages > 1 && (
@@ -675,7 +737,7 @@ const WalletPage = () => {
                     No transaction history found
                   </p>
                   <p className="text-gray-400 text-sm mt-1">
-                    Your deposit transactions will appear here
+                    Your transactions will appear here
                   </p>
                 </div>
               )}
