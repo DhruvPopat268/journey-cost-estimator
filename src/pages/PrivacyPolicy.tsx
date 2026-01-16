@@ -26,12 +26,12 @@ const PrivacyPolicy = () => {
 
       <div className="container">
 
-        <h1>Privacy Policy – Hire 4 Drive</h1>
-        <p><strong>Last Updated:</strong> [Insert Date]</p>
+        <h1>Privacy Policy – Hire4Drive</h1>
+        <p><strong>Last Updated:</strong> 16/01/2026</p>
 
         <div className="section">
           <p>
-            Welcome to <strong>Hire 4 Drive</strong> ("Company", "we", "us", or "our").
+            Welcome to <strong>Hire4Drive</strong> ("Company", "we", "us", or "our").
             We value your trust and are committed to handling your personal information
             with transparency and care. This Privacy Policy explains how we collect,
             use, disclose, and protect your information when you use our mobile
@@ -41,7 +41,7 @@ const PrivacyPolicy = () => {
         </div>
 
         <h2>1. Information We Collect</h2>
-        <p>We collect different types of information to provide and improve the Hire 4 Drive service:</p>
+        <p>We collect different types of information to provide and improve the Hire4Drive service:</p>
 
         <h3>A. Personal Identification Information</h3>
         <ul>
@@ -199,7 +199,7 @@ const PrivacyPolicy = () => {
         ----------------------------- */}
 
         <h2>13. Refund & Cancellation Policy</h2>
-        <p>Hire 4 Drive follows the guidelines below:</p>
+        <p>Hire4Drive follows the guidelines below:</p>
 
         <h3>A. Customer Cancellations</h3>
         <ul>
@@ -311,16 +311,16 @@ const PrivacyPolicy = () => {
 
         <h2>17. Contact Us</h2>
         <p>
-          <strong>Email:</strong> support@example.com<br />
-          <strong>Address:</strong> [Your Company Address]<br />
-          <strong>Website:</strong> https://yourwebsite.com
+          <strong>Email:</strong> support@hire4drive.com<br />
+          <strong>Address:</strong> 1747, 1st Floor, 3rd Cross 3rd Block,Doctor Vishnuvardhan Road, Begur Rd, Vishwapriya Nagar, Bengaluru, Karnataka , 560068. <br />
+          <strong>Website:</strong> https://www.hire4drive.com
         </p>
 
         <div className="note">
           Replace placeholders (email, website, address, date) before publishing.
         </div>
 
-        <p className="footer-text">© {year} Hire 4 Drive. All rights reserved.</p>
+        <p className="footer-text">© {year} Hire4Drive. All rights reserved.</p>
 
       </div>
     </>
