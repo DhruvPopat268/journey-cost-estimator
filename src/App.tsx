@@ -78,7 +78,7 @@ const AppWithSidebar = () => {
         <Route path="/pastRides" element={<PastRides />} />
 
         <Route path="/detailView/:id" element={<BookingDetailView />} />
-        <Route path="/privacyPolicy" element={<PrivacyPolicy />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/about-us" element={<AboutUs />} />
         <Route path="/contact-us" element={<ContactUs />} />
         <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
