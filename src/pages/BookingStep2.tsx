@@ -1835,16 +1835,16 @@ const BookingStep2 = () => {
                 <div className="pt-4">
                   <h4 className="font-semibold text-gray-800 mb-2">Package Details</h4>
                   <div className="space-y-2 text-sm">
-                    {rideCostData.includedKm && rideCostData.includedKm.length > 0 && parseInt(rideCostData.includedKm[0]) > 0 && (
+                    {rideCostData.includedKm && parseInt(rideCostData.includedKm) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-gray-600">Included Distance:</span>
-                        <span className="font-medium">{rideCostData.includedKm[0]}Km</span>
+                        <span className="font-medium">{rideCostData.includedKm}Km</span>
                       </div>
                     )}
-                    {rideCostData.includedMinutes && rideCostData.includedMinutes.length > 0 && parseInt(rideCostData.includedMinutes[0]) > 0 && (
+                    {rideCostData.includedMinutes && parseInt(rideCostData.includedMinutes) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-gray-600">Included Time:</span>
-                        <span className="font-medium">{formatPackageTime(rideCostData.includedMinutes[0])}</span>
+                        <span className="font-medium">{formatPackageTime(rideCostData.includedMinutes)}</span>
                       </div>
                     )}
                     {rideCostData.extraChargePerKm > 0 && (
