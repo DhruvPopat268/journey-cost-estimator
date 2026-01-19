@@ -103,7 +103,7 @@ const BookingStep2 = () => {
                            bookingData?.subSubcategoryName?.toLowerCase().includes('oneway');
     
     if (isDistanceBased) {
-      return `${totalMinutes}Km`;
+      return `${totalMinutes} Kms`;
     }
     
     // Time-based services
@@ -143,6 +143,12 @@ const BookingStep2 = () => {
     } else {
       return totalMinutes === 1 ? '1 Minute' : `${totalMinutes} Minutes`;
     }
+  };
+
+  // Helper function to format price display
+  const formatPrice = (amount) => {
+    const num = parseFloat(amount || 0);
+    return num % 1 === 0 ? `₹${num}` : `₹${num.toFixed(2)}`;
   };
 
   // Initialize displayDates when durationValue changes
@@ -490,7 +496,7 @@ const BookingStep2 = () => {
               if (isDistanceBased) {
                 // Distance-based: show only Km
                 return {
-                  value: `${km}Km`,
+                  value: `${km} Kms`,
                   rawMinutes: item.includedMinutes,
                   rawKm: item.includedKm
                 };
@@ -739,7 +745,7 @@ const BookingStep2 = () => {
       dispatch(setSelectedCategory(serializableCategory));
 
       const categoryName = selectedCategory.category;
-      if (categoryName) {
+      if (categoryName && durationOptions.length > 0) { // ← Wait for durationOptions
         fetchInstructions(categoryName);
         // Call referral calculation API when category changes
         if (termsAccepted) {
@@ -747,7 +753,7 @@ const BookingStep2 = () => {
         }
       }
     }
-  }, [selectedCategory?.category]);
+  }, [selectedCategory?.category, durationOptions.length]); // ← Add durationOptions.length as dependency
 
   // Fetch instructions when car category changes for cab bookings
   useEffect(() => {
@@ -1465,7 +1471,7 @@ const BookingStep2 = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-right">
-                    <p className="text-lg font-bold text-gray-800">₹{(item.totalPayable || 0).toFixed(2)}</p>
+                    <p className="text-lg font-bold text-gray-800">{formatPrice(item.totalPayable)}</p>
                   </div>
 
                   {/* Info button - only show when category is selected */}
@@ -1596,17 +1602,17 @@ const BookingStep2 = () => {
                           <div className="space-y-1">
                             <div className="flex justify-between">
                               <span className="text-gray-600">Current Balance:</span>
-                              <span className="font-medium text-green-600">₹{(walletBalance || 0).toFixed(2)}</span>
+                              <span className="font-medium text-green-600">{formatPrice(walletBalance)}</span>
                             </div>
                             {walletBalance < finalPayable ? (
                               <div className="text-red-600">
                                 <div className="flex justify-between">
                                   <span>Required:</span>
-                                  <span>₹{(finalPayable || 0).toFixed(2)}</span>
+                                  <span>{formatPrice(finalPayable)}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span>Need to add:</span>
-                                  <span className="font-medium">₹{((finalPayable || 0) - (walletBalance || 0)).toFixed(2)}</span>
+                                  <span className="font-medium">{formatPrice((finalPayable || 0) - (walletBalance || 0))}</span>
                                 </div>
                                 <Button
                                   onClick={() => navigate("/wallet")}
@@ -1621,7 +1627,7 @@ const BookingStep2 = () => {
                               <div className="text-green-600">
                                 <div className="flex justify-between">
                                   <span>After payment:</span>
-                                  <span className="font-medium">₹{((walletBalance || 0) - (finalPayable || 0)).toFixed(2)}</span>
+                                  <span className="font-medium">{formatPrice((walletBalance || 0) - (finalPayable || 0))}</span>
                                 </div>
                               </div>
                             )}
@@ -1659,13 +1665,13 @@ const BookingStep2 = () => {
                     'Fix Duration Error' :
                     profileError ?
                       'Complete Profile First' :
-                      `Confirm Booking ₹${(finalPayable || 0).toFixed(2)}`
+                      `Confirm Booking ${formatPrice(finalPayable)}`
                 ) :
                 durationError ?
                   'Fix No Of Days Error' :
                   profileError ?
                     'Complete Profile First' :
-                    `Book Ride ₹${(finalPayable || 0).toFixed(2)}`
+                    `Book Ride ${formatPrice(finalPayable)}`
               }
             </Button>
           )}
@@ -1785,7 +1791,7 @@ const BookingStep2 = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="font-medium">Base Fare:</span>
-                    <span className="font-medium">₹{selectedCategory.subtotal || 0}</span>
+                    <span className="font-medium">{formatPrice(selectedCategory.subtotal)}</span>
                   </div>
 
                   {selectedCategory.discountApplied > 0 && (
@@ -1797,20 +1803,20 @@ const BookingStep2 = () => {
 
                   <div className="flex justify-between">
                     <span className="font-medium">Taxes & Fees:</span>
-                    <span className="font-medium">₹{selectedCategory.gstCharges || 0}</span>
+                    <span className="font-medium">{formatPrice(selectedCategory.gstCharges)}</span>
                   </div>
 
                   {selectedCategory.insuranceCharges > 0 && (
                     <div className="flex justify-between">
                       <span className="font-medium">Secure Fee:</span>
-                      <span className="font-medium">₹{selectedCategory.insuranceCharges || 0}</span>
+                      <span className="font-medium">{formatPrice(selectedCategory.insuranceCharges)}</span>
                     </div>
                   )}
 
                   {selectedCategory.cancellationCharges > 0 &&
                     <div className="flex justify-between">
                       <span className="font-medium">Cancellation Fee:</span>
-                      <span className="font-medium">₹{selectedCategory.cancellationCharges || 0}</span>
+                      <span className="font-medium">{formatPrice(selectedCategory.cancellationCharges)}</span>
                     </div>}
 
 
@@ -1821,11 +1827,7 @@ const BookingStep2 = () => {
                 <div className="flex justify-between text-lg font-bold">
                   <span>Estimated Total:</span>
                   <span className="text-green-600">
-                    ₹{Math.max(
-                      0,
-                      (selectedCategory.totalPayable || 0)
-
-                    )}
+                    {formatPrice(Math.max(0, selectedCategory.totalPayable || 0))}
                   </span>
                 </div>
               </div>
@@ -1838,7 +1840,7 @@ const BookingStep2 = () => {
                     {rideCostData.includedKm && parseInt(rideCostData.includedKm) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-gray-600">Included Distance:</span>
-                        <span className="font-medium">{rideCostData.includedKm}Km</span>
+                        <span className="font-medium">{rideCostData.includedKm} Kms</span>
                       </div>
                     )}
                     {rideCostData.includedMinutes && parseInt(rideCostData.includedMinutes) > 0 && (
@@ -1847,16 +1849,16 @@ const BookingStep2 = () => {
                         <span className="font-medium">{formatPackageTime(rideCostData.includedMinutes)}</span>
                       </div>
                     )}
-                    {rideCostData.extraChargePerKm > 0 && (
+                    {rideCostData.finalExtraChargePerKm > 0 && (
                       <div className="flex justify-between">
                         <span className="text-gray-600">Extra Charge/Km:</span>
-                        <span className="font-medium">₹{rideCostData.extraChargePerKm}</span>
+                        <span className="font-medium">₹{rideCostData.finalExtraChargePerKm}</span>
                       </div>
                     )}
-                    {rideCostData.extraChargePerMinute > 0 && (
+                    {rideCostData.finalExtraChargePerMinute > 0 && (
                       <div className="flex justify-between">
                         <span className="text-gray-600">Extra Charge/Min:</span>
-                        <span className="font-medium">₹{rideCostData.extraChargePerMinute}</span>
+                        <span className="font-medium">₹{rideCostData.finalExtraChargePerMinute}</span>
                       </div>
                     )}
                   </div>
