@@ -46,6 +46,7 @@ const BookingStep2 = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cash');
   const [instructionsLoading, setInstructionsLoading] = useState(false);
+  const [rideCostData, setRideCostData] = useState(null);
 
   const [showBackConfirmation, setShowBackConfirmation] = useState(false);
   const [showReferralSection, setShowReferralSection] = useState(false);
@@ -119,6 +120,28 @@ const BookingStep2 = () => {
       }
     } else {
       return `${totalMinutes} Minutes`;
+    }
+  };
+
+  // Helper function to format package time display
+  const formatPackageTime = (minutes) => {
+    const totalMinutes = parseInt(minutes);
+    
+    if (totalMinutes >= 1440) {
+      const days = Math.floor(totalMinutes / 1440);
+      return days === 1 ? '1 Day' : `${days} Days`;
+    } else if (totalMinutes >= 60) {
+      const hours = Math.floor(totalMinutes / 60);
+      const remainingMinutes = totalMinutes % 60;
+      if (remainingMinutes === 0) {
+        return hours === 1 ? '1 Hour' : `${hours} Hours`;
+      } else {
+        const hourText = hours === 1 ? '1 Hour' : `${hours} Hours`;
+        const minText = remainingMinutes === 1 ? '1 Minute' : `${remainingMinutes} Minutes`;
+        return `${hourText} ${minText}`;
+      }
+    } else {
+      return totalMinutes === 1 ? '1 Minute' : `${totalMinutes} Minutes`;
     }
   };
 
@@ -206,17 +229,30 @@ const BookingStep2 = () => {
     }
   }, [bookingData?.subcategoryName, bookingData?.selectedDates, durationValue]);
 
-  const fetchInstructions = async (categoryName) => {
+  const fetchInstructions = async (categoryName, currentUsage = null) => {
     if (!categoryName || instructionsLoading) return;
 
     setInstructionsLoading(true);
     try {
       const categoryType = bookingData?.categoryName?.toLowerCase();
 
+      // Use passed currentUsage or fallback to state values
+      const usageValue = currentUsage || selectedUsage || customUsage;
+      
+      // Find the raw data for the selected usage
+      const selectedRawData = durationOptions.find(option => option.value === usageValue);
+      
+      // Create combined selectedUsage for API (always send both Km & Mins)
+      // Only send if we have valid raw data, otherwise skip selectedUsage
+      const combinedSelectedUsage = selectedRawData 
+        ? `${selectedRawData.rawKm}Km & ${selectedRawData.rawMinutes}Mins`
+        : null;
+
       const requestBody = {
         categoryId: bookingData.categoryId,
         subCategoryId: bookingData.subcategoryId,
-        ...(bookingData.subSubcategoryId && { subSubCategoryId: bookingData.subSubcategoryId })
+        ...(bookingData.subSubcategoryId && { subSubCategoryId: bookingData.subSubcategoryId }),
+        ...(combinedSelectedUsage && { selectedUsage: combinedSelectedUsage })
       };
 
       // Add appropriate category ID based on booking type
@@ -235,8 +271,10 @@ const BookingStep2 = () => {
         requestBody
       );
       const instructionTexts = res.data.data || [];
+      const costData = res.data.rideCostData || null;
 
       setInstructions(instructionTexts.flat());
+      setRideCostData(costData);
     } catch (error) {
       console.error('Failed to fetch instructions', error);
       if (error.response?.status === 401) {
@@ -298,9 +336,10 @@ const BookingStep2 = () => {
       const selectedRawData = options.find(option => option.value === defaultUsage);
       
       // Create combined selectedUsage for API (always send both Km & Mins)
+      // Only send if we have valid raw data, otherwise skip selectedUsage
       const combinedSelectedUsage = selectedRawData 
         ? `${selectedRawData.rawKm}Km & ${selectedRawData.rawMinutes}Mins`
-        : defaultUsage;
+        : null;
       
       // Create payload without sender/receiver fields for calculation
       const { senderMobile, senderName, senderType, receiverMobile, receiverName, receiverType, senderDetails, receiverDetails, ...calculationData } = bookingData;
@@ -309,7 +348,7 @@ const BookingStep2 = () => {
         apiEndpoint,
         {
           ...calculationData,
-          selectedUsage: combinedSelectedUsage,
+          ...(combinedSelectedUsage && { selectedUsage: combinedSelectedUsage }),
           includeInsurance: includeInsurance,
           durationType: finalDurationType,
           durationValue: finalDurationValue,
@@ -480,6 +519,13 @@ const BookingStep2 = () => {
               // Wait for next tick to ensure state is updated, pass options directly
               setTimeout(() => {
                 callCalculationAPIWithOptions(defaultUsage, options, durationType, durationValue, defaultCarCategory, defaultParcelCategory);
+              }, 0);
+              return;
+            } else {
+              // If we have existing usage from Redux, call calculation API with proper options
+              const existingUsage = selectedUsage || customUsage;
+              setTimeout(() => {
+                callCalculationAPIWithOptions(existingUsage, options, durationType, durationValue, defaultCarCategory, defaultParcelCategory);
               }, 0);
               return;
             }
@@ -662,6 +708,11 @@ const BookingStep2 = () => {
     setCustomUsage('');
     dispatch(setUsage({ selectedUsage: value, customUsage: '' }));
     await callCalculationAPI(value);
+    
+    // Fetch instructions with the exact same usage value
+    if (selectedCategory?.category) {
+      fetchInstructions(selectedCategory.category, value);
+    }
   };
 
   // Debounced custom usage handling
@@ -672,6 +723,11 @@ const BookingStep2 = () => {
       if (customUsage && bookingData && !isCalculating) {
         dispatch(setUsage({ selectedUsage: '', customUsage: customUsage }));
         callCalculationAPI(customUsage);
+        
+        // Fetch instructions with the exact same custom usage value
+        if (selectedCategory?.category) {
+          fetchInstructions(selectedCategory.category, customUsage);
+        }
       }
     }, 500);
     return () => clearTimeout(delayDebounce);
@@ -1773,6 +1829,39 @@ const BookingStep2 = () => {
                   </span>
                 </div>
               </div>
+
+              {/* Ride Cost Data Section */}
+              {rideCostData && (
+                <div className="pt-4">
+                  <h4 className="font-semibold text-gray-800 mb-2">Package Details</h4>
+                  <div className="space-y-2 text-sm">
+                    {rideCostData.includedKm && rideCostData.includedKm.length > 0 && parseInt(rideCostData.includedKm[0]) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Included Distance:</span>
+                        <span className="font-medium">{rideCostData.includedKm[0]}Km</span>
+                      </div>
+                    )}
+                    {rideCostData.includedMinutes && rideCostData.includedMinutes.length > 0 && parseInt(rideCostData.includedMinutes[0]) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Included Time:</span>
+                        <span className="font-medium">{formatPackageTime(rideCostData.includedMinutes[0])}</span>
+                      </div>
+                    )}
+                    {rideCostData.extraChargePerKm > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Extra Charge/Km:</span>
+                        <span className="font-medium">₹{rideCostData.extraChargePerKm}</span>
+                      </div>
+                    )}
+                    {rideCostData.extraChargePerMinute > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Extra Charge/Min:</span>
+                        <span className="font-medium">₹{rideCostData.extraChargePerMinute}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Instructions Section without Horizontal Scroll */}
               {instructions && instructions.length > 0 ? (
