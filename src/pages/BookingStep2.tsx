@@ -487,8 +487,7 @@ const BookingStep2 = () => {
             const normalizeString = (str) => str?.toLowerCase().replace(/[\s-]/g, '') || '';
             const isDistanceBased = normalizeString(bookingData?.subcategoryName).includes('oneway') || 
                                    normalizeString(bookingData?.subSubcategoryName).includes('oneway') ||
-                                   normalizeString(bookingData?.subcategoryName).includes('outstation') ||
-                                   normalizeString(bookingData?.subcategoryName).includes('incity');
+                                   normalizeString(bookingData?.categoryName).includes('parcel');
 
             // Create options based on service type
             const options = dataArray.map(item => {
