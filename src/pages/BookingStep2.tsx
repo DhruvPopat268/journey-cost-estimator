@@ -265,10 +265,10 @@ const BookingStep2 = () => {
       if (categoryType === 'driver') {
         requestBody.driverCategoryId = selectedCategory?.categoryId;
       } else if (categoryType === 'cab') {
-        requestBody.carId = selectedCategory?.categoryId; // Store as carId
+        requestBody.carId = selectedCategory?.categoryId;
         requestBody.carCategoryId = selectedCarCategory?._id;
       } else if (categoryType === 'parcel') {
-        requestBody.vehicleTypeId = selectedCategory?.categoryId; // Store as carId
+        requestBody.vehicleTypeId = selectedCategory?.categoryId;
         requestBody.parcelCategoryId = selectedParcelCategory?._id;
       }
 
@@ -761,14 +761,14 @@ const BookingStep2 = () => {
     if (selectedCarCategory && bookingData?.categoryName?.toLowerCase() === 'cab' && selectedCategory?.category) {
       fetchInstructions(selectedCategory.category);
     }
-  }, [selectedCarCategory?._id]);
+  }, [selectedCarCategory?._id, selectedCategory?.categoryId]);
 
   // Fetch instructions when parcel category changes for parcel bookings
   useEffect(() => {
     if (selectedParcelCategory && bookingData?.categoryName?.toLowerCase() === 'parcel' && selectedCategory?.category) {
       fetchInstructions(selectedCategory.category);
     }
-  }, [selectedParcelCategory?._id]);
+  }, [selectedParcelCategory?._id, selectedCategory?.categoryId]);
 
   useEffect(() => {
     if (totalAmount?.length > 0) {
