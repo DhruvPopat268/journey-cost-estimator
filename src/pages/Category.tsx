@@ -65,9 +65,9 @@ const Category = () => {
       setError(null);
 
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/categories`);
-        if (res.status === 200) {
-          setCategories(res.data || []);
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/categories/userApp`);
+        if (res.status === 200 && res.data.success) {
+          setCategories(res.data.data || []);
         } else {
           setError('Failed to load categories');
         }

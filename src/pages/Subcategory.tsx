@@ -28,7 +28,7 @@ const Subcategory = () => {
       setError(null);
 
       try {
-        const subcategoriesRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/subcategories`);
+        const subcategoriesRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/subcategories/userWeb`);
         const allSubcategories = subcategoriesRes.data || [];
         const filteredSubcategories = allSubcategories.filter(sub => sub.categoryId === categoryId);
 

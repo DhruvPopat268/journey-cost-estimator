@@ -23,7 +23,7 @@ const SubSubcategory = () => {
       }
 
       try {
-        const subSubcategoriesRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/subsubcategories`);
+        const subSubcategoriesRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/subsubcategories/userWeb`);
         const allSubSubcategories = subSubcategoriesRes.data || [];
         const filteredSubSubcategories = allSubSubcategories.filter(sub => sub.categoryId === categoryId);
 
