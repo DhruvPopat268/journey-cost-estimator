@@ -361,8 +361,15 @@ const Booking = () => {
     
     const now = new Date();
     const selectedDateTime = new Date(`${selectedDate}T${selectedTime}`);
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Only apply time restrictions for today's date
+    if (selectedDate !== today) {
+      return true; // Any time is valid for future dates
+    }
+    
     const isOutstation = subcategoryName.toLowerCase() === 'outstation' || subcategoryName.toLowerCase() === 'out-station';
-    const requiredMinutes = isOutstation ? 60 : 30; // Adding 1 extra minute to avoid edge cases
+    const requiredMinutes = isOutstation ? 60 : 30;
     
     const minAllowedTime = new Date(now.getTime() + requiredMinutes * 60000);
     return selectedDateTime >= minAllowedTime;
